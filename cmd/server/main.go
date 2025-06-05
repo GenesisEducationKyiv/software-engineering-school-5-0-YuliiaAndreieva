@@ -3,20 +3,22 @@ package main
 import (
 	"context"
 	"database/sql"
-	"github.com/golang-migrate/migrate/v4"
-	"github.com/robfig/cron/v3"
+	"errors"
 	"log"
 	"net/http"
 	"strconv"
 	"time"
-	"weather-api/internal/core/domain"
 
 	"github.com/gin-gonic/gin"
+	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
+	"github.com/robfig/cron/v3"
+
 	"weather-api/internal/adapter/email"
 	"weather-api/internal/adapter/repository/postgres"
 	"weather-api/internal/adapter/weather"
+	"weather-api/internal/core/domain"
 	"weather-api/internal/core/service"
 	httphandler "weather-api/internal/handler/http"
 	"weather-api/internal/util"
@@ -32,13 +34,17 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to connect to DB: %v", err)
 	}
-	defer db.Close()
+	defer func() {
+		if err := db.Close(); err != nil {
+			log.Printf("Error closing database connection: %v", err)
+		}
+	}()
 
 	m, err := migrate.New("file://migrations", cfg.DBConnStr)
 	if err != nil {
 		log.Fatalf("Failed to initialize migration: %v", err)
 	}
-	if err := m.Up(); err != nil && err != migrate.ErrNoChange {
+	if err := m.Up(); err != nil && !errors.Is(err, migrate.ErrNoChange) {
 		log.Fatalf("Failed to apply migrations: %v", err)
 	}
 
@@ -71,8 +77,14 @@ func main() {
 	})
 
 	cron := cron.New()
-	cron.AddFunc("0 * * * *", func() { emailService.SendUpdates(context.Background(), domain.FrequencyHourly) })
-	cron.AddFunc("0 0 * * *", func() { emailService.SendUpdates(context.Background(), domain.FrequencyDaily) })
+	_, err = cron.AddFunc("0 * * * *", func() { emailService.SendUpdates(context.Background(), domain.FrequencyHourly) })
+	if err != nil {
+		return
+	}
+	_, err = cron.AddFunc("0 0 * * *", func() { emailService.SendUpdates(context.Background(), domain.FrequencyDaily) })
+	if err != nil {
+		return
+	}
 	cron.Start()
 
 	port := strconv.Itoa(cfg.Port)

@@ -22,7 +22,11 @@ func (w *WeatherService) GetWeather(city string) (domain.Weather, error) {
 	if err != nil {
 		return domain.Weather{}, err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			fmt.Printf("Error closing response body: %v\n", err)
+		}
+	}()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {

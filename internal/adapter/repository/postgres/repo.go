@@ -102,7 +102,11 @@ func (r *SubscriptionRepo) GetSubscriptionsByFrequency(ctx context.Context, freq
 		log.Printf("Failed to query subscriptions: %v", err)
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() {
+		if err := rows.Close(); err != nil {
+			log.Printf("Error closing rows: %v", err)
+		}
+	}()
 
 	var subs []domain.Subscription
 	for rows.Next() {

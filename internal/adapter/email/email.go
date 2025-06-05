@@ -6,6 +6,7 @@ import (
 	"net/smtp"
 
 	"github.com/jordan-wright/email"
+
 	"weather-api/internal/core/port"
 )
 

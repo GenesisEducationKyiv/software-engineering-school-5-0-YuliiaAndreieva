@@ -3,11 +3,11 @@ package service
 import (
 	"errors"
 	"testing"
-	"weather-api/internal/mocks"
 
 	"github.com/stretchr/testify/assert"
 
 	"weather-api/internal/core/domain"
+	"weather-api/internal/mocks"
 )
 
 func TestWeatherService_GetWeather(t *testing.T) {
