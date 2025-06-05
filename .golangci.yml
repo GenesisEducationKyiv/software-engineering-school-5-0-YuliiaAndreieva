@@ -1,0 +1,60 @@
+run:
+  timeout: 5m
+
+issues:
+  exclude-dirs:
+    - vendor
+    - generated
+  exclude-use-default: false
+  exclude-rules:
+    - path: cmd/server/main\.go
+      text: "shadowing of variable"
+      linters:
+        - revive
+    - path: internal/mocks/.*\.go
+      linters:
+        - errcheck
+        - gofmt
+        - goimports
+  max-issues-per-linter: 0
+  max-same-issues: 50
+
+linters:
+  enable:
+    - govet
+    - errcheck
+    - staticcheck
+    - gofmt
+    - goimports
+    - gocyclo
+    - revive
+    - typecheck
+    - unparam
+    - godot
+  disable: []
+
+linters-settings:
+  errcheck:
+    check-type-assertions: true
+    check-assign-to-blank: true
+  gocyclo:
+    min-complexity: 15
+  revive:
+    rules:
+      - name: unexported-return
+        severity: warning
+      - name: var-naming
+        severity: error
+      - name: blank-imports
+        severity: error
+  gofmt:
+    simplify: true
+  unparam:
+    check-exported: true
+  godot:
+    scope: all
+
+output:
+  formats:
+    - format: colored-line-number
+      path: stdout
