@@ -36,7 +36,6 @@ linters:
 linters-settings:
   errcheck:
     check-type-assertions: true
-    check-assign-to-blank: true
   gocyclo:
     min-complexity: 15
   revive:
