@@ -1,36 +1,35 @@
 package util
 
 import (
-	"fmt"
+	"strconv"
 )
 
 func BuildConfirmationEmail(city, token string) (subject, body string) {
 	baseURL := GetBaseURL()
-	confirmURL := fmt.Sprintf("%s/api/confirm/%s", baseURL, token)
+	confirmURL := baseURL + "/api/confirm/" + token
 	subject = "Confirm Subscription"
-	body = fmt.Sprintf(`
-        <html>
-            <body>
-                <p>Thank you for subscribing to weather updates for %s!</p>
-                <p>Please click the link below to confirm your subscription:</p>
-                <p><a href="%s" style="color: #0066cc; text-decoration: underline;">Confirm your subscription</a></p>
-            </body>
-        </html>
-    `, city, confirmURL)
+	body = "<html><body>" +
+		"<p>Thank you for subscribing to weather updates for " + city + "!</p>" +
+		"<p>Please click the link below to confirm your subscription:</p>" +
+		`<p><a href="` + confirmURL + `" style="color: #0066cc; text-decoration: underline;">` +
+		"Confirm your subscription</a></p>" +
+		"</body></html>"
 	return
 }
 
 func BuildWeatherUpdateEmail(city string, temperature float64, humidity int, description, token string) (subject, body string) {
 	baseURL := GetBaseURL()
-	unsubscribeURL := fmt.Sprintf("%s/api/unsubscribe/%s", baseURL, token)
+	unsubscribeURL := baseURL + "/api/unsubscribe/" + token
 	subject = "Weather Update"
-	body = fmt.Sprintf(`
-        <html>
-            <body>
-                <p>Weather in %s: Temp %.2f°C, Humidity %d%%, %s</p>
-                <p><a href="%s" style="color: #0066cc; text-decoration: underline;">Unsubscribe</a></p>
-            </body>
-        </html>
-    `, city, temperature, humidity, description, unsubscribeURL)
+	tempStr := strconv.FormatFloat(temperature, 'f', 2, 64) // 2 знаки після коми
+	humidStr := strconv.Itoa(humidity)
+
+	body = "<html><body>" +
+		"<p>Weather in " + city + ": Temp " + tempStr + "°C, Humidity " +
+		humidStr + "%, " + description + "</p>" +
+		`<p><a href="` + unsubscribeURL +
+		`" style="color: #0066cc; text-decoration: underline;">Unsubscribe</a></p>` +
+		"</body></html>"
+
 	return
 }
