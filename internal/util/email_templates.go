@@ -21,7 +21,7 @@ func BuildWeatherUpdateEmail(city string, temperature float64, humidity int, des
 	baseURL := GetBaseURL()
 	unsubscribeURL := baseURL + "/api/unsubscribe/" + token
 	subject = "Weather Update"
-	tempStr := strconv.FormatFloat(temperature, 'f', 2, 64) // 2 знаки після коми
+	tempStr := strconv.FormatFloat(temperature, 'f', 2, 64)
 	humidStr := strconv.Itoa(humidity)
 
 	body = "<html><body>" +

@@ -72,6 +72,19 @@ Run tests only in core/service directory:
 go test ./internal/core/service/...
 ```
 
+### Code Quality with golangci-lint
+
+Install golangci-lint:
+
+```bash
+go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.1.6
+```
+
+Run the linter:
+```bash
+golangci-lint run -v
+```
+
 ## API Endpoints
 
 - `GET /api/weather` - Get current weather for a city
