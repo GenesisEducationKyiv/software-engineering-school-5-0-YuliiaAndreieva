@@ -1,4 +1,4 @@
-name: Go
+name: build
 
 on:
   push:
@@ -23,12 +23,6 @@ jobs:
           restore-keys: ${{ runner.os }}-go-
 
       - run: go mod download
-
-      - uses: golangci/golangci-lint-action@v8
-        with:
-            version: v2.1.6
-            args: --timeout=5m --out-format=colored-line-number
-            config: .golangci.yml
 
       - run: go build -v ./...
 
