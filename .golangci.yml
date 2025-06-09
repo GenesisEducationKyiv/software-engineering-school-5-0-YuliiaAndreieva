@@ -12,10 +12,6 @@ linters:
   disable: []
   exclusions:
     rules:
-    - path: cmd/server/main\.go
-      text: "shadowing of variable"
-      linters:
-        - revive
     - path: internal/mocks/.*\.go
       linters:
         - errcheck
