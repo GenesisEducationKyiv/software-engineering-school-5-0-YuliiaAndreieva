@@ -2,8 +2,9 @@ package mocks
 
 import (
 	"context"
-	"github.com/stretchr/testify/mock"
 	"weather-api/internal/core/domain"
+
+	"github.com/stretchr/testify/mock"
 )
 
 type MockSubscriptionRepository struct {

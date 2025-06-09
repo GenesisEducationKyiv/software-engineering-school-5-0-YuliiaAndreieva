@@ -113,7 +113,7 @@ func (s *SubscriptionService) Unsubscribe(ctx context.Context, token string) err
 	if token == "" {
 		return domain.ErrInvalidToken
 	}
-	//TODO: validate and generate the token better in future
+	//TODO: validate and generate the token better in future.
 
 	exists, err := s.repo.IsTokenExists(ctx, token)
 	if err != nil {

@@ -2,9 +2,11 @@ package weather
 
 import (
 	"encoding/json"
-	"fmt"
+	"errors"
 	"io"
+	"log"
 	"net/http"
+	"strconv"
 	"weather-api/internal/core/domain"
 )
 
@@ -22,7 +24,11 @@ func (w *WeatherService) GetWeather(city string) (domain.Weather, error) {
 	if err != nil {
 		return domain.Weather{}, err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			log.Printf("Error closing response body: %v\n", err)
+		}
+	}()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -50,7 +56,9 @@ func (w *WeatherService) GetWeather(city string) (domain.Weather, error) {
 		if data.Error.Code == 1006 {
 			return domain.Weather{}, domain.ErrCityNotFound
 		}
-		return domain.Weather{}, fmt.Errorf("API error: %s", data.Error.Message)
+		log.Printf("weatherapi error: %s (code %d)", data.Error.Message, data.Error.Code)
+		msg := "weatherapi error: " + strconv.Itoa(data.Error.Code) + " " + data.Error.Message
+		return domain.Weather{}, errors.New(msg)
 	}
 
 	if data.Current.TempC == 0 && data.Current.Humidity == 0 && data.Current.Condition.Text == "" {

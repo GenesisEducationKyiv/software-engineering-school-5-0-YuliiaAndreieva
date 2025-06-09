@@ -1,11 +1,12 @@
 package email
 
 import (
-	"fmt"
 	"log"
 	"net/smtp"
+	"strconv"
 
 	"github.com/jordan-wright/email"
+
 	"weather-api/internal/core/port"
 )
 
@@ -29,7 +30,8 @@ func (e *SMTPEmailSender) SendEmail(to, subject, body string) error {
 	msg.Subject = subject
 	msg.HTML = []byte(body)
 
-	err := msg.Send(fmt.Sprintf("%s:%d", e.host, e.port), smtp.PlainAuth("", e.user, e.pass, e.host))
+	addr := e.host + ":" + strconv.Itoa(e.port)
+	err := msg.Send(addr, smtp.PlainAuth("", e.user, e.pass, e.host))
 	if err != nil {
 		log.Printf("Failed to send email to %s: %v", to, err)
 		return err

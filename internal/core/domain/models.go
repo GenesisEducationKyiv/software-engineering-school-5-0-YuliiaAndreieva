@@ -3,11 +3,11 @@ package domain
 import "errors"
 
 var (
-	ErrCityNotFound           = errors.New("City not found")
-	ErrInvalidInput           = errors.New("Invalid input")
-	ErrEmailAlreadySubscribed = errors.New("Email already subscribed")
-	ErrInvalidToken           = errors.New("Invalid token")
-	ErrTokenNotFound          = errors.New("Token not found")
+	ErrCityNotFound           = errors.New("city not found")
+	ErrInvalidInput           = errors.New("invalid input")
+	ErrEmailAlreadySubscribed = errors.New("email already subscribed")
+	ErrInvalidToken           = errors.New("invalid token")
+	ErrTokenNotFound          = errors.New("token not found")
 )
 
 type Frequency string
