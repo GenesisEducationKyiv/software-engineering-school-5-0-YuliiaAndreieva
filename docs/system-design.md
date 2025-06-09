@@ -23,7 +23,7 @@
 - Secure token generation for confirmations/unsubscribe
 - SMTP authentication for email delivery
 
-#### Constraints
+### Constraints
 - Free tier limitations of WeatherAPI.com
 
 ## 2. Load Estimation
@@ -51,24 +51,30 @@
 
 ```mermaid
 flowchart TB
- subgraph subGraph0["Core Services"]
+    subgraph "Core Services"
         WS["Weather Service"]
         SS["Subscription Service"]
         ES["Email Service"]
         TS["Token Service"]
-  end
- subgraph subGraph1["Data Layer"]
+    end
+
+    subgraph "Data Layer"
         PG[("PostgreSQL")]
-  end
- subgraph subGraph2["External Services"]
+        Repo["Repository"]
+    end
+
+    subgraph "External Services"
         Weather["WeatherAPI.com"]
         Email["SMTP Server"]
-  end
+    end
+
     User["Users"] --> API["API Server"]
     API --> WS & SS & ES & TS
     WS --> Weather
-    ES --> Email & PG
-    SS --> PG
+    ES --> Email
+    SS --> Repo
+    ES --> Repo
+    Repo --> PG
 ```
 
 ## 4.Detailed component design
@@ -130,19 +136,43 @@ sequenceDiagram
 
     Client->>API: POST /api/subscribe
     API->>SS: Subscribe(email, city, frequency)
-    SS->>WS: Validate city
-    WS->>WeatherAPI: Check city exists
-    WeatherAPI-->>WS: City valid
-    WS-->>SS: City validated
-    SS->>TS: Generate token
-    TS-->>SS: Token
-    SS->>DB: Create subscription
-    SS->>ES: Send confirmation email
-    ES->>SMTP: Send email
-    SMTP-->>ES: Email sent
-    ES-->>SS: Email sent
-    SS-->>API: Subscription created
-    API-->>Client: Success response
+    
+    %% Input validation
+    alt Invalid input (email, frequency)
+        SS-->>API: Error: Invalid input
+        API-->>Client: 400 Bad Request
+    else Valid input
+        %% Check if subscription exists
+        SS->>DB: Check if email subscribed
+        DB-->>SS: Subscription status
+        
+        alt Email already subscribed
+            SS-->>API: Error: Email already subscribed
+            API-->>Client: 409 Conflict
+        else Email not subscribed
+            SS->>WS: Validate city
+            WS->>WeatherAPI: Check city exists
+            
+            alt City not found
+                WeatherAPI-->>WS: City not found
+                WS-->>SS: Error: City not found
+                SS-->>API: Error: City not found
+                API-->>Client: 404 Not Found
+            else City found
+                WeatherAPI-->>WS: City valid
+                WS-->>SS: City validated
+                SS->>TS: Generate token
+                TS-->>SS: Token
+                SS->>DB: Create subscription
+                SS->>ES: Send confirmation email
+                ES->>SMTP: Send email
+                SMTP-->>ES: Email sent
+                ES-->>SS: Email sent
+                SS-->>API: Subscription created
+                API-->>Client: Success response
+            end
+        end
+    end
 ```
 
 ### 5.3 Confirmation Flow
@@ -155,12 +185,25 @@ sequenceDiagram
 
     Client->>API: GET /api/confirm/:token
     API->>SS: Confirm(token)
-    SS->>DB: Update subscription
-    DB-->>SS: Updated
-    SS-->>API: Confirmed
-    API-->>Client: Success response
+    
+    alt Invalid token format
+        SS-->>API: Error: Invalid token
+        API-->>Client: 400 Bad request
+    else Valid token format
+        SS->>DB: Find subscription by token
+        
+        alt Token not found
+            DB-->>SS: No subscription found
+            SS-->>API: Error: Token not found
+            API-->>Client: 404 Not Found
+        else Token found
+            SS->>DB: Update subscription status
+            DB-->>SS: Updated
+            SS-->>API: Confirmed
+            API-->>Client: Success response
+        end
+    end
 ```
-
 ### 5.4 Unsubscribe Flow
 ```mermaid
 sequenceDiagram
@@ -171,8 +214,22 @@ sequenceDiagram
 
     Client->>API: GET /api/unsubscribe/:token
     API->>SS: Unsubscribe(token)
-    SS->>DB: Delete subscription
-    DB-->>SS: Deleted
-    SS-->>API: Unsubscribed
-    API-->>Client: Success response
+    
+    alt Invalid token format
+        SS-->>API: Error: Invalid token
+        API-->>Client: 400 Bad Request
+    else Valid token format
+        SS->>DB: Find subscription by token
+        
+        alt Token not found
+            DB-->>SS: No subscription found
+            SS-->>API: Error: Token not found
+            API-->>Client: 404 Not Found
+        else Token found
+            SS->>DB: Delete subscription
+            DB-->>SS: Deleted
+            SS-->>API: Unsubscribed
+            API-->>Client: Success response
+        end
+    end
 ```
