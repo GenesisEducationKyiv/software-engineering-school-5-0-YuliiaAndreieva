@@ -1,6 +1,6 @@
 package weather
 
-type weatherResponse struct {
+type WeatherResponse struct {
 	Current struct {
 		TempC     float64 `json:"temp_c"`
 		Humidity  int     `json:"humidity"`

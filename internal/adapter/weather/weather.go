@@ -18,7 +18,7 @@ type HTTPDoer interface {
 }
 
 type WeatherValidator interface {
-	ValidateResponse(data weatherResponse) error
+	ValidateResponse(data WeatherResponse) error
 }
 
 type WeatherAPIClient struct {
@@ -53,7 +53,12 @@ func (c *WeatherAPIClient) GetWeather(ctx context.Context, city string) (domain.
 	if err != nil {
 		return domain.Weather{}, err
 	}
-	defer resp.Body.Close()
+
+	defer func() {
+		if cerr := resp.Body.Close(); cerr != nil && err == nil {
+			err = cerr
+		}
+	}()
 
 	data, err := c.parser.ParseResponse(resp.Body)
 	if err != nil {
@@ -77,7 +82,11 @@ func (c *WeatherAPIClient) ValidateCity(ctx context.Context, city string) error 
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if cerr := resp.Body.Close(); cerr != nil && err == nil {
+			err = cerr
+		}
+	}()
 
 	var results []struct {
 		Name string `json:"name"`

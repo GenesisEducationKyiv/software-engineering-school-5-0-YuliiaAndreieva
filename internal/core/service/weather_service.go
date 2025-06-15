@@ -14,7 +14,7 @@ type weatherService struct {
 	weatherSvc weather.Provider
 }
 
-func NewWeatherService(weatherSvc weather.Provider) *weatherService {
+func NewWeatherService(weatherSvc weather.Provider) WeatherService {
 	return &weatherService{weatherSvc: weatherSvc}
 }
 

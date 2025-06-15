@@ -13,7 +13,7 @@ func NewValidator() *Validator {
 	return &Validator{}
 }
 
-func (v *Validator) ValidateResponse(data weatherResponse) error {
+func (v *Validator) ValidateResponse(data WeatherResponse) error {
 	if data.Error.Code != 0 {
 		if data.Error.Code == 1006 {
 			return domain.ErrCityNotFound

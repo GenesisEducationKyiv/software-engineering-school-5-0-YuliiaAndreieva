@@ -26,7 +26,7 @@ func NewSubscriptionRepo(db *sql.DB) SubscriptionRepository {
 }
 
 func (r *subscriptionRepository) CreateSubscription(ctx context.Context, sub domain.Subscription) error {
-	log.Printf("Creating subscription for city: %s", sub.City)
+	log.Printf("Creating subscription for city")
 	query := `INSERT INTO subscriptions (email, city_id, frequency, token, is_confirmed) VALUES ($1, $2, $3, $4, $5)`
 	_, err := r.db.ExecContext(ctx, query, sub.Email, sub.CityID, sub.Frequency, sub.Token, sub.IsConfirmed)
 	if err != nil {
@@ -114,7 +114,11 @@ func (r *subscriptionRepository) GetSubscriptionsByFrequency(ctx context.Context
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() {
+		if cerr := rows.Close(); cerr != nil && err == nil {
+			err = cerr
+		}
+	}()
 
 	var subscriptions []domain.Subscription
 	for rows.Next() {
