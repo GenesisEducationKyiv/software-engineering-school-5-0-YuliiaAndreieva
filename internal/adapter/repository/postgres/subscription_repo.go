@@ -14,8 +14,8 @@ type SubscriptionRepository interface {
 	UpdateSubscription(ctx context.Context, sub domain.Subscription) error
 	DeleteSubscription(ctx context.Context, token string) error
 	GetSubscriptionsByFrequency(ctx context.Context, frequency string) ([]domain.Subscription, error)
-	IsEmailSubscribed(ctx context.Context, email string) (bool, error)
 	IsTokenExists(ctx context.Context, token string) (bool, error)
+	IsSubscriptionExists(ctx context.Context, email string, cityID int64, frequency domain.Frequency) (bool, error)
 }
 type subscriptionRepository struct {
 	db *sql.DB
@@ -27,8 +27,8 @@ func NewSubscriptionRepo(db *sql.DB) SubscriptionRepository {
 
 func (r *subscriptionRepository) CreateSubscription(ctx context.Context, sub domain.Subscription) error {
 	log.Printf("Creating subscription for city: %s", sub.City)
-	query := `INSERT INTO subscriptions (email, city, frequency, token, is_confirmed) VALUES ($1, $2, $3, $4, $5)`
-	_, err := r.db.ExecContext(ctx, query, sub.Email, sub.City, sub.Frequency, sub.Token, sub.IsConfirmed)
+	query := `INSERT INTO subscriptions (email, city_id, frequency, token, is_confirmed) VALUES ($1, $2, $3, $4, $5)`
+	_, err := r.db.ExecContext(ctx, query, sub.Email, sub.CityID, sub.Frequency, sub.Token, sub.IsConfirmed)
 	if err != nil {
 		log.Printf("Failed to create subscription: %v", err)
 		return err
@@ -40,8 +40,8 @@ func (r *subscriptionRepository) CreateSubscription(ctx context.Context, sub dom
 func (r *subscriptionRepository) GetSubscriptionByToken(ctx context.Context, token string) (domain.Subscription, error) {
 	log.Printf("Looking up subscription")
 	var sub domain.Subscription
-	query := `SELECT id, email, city, frequency, token, is_confirmed FROM subscriptions WHERE token = $1`
-	err := r.db.QueryRowContext(ctx, query, token).Scan(&sub.ID, &sub.Email, &sub.City, &sub.Frequency, &sub.Token, &sub.IsConfirmed)
+	query := `SELECT token FROM subscriptions WHERE token = $1`
+	err := r.db.QueryRowContext(ctx, query, token).Scan(&sub.Token)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			log.Printf("No subscription found")
@@ -103,44 +103,44 @@ func (r *subscriptionRepository) DeleteSubscription(ctx context.Context, token s
 }
 
 func (r *subscriptionRepository) GetSubscriptionsByFrequency(ctx context.Context, frequency string) ([]domain.Subscription, error) {
-	log.Printf("Getting subscriptions for frequency: %s", frequency)
-	query := `SELECT id, email, city, frequency, token, is_confirmed FROM subscriptions WHERE frequency = $1 AND is_confirmed = true`
+	query := `
+        SELECT s.id, s.email, s.city_id, c.name as city_name,
+               s.frequency, s.token, s.is_confirmed
+        FROM subscriptions s
+        JOIN cities c ON s.city_id = c.id
+        WHERE s.frequency = $1 AND s.is_confirmed = true
+    `
 	rows, err := r.db.QueryContext(ctx, query, frequency)
 	if err != nil {
-		log.Printf("Failed to query subscriptions: %v", err)
 		return nil, err
 	}
-	defer func() {
-		if err := rows.Close(); err != nil {
-			log.Printf("Error closing rows: %v", err)
-		}
-	}()
+	defer rows.Close()
 
-	var subs []domain.Subscription
+	var subscriptions []domain.Subscription
 	for rows.Next() {
 		var sub domain.Subscription
-		if err := rows.Scan(&sub.ID, &sub.Email, &sub.City, &sub.Frequency, &sub.Token, &sub.IsConfirmed); err != nil {
-			log.Printf("Error scanning subscription row: %v", err)
+		var city domain.City
+		err := rows.Scan(
+			&sub.ID,
+			&sub.Email,
+			&sub.CityID,
+			&city.Name,
+			&sub.Frequency,
+			&sub.Token,
+			&sub.IsConfirmed,
+		)
+		if err != nil {
 			return nil, err
 		}
-		subs = append(subs, sub)
+		sub.City = &city
+		subscriptions = append(subscriptions, sub)
 	}
 
-	log.Printf("Found %d subscriptions for frequency: %s", len(subs), frequency)
-	return subs, nil
-}
-
-func (r *subscriptionRepository) IsEmailSubscribed(ctx context.Context, email string) (bool, error) {
-	log.Printf("Checking if email is already subscribed: %s", email)
-	query := `SELECT EXISTS(SELECT 1 FROM subscriptions WHERE email = $1)`
-	var exists bool
-	err := r.db.QueryRowContext(ctx, query, email).Scan(&exists)
-	if err != nil {
-		log.Printf("Failed to check email subscription: %v", err)
-		return false, err
+	if err = rows.Err(); err != nil {
+		return nil, err
 	}
-	log.Printf("Email subscription check result: %v", exists)
-	return exists, nil
+
+	return subscriptions, nil
 }
 
 func (r *subscriptionRepository) IsTokenExists(ctx context.Context, token string) (bool, error) {
@@ -153,5 +153,20 @@ func (r *subscriptionRepository) IsTokenExists(ctx context.Context, token string
 		return false, err
 	}
 	log.Printf("Token existence check result: %v", exists)
+	return exists, nil
+}
+
+func (r *subscriptionRepository) IsSubscriptionExists(ctx context.Context, email string, cityID int64, frequency domain.Frequency) (bool, error) {
+	var exists bool
+	query := `
+        SELECT EXISTS(
+            SELECT 1 FROM subscriptions 
+            WHERE email = $1 AND city_id = $2 AND frequency = $3
+        )
+    `
+	err := r.db.QueryRowContext(ctx, query, email, cityID, frequency).Scan(&exists)
+	if err != nil {
+		return false, err
+	}
 	return exists, nil
 }

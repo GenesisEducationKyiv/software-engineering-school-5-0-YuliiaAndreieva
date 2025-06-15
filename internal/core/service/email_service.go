@@ -1,7 +1,6 @@
 package service
 
 import (
-	"context"
 	"log"
 	"weather-api/internal/adapter/email"
 	"weather-api/internal/adapter/repository/postgres"
@@ -23,29 +22,21 @@ func NewEmailService(repo postgres.SubscriptionRepository, weatherSvc WeatherSer
 	}
 }
 
-func (s *EmailService) SendUpdates(ctx context.Context, frequency domain.Frequency) {
-	subs, err := s.repo.GetSubscriptionsByFrequency(ctx, string(frequency))
-	if err != nil {
-		log.Printf("Failed to get %s subscriptions: %v", frequency, err)
-		return
-	}
-	s.sendUpdates(subs)
-}
+func (s *EmailService) SendUpdates(updates []domain.WeatherUpdate) error {
+	for _, update := range updates {
+		subject, htmlBody := util.BuildWeatherUpdateEmail(
+			update.Subscription.City.Name,
+			update.Weather.Temperature,
+			update.Weather.Humidity,
+			update.Weather.Description,
+			update.Subscription.Token,
+		)
 
-func (s *EmailService) sendUpdates(subs []domain.Subscription) {
-	for _, sub := range subs {
-		if !sub.IsConfirmed {
+		if err := s.emailSvc.SendEmail(update.Subscription.Email, subject, htmlBody); err != nil {
+			log.Printf("Failed to send email to %s: %v", update.Subscription.Email, err)
 			continue
 		}
-		weather, err := s.weatherSvc.GetWeather(sub.City)
-		if err != nil {
-			log.Printf("Failed to get weather for %s: %v", sub.City, err)
-			return
-		}
-
-		subject, htmlBody := util.BuildWeatherUpdateEmail(sub.City, weather.Temperature, weather.Humidity, weather.Description, sub.Token)
-		if err := s.emailSvc.SendEmail(sub.Email, subject, htmlBody); err != nil {
-			log.Printf("Failed to send email to %s: %v", sub.Email, err)
-		}
 	}
+
+	return nil
 }
