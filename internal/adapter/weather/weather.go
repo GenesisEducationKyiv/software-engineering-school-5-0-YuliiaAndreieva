@@ -1,73 +1,93 @@
 package weather
 
 import (
+	"context"
 	"encoding/json"
-	"errors"
-	"io"
-	"log"
 	"net/http"
-	"strconv"
+	"net/url"
 	"weather-api/internal/core/domain"
 )
 
+type Provider interface {
+	GetWeather(ctx context.Context, city string) (domain.Weather, error)
+	ValidateCity(ctx context.Context, city string) error
+}
+
+type HTTPDoer interface {
+	Do(*http.Request) (*http.Response, error)
+}
+
+type WeatherValidator interface {
+	ValidateResponse(data weatherResponse) error
+}
+
 type WeatherAPIClient struct {
-	apiKey string
+	apiKey     string
+	baseURL    string
+	httpClient HTTPDoer
+	parser     WeatherParser
+	validator  WeatherValidator
 }
 
-func NewWeatherAPIClient(apiKey string) *WeatherAPIClient {
-	return &WeatherAPIClient{apiKey: apiKey}
+func NewWeatherAPIClient(apiKey, baseURL string,
+	httpClient HTTPDoer,
+	parser WeatherParser,
+	validator WeatherValidator,
+) *WeatherAPIClient {
+	return &WeatherAPIClient{
+		apiKey: apiKey, baseURL: baseURL,
+		httpClient: httpClient,
+		parser:     parser,
+		validator:  validator,
+	}
 }
 
-func (w *WeatherAPIClient) GetWeather(city string) (domain.Weather, error) {
-	url := "http://api.weatherapi.com/v1/current.json?key=" + w.apiKey + "&q=" + city
-	resp, err := http.Get(url)
+func (c *WeatherAPIClient) GetWeather(ctx context.Context, city string) (domain.Weather, error) {
+	req, _ := http.NewRequestWithContext(
+		ctx,
+		http.MethodGet,
+		c.baseURL+"/current.json?key="+c.apiKey+"&q="+url.QueryEscape(city),
+		nil)
+
+	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return domain.Weather{}, err
 	}
-	defer func() {
-		if err := resp.Body.Close(); err != nil {
-			log.Printf("Error closing response body: %v\n", err)
-		}
-	}()
+	defer resp.Body.Close()
 
-	body, err := io.ReadAll(resp.Body)
+	data, err := c.parser.ParseResponse(resp.Body)
 	if err != nil {
 		return domain.Weather{}, err
 	}
-
-	var data struct {
-		Current struct {
-			TempC     float64 `json:"temp_c"`
-			Humidity  int     `json:"humidity"`
-			Condition struct {
-				Text string `json:"text"`
-			} `json:"condition"`
-		} `json:"current"`
-		Error struct {
-			Code    int    `json:"code"`
-			Message string `json:"message"`
-		} `json:"error"`
-	}
-	if err := json.Unmarshal(body, &data); err != nil {
+	if err = c.validator.ValidateResponse(data); err != nil {
 		return domain.Weather{}, err
 	}
+	return c.parser.MapToDomain(data), nil
+}
 
-	if data.Error.Code != 0 {
-		if data.Error.Code == 1006 {
-			return domain.Weather{}, domain.ErrCityNotFound
-		}
-		log.Printf("weatherapi error: %s (code %d)", data.Error.Message, data.Error.Code)
-		msg := "weatherapi error: " + strconv.Itoa(data.Error.Code) + " " + data.Error.Message
-		return domain.Weather{}, errors.New(msg)
+func (c *WeatherAPIClient) ValidateCity(ctx context.Context, city string) error {
+	req, _ := http.NewRequestWithContext(
+		ctx,
+		http.MethodGet,
+		c.baseURL+"/search.json?key="+c.apiKey+"&q="+url.QueryEscape(city),
+		nil,
+	)
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	var results []struct {
+		Name string `json:"name"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&results); err != nil {
+		return err
 	}
 
-	if data.Current.TempC == 0 && data.Current.Humidity == 0 && data.Current.Condition.Text == "" {
-		return domain.Weather{}, domain.ErrCityNotFound
+	if len(results) == 0 {
+		return domain.ErrCityNotFound
 	}
-
-	return domain.Weather{
-		Temperature: data.Current.TempC,
-		Humidity:    data.Current.Humidity,
-		Description: data.Current.Condition.Text,
-	}, nil
+	return nil
 }
