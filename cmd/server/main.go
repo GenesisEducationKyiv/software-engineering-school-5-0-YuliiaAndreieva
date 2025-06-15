@@ -49,13 +49,20 @@ func main() {
 	}
 
 	emailAdapter := email.NewEmailSender(cfg.SMTPHost, cfg.SMTPPort, cfg.SMTPUser, cfg.SMTPPass)
-	weatherAdapter := weather.NewWeatherAPIClient(cfg.WeatherAPIKey)
-	repo := postgres.NewSubscriptionRepo(db)
+	weatherAdapter := weather.NewWeatherAPIClient(
+		cfg.WeatherAPIKey,
+		"http://api.weatherapi.com/v1",
+		&http.Client{Timeout: 5 * time.Second},
+		weather.NewParser(),
+		weather.NewValidator(),
+	)
+	subscriptionRepo := postgres.NewSubscriptionRepo(db)
+	cityRepo := postgres.NewCityRepository(db)
 
 	weatherService := service.NewWeatherService(weatherAdapter)
 	tokenService := service.NewTokenService()
-	subscriptionService := service.NewSubscriptionService(repo, weatherService, emailAdapter, tokenService)
-	emailService := service.NewEmailService(repo, weatherAdapter, emailAdapter)
+	subscriptionService := service.NewSubscriptionService(subscriptionRepo, cityRepo, weatherService, weatherAdapter, emailAdapter, tokenService)
+	emailService := service.NewEmailService(subscriptionRepo, weatherAdapter, emailAdapter)
 
 	weatherHandler := httphandler.NewWeatherHandler(weatherService)
 	subscriptionHandler := httphandler.NewSubscriptionHandler(subscriptionService)
@@ -76,15 +83,28 @@ func main() {
 		c.File("./web/index.html")
 	})
 
+	schedulerService := service.NewSchedulerService(subscriptionService, emailService)
 	cron := cron.New()
-	_, err = cron.AddFunc("0 * * * *", func() { emailService.SendUpdates(context.Background(), domain.FrequencyHourly) })
+	_, err = cron.AddFunc("* * * * *", func() {
+		err := schedulerService.SendWeatherUpdates(context.Background(), domain.FrequencyHourly)
+		if err != nil {
+			return
+		}
+	})
 	if err != nil {
 		return
 	}
-	_, err = cron.AddFunc("0 0 * * *", func() { emailService.SendUpdates(context.Background(), domain.FrequencyDaily) })
+
+	_, err = cron.AddFunc("0 0 * * *", func() {
+		err := schedulerService.SendWeatherUpdates(context.Background(), domain.FrequencyDaily)
+		if err != nil {
+			return
+		}
+	})
 	if err != nil {
 		return
 	}
+
 	cron.Start()
 
 	port := strconv.Itoa(cfg.Port)

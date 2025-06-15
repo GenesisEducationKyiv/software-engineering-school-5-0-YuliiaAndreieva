@@ -23,7 +23,7 @@ func (h *WeatherHandler) GetWeather(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "City parameter is required"})
 		return
 	}
-	weather, err := h.weatherService.GetWeather(city)
+	weather, err := h.weatherService.GetWeather(c, city)
 	if err != nil {
 		if errors.Is(err, domain.ErrCityNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "City not found"})
