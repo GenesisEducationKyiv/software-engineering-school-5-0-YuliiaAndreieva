@@ -10,15 +10,15 @@ import (
 	"weather-api/internal/core/domain"
 )
 
-type WeatherService struct {
+type WeatherAPIClient struct {
 	apiKey string
 }
 
-func NewWeatherService(apiKey string) *WeatherService {
-	return &WeatherService{apiKey: apiKey}
+func NewWeatherAPIClient(apiKey string) *WeatherAPIClient {
+	return &WeatherAPIClient{apiKey: apiKey}
 }
 
-func (w *WeatherService) GetWeather(city string) (domain.Weather, error) {
+func (w *WeatherAPIClient) GetWeather(city string) (domain.Weather, error) {
 	url := "http://api.weatherapi.com/v1/current.json?key=" + w.apiKey + "&q=" + city
 	resp, err := http.Get(url)
 	if err != nil {

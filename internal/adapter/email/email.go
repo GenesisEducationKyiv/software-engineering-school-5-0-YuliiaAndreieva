@@ -6,22 +6,23 @@ import (
 	"strconv"
 
 	"github.com/jordan-wright/email"
-
-	"weather-api/internal/core/port"
 )
 
-type SMTPEmailSender struct {
+type EmailSender interface {
+	SendEmail(to string, subject string, body string) error
+}
+type emailSender struct {
 	host string
 	port int
 	user string
 	pass string
 }
 
-func NewSMTPEmailSender(host string, port int, user, pass string) port.EmailService {
-	return &SMTPEmailSender{host: host, port: port, user: user, pass: pass}
+func NewEmailSender(host string, port int, user, pass string) EmailSender {
+	return &emailSender{host: host, port: port, user: user, pass: pass}
 }
 
-func (e *SMTPEmailSender) SendEmail(to, subject, body string) error {
+func (e *emailSender) SendEmail(to, subject, body string) error {
 	log.Printf("Attempting to send email to: %s, subject: %s, from: %s", to, subject, e.user)
 
 	msg := email.NewEmail()

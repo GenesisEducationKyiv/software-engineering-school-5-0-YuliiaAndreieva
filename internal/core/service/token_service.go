@@ -3,16 +3,18 @@ package service
 import (
 	"crypto/rand"
 	"encoding/base64"
-	"weather-api/internal/core/port"
 )
 
-type TokenService struct{}
+type TokenService interface {
+	GenerateToken() (string, error)
+}
+type tokenService struct{}
 
-func NewTokenService() port.TokenService {
-	return &TokenService{}
+func NewTokenService() TokenService {
+	return &tokenService{}
 }
 
-func (s *TokenService) GenerateToken() (string, error) {
+func (s *tokenService) GenerateToken() (string, error) {
 	b := make([]byte, 32)
 	if _, err := rand.Read(b); err != nil {
 		return "", err

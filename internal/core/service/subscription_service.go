@@ -4,19 +4,20 @@ import (
 	"context"
 	"errors"
 	"log"
+	"weather-api/internal/adapter/email"
+	"weather-api/internal/adapter/repository/postgres"
 	"weather-api/internal/core/domain"
-	"weather-api/internal/core/port"
 	"weather-api/internal/util"
 )
 
 type SubscriptionService struct {
-	repo       port.SubscriptionRepository
-	weatherSvc port.WeatherService
-	emailSvc   port.EmailService
-	tokenSvc   port.TokenService
+	repo       postgres.SubscriptionRepository
+	weatherSvc WeatherService
+	emailSvc   email.EmailSender
+	tokenSvc   TokenService
 }
 
-func NewSubscriptionService(repo port.SubscriptionRepository, weatherSvc port.WeatherService, emailSvc port.EmailService, tokenSvc port.TokenService) *SubscriptionService {
+func NewSubscriptionService(repo postgres.SubscriptionRepository, weatherSvc WeatherService, emailSvc email.EmailSender, tokenSvc TokenService) *SubscriptionService {
 	return &SubscriptionService{
 		repo:       repo,
 		weatherSvc: weatherSvc,

@@ -2,18 +2,21 @@ package service
 
 import (
 	"weather-api/internal/core/domain"
-	"weather-api/internal/core/port"
 )
 
-type WeatherService struct {
-	weatherSvc port.WeatherService
+type WeatherService interface {
+	GetWeather(city string) (domain.Weather, error)
 }
 
-func NewWeatherService(weatherSvc port.WeatherService) *WeatherService {
-	return &WeatherService{weatherSvc: weatherSvc}
+type weatherService struct {
+	weatherSvc WeatherService
 }
 
-func (s *WeatherService) GetWeather(city string) (domain.Weather, error) {
+func NewWeatherService(weatherSvc WeatherService) *weatherService {
+	return &weatherService{weatherSvc: weatherSvc}
+}
+
+func (s *weatherService) GetWeather(city string) (domain.Weather, error) {
 	weather, err := s.weatherSvc.GetWeather(city)
 	if err != nil {
 		return domain.Weather{}, err

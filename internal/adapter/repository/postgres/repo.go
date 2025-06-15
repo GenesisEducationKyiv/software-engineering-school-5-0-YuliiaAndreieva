@@ -6,18 +6,26 @@ import (
 	"errors"
 	"log"
 	"weather-api/internal/core/domain"
-	"weather-api/internal/core/port"
 )
 
-type SubscriptionRepo struct {
+type SubscriptionRepository interface {
+	CreateSubscription(ctx context.Context, sub domain.Subscription) error
+	GetSubscriptionByToken(ctx context.Context, token string) (domain.Subscription, error)
+	UpdateSubscription(ctx context.Context, sub domain.Subscription) error
+	DeleteSubscription(ctx context.Context, token string) error
+	GetSubscriptionsByFrequency(ctx context.Context, frequency string) ([]domain.Subscription, error)
+	IsEmailSubscribed(ctx context.Context, email string) (bool, error)
+	IsTokenExists(ctx context.Context, token string) (bool, error)
+}
+type subscriptionRepository struct {
 	db *sql.DB
 }
 
-func NewSubscriptionRepo(db *sql.DB) port.SubscriptionRepository {
-	return &SubscriptionRepo{db: db}
+func NewSubscriptionRepo(db *sql.DB) SubscriptionRepository {
+	return &subscriptionRepository{db: db}
 }
 
-func (r *SubscriptionRepo) CreateSubscription(ctx context.Context, sub domain.Subscription) error {
+func (r *subscriptionRepository) CreateSubscription(ctx context.Context, sub domain.Subscription) error {
 	log.Printf("Creating subscription for city: %s", sub.City)
 	query := `INSERT INTO subscriptions (email, city, frequency, token, is_confirmed) VALUES ($1, $2, $3, $4, $5)`
 	_, err := r.db.ExecContext(ctx, query, sub.Email, sub.City, sub.Frequency, sub.Token, sub.IsConfirmed)
@@ -29,7 +37,7 @@ func (r *SubscriptionRepo) CreateSubscription(ctx context.Context, sub domain.Su
 	return nil
 }
 
-func (r *SubscriptionRepo) GetSubscriptionByToken(ctx context.Context, token string) (domain.Subscription, error) {
+func (r *subscriptionRepository) GetSubscriptionByToken(ctx context.Context, token string) (domain.Subscription, error) {
 	log.Printf("Looking up subscription")
 	var sub domain.Subscription
 	query := `SELECT id, email, city, frequency, token, is_confirmed FROM subscriptions WHERE token = $1`
@@ -46,7 +54,7 @@ func (r *SubscriptionRepo) GetSubscriptionByToken(ctx context.Context, token str
 	return sub, nil
 }
 
-func (r *SubscriptionRepo) UpdateSubscription(ctx context.Context, sub domain.Subscription) error {
+func (r *subscriptionRepository) UpdateSubscription(ctx context.Context, sub domain.Subscription) error {
 	log.Printf("Updating subscription")
 	query := `UPDATE subscriptions SET is_confirmed = $1 WHERE token = $2`
 	result, err := r.db.ExecContext(ctx, query, sub.IsConfirmed, sub.Token)
@@ -70,7 +78,7 @@ func (r *SubscriptionRepo) UpdateSubscription(ctx context.Context, sub domain.Su
 	return nil
 }
 
-func (r *SubscriptionRepo) DeleteSubscription(ctx context.Context, token string) error {
+func (r *subscriptionRepository) DeleteSubscription(ctx context.Context, token string) error {
 	log.Printf("Deleting subscription")
 	query := `DELETE FROM subscriptions WHERE token = $1`
 	result, err := r.db.ExecContext(ctx, query, token)
@@ -94,7 +102,7 @@ func (r *SubscriptionRepo) DeleteSubscription(ctx context.Context, token string)
 	return nil
 }
 
-func (r *SubscriptionRepo) GetSubscriptionsByFrequency(ctx context.Context, frequency string) ([]domain.Subscription, error) {
+func (r *subscriptionRepository) GetSubscriptionsByFrequency(ctx context.Context, frequency string) ([]domain.Subscription, error) {
 	log.Printf("Getting subscriptions for frequency: %s", frequency)
 	query := `SELECT id, email, city, frequency, token, is_confirmed FROM subscriptions WHERE frequency = $1 AND is_confirmed = true`
 	rows, err := r.db.QueryContext(ctx, query, frequency)
@@ -122,7 +130,7 @@ func (r *SubscriptionRepo) GetSubscriptionsByFrequency(ctx context.Context, freq
 	return subs, nil
 }
 
-func (r *SubscriptionRepo) IsEmailSubscribed(ctx context.Context, email string) (bool, error) {
+func (r *subscriptionRepository) IsEmailSubscribed(ctx context.Context, email string) (bool, error) {
 	log.Printf("Checking if email is already subscribed: %s", email)
 	query := `SELECT EXISTS(SELECT 1 FROM subscriptions WHERE email = $1)`
 	var exists bool
@@ -135,7 +143,7 @@ func (r *SubscriptionRepo) IsEmailSubscribed(ctx context.Context, email string) 
 	return exists, nil
 }
 
-func (r *SubscriptionRepo) IsTokenExists(ctx context.Context, token string) (bool, error) {
+func (r *subscriptionRepository) IsTokenExists(ctx context.Context, token string) (bool, error) {
 	log.Printf("Checking if token exists: %s", token)
 	query := `SELECT EXISTS(SELECT 1 FROM subscriptions WHERE token = $1)`
 	var exists bool
