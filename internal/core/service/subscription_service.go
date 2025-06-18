@@ -8,7 +8,7 @@ import (
 	"weather-api/internal/adapter/repository/postgres"
 	"weather-api/internal/adapter/weather"
 	"weather-api/internal/core/domain"
-	"weather-api/internal/util"
+	"weather-api/internal/util/emailutil"
 )
 
 type SubscriptionService struct {
@@ -42,7 +42,7 @@ func (s *SubscriptionService) Subscribe(ctx context.Context, email, city string,
 	cityEntity, err := s.cityRepo.GetByName(ctx, city)
 	if err != nil {
 		if errors.Is(err, domain.ErrCityNotFound) {
-			if err := s.weatherClient.ValidateCity(ctx, city); err != nil {
+			if err := s.weatherClient.CheckCityExists(ctx, city); err != nil {
 				if errors.Is(err, domain.ErrCityNotFound) {
 					return "", domain.ErrCityNotFound
 				}
@@ -83,7 +83,7 @@ func (s *SubscriptionService) Subscribe(ctx context.Context, email, city string,
 		return "", err
 	}
 
-	subject, htmlBody := util.BuildConfirmationEmail(city, token)
+	subject, htmlBody := emailutil.BuildConfirmationEmail(city, token)
 	err = s.emailSvc.SendEmail(email, subject, htmlBody)
 	if err != nil {
 		log.Printf("Failed to send confirmation email: %v", err)

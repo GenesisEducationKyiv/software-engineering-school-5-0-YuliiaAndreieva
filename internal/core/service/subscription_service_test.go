@@ -5,9 +5,9 @@ import (
 	"errors"
 	"testing"
 	"weather-api/internal/mocks"
+	"weather-api/internal/util/emailutil"
 
 	"weather-api/internal/core/domain"
-	"weather-api/internal/util"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -55,7 +55,7 @@ func TestSubscriptionService_Subscribe(t *testing.T) {
 				}
 				subRepo.On("CreateSubscription", ctx, sub).Return(nil)
 
-				subject, body := util.BuildConfirmationEmail(cityName, tokenStr)
+				subject, body := emailutil.BuildConfirmationEmail(cityName, tokenStr)
 				emailSvc.On("SendEmail", email, subject, body).Return(nil)
 			},
 			expectedToken: tokenStr,
@@ -89,7 +89,7 @@ func TestSubscriptionService_Subscribe(t *testing.T) {
 				}
 				subRepo.On("CreateSubscription", ctx, sub).Return(nil)
 
-				subject, body := util.BuildConfirmationEmail(cityName, tokenStr)
+				subject, body := emailutil.BuildConfirmationEmail(cityName, tokenStr)
 				emailSvc.On("SendEmail", email, subject, body).Return(nil)
 			},
 			expectedToken: tokenStr,

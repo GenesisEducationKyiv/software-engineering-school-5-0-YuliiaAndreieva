@@ -2,6 +2,7 @@ package service_test
 
 import (
 	"testing"
+	"weather-api/internal/util/emailutil"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -9,7 +10,6 @@ import (
 	"weather-api/internal/core/domain"
 	"weather-api/internal/core/service"
 	"weather-api/internal/mocks"
-	"weather-api/internal/util"
 )
 
 func TestEmailService_SendUpdates(t *testing.T) {
@@ -40,8 +40,8 @@ func TestEmailService_SendUpdates(t *testing.T) {
 				},
 			},
 			setupMocks: func(es *mocks.MockEmailService) {
-				subKyiv, bodyKyiv := util.BuildWeatherUpdateEmail("Kyiv", 20.5, 60, "Sunny", "token1")
-				subLviv, bodyLviv := util.BuildWeatherUpdateEmail("Lviv", 18.0, 65, "Cloudy", "token2")
+				subKyiv, bodyKyiv := emailutil.BuildWeatherUpdateEmail("Kyiv", 20.5, 60, "Sunny", "token1")
+				subLviv, bodyLviv := emailutil.BuildWeatherUpdateEmail("Lviv", 18.0, 65, "Cloudy", "token2")
 
 				es.On("SendEmail", "user1@example.com", subKyiv, bodyKyiv).Return(nil).Once()
 				es.On("SendEmail", "user2@example.com", subLviv, bodyLviv).Return(nil).Once()
@@ -63,7 +63,7 @@ func TestEmailService_SendUpdates(t *testing.T) {
 				},
 			},
 			setupMocks: func(es *mocks.MockEmailService) {
-				subj, body := util.BuildWeatherUpdateEmail("Kyiv", 20.5, 60, "Sunny", "token1")
+				subj, body := emailutil.BuildWeatherUpdateEmail("Kyiv", 20.5, 60, "Sunny", "token1")
 				es.On("SendEmail", "user1@example.com", subj, body).
 					Return(assert.AnError).Once()
 			},

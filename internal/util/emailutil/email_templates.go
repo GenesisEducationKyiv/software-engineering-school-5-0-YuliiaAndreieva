@@ -1,11 +1,12 @@
-package util
+package emailutil
 
 import (
 	"strconv"
+	"weather-api/internal/util/configutil"
 )
 
 func BuildConfirmationEmail(city, token string) (subject, body string) {
-	baseURL := GetBaseURL()
+	baseURL := configutil.GetBaseURL()
 	confirmURL := baseURL + "/api/confirm/" + token
 	subject = "Confirm Subscription"
 	body = "<html><body>" +
@@ -18,7 +19,7 @@ func BuildConfirmationEmail(city, token string) (subject, body string) {
 }
 
 func BuildWeatherUpdateEmail(city string, temperature float64, humidity int, description, token string) (subject, body string) {
-	baseURL := GetBaseURL()
+	baseURL := configutil.GetBaseURL()
 	unsubscribeURL := baseURL + "/api/unsubscribe/" + token
 	subject = "Weather Update"
 	tempStr := strconv.FormatFloat(temperature, 'f', 2, 64)
