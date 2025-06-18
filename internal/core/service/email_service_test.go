@@ -86,15 +86,62 @@ func TestEmailService_SendUpdates(t *testing.T) {
 			emailMock := &mocks.MockEmailService{}
 			tt.setupMocks(emailMock)
 
-			repoMock := &mocks.MockSubscriptionRepository{}
-			wsMock := &mocks.MockWeatherProvider{}
-
-			s := service.NewEmailService(repoMock, wsMock, emailMock)
+			s := service.NewEmailService(emailMock)
 
 			err := s.SendUpdates(tt.updates)
 			assert.NoError(t, err)
 
 			tt.verifyMocks(t, emailMock)
+		})
+	}
+}
+
+func TestEmailService_SendConfirmationEmail(t *testing.T) {
+	tests := []struct {
+		name         string
+		subscription *domain.Subscription
+		setupMocks   func(emailSvc *mocks.MockEmailService)
+		expectErr    error
+	}{
+		{
+			name: "successfully sends confirmation email",
+			subscription: &domain.Subscription{
+				Email: "user@example.com",
+				City:  &domain.City{Name: "Kyiv"},
+				Token: "token123",
+			},
+			setupMocks: func(es *mocks.MockEmailService) {
+				subject, body := emailutil.BuildConfirmationEmail("Kyiv", "token123")
+				es.On("SendEmail", "user@example.com", subject, body).Return(nil).Once()
+			},
+			expectErr: nil,
+		},
+		{
+			name: "email service returns error",
+			subscription: &domain.Subscription{
+				Email: "user@example.com",
+				City:  &domain.City{Name: "Kyiv"},
+				Token: "token123",
+			},
+			setupMocks: func(es *mocks.MockEmailService) {
+				subject, body := emailutil.BuildConfirmationEmail("Kyiv", "token123")
+				es.On("SendEmail", "user@example.com", subject, body).Return(assert.AnError).Once()
+			},
+			expectErr: assert.AnError,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			emailMock := &mocks.MockEmailService{}
+			tt.setupMocks(emailMock)
+
+			s := service.NewEmailService(emailMock)
+
+			err := s.SendConfirmationEmail(tt.subscription)
+			assert.Equal(t, tt.expectErr, err)
+
+			emailMock.AssertExpectations(t)
 		})
 	}
 }
