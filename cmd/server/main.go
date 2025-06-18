@@ -59,8 +59,17 @@ func main() {
 
 	weatherService := service.NewWeatherService(weatherAdapter)
 	tokenService := service.NewTokenService()
-	subscriptionService := service.NewSubscriptionService(subscriptionRepo, cityRepo, weatherService, weatherAdapter, emailAdapter, tokenService)
-	emailService := service.NewEmailService(subscriptionRepo, weatherAdapter, emailAdapter)
+	emailService := service.NewEmailService(emailAdapter)
+
+	subscriptionService := service.NewSubscriptionService(
+		subscriptionRepo,
+		cityRepo,
+		weatherAdapter,
+		tokenService,
+		emailService,
+	)
+
+	weatherUpdateService := service.NewWeatherUpdateService(subscriptionService, weatherService)
 
 	weatherHandler := httphandler.NewWeatherHandler(weatherService)
 	subscriptionHandler := httphandler.NewSubscriptionHandler(subscriptionService)
@@ -81,7 +90,7 @@ func main() {
 		c.File("./web/index.html")
 	})
 
-	schedulerService := service.NewSchedulerService(subscriptionService, emailService)
+	schedulerService := service.NewSchedulerService(weatherUpdateService, emailService)
 	cron := cron.New()
 	_, err = cron.AddFunc("* * * * *", func() {
 		err := schedulerService.SendWeatherUpdates(context.Background(), domain.FrequencyHourly)

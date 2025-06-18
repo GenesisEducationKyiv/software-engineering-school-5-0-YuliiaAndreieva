@@ -7,19 +7,19 @@ import (
 )
 
 type SchedulerService struct {
-	subscriptionService *SubscriptionService
-	emailService        *EmailService
+	weatherUpdateService *WeatherUpdateService
+	emailService         *EmailService
 }
 
-func NewSchedulerService(subscriptionService *SubscriptionService, emailService *EmailService) *SchedulerService {
+func NewSchedulerService(weatherUpdateService *WeatherUpdateService, emailService *EmailService) *SchedulerService {
 	return &SchedulerService{
-		subscriptionService: subscriptionService,
-		emailService:        emailService,
+		weatherUpdateService: weatherUpdateService,
+		emailService:         emailService,
 	}
 }
 
 func (s *SchedulerService) SendWeatherUpdates(ctx context.Context, frequency domain.Frequency) error {
-	updates, err := s.subscriptionService.PrepareUpdates(ctx, frequency)
+	updates, err := s.weatherUpdateService.PrepareUpdates(ctx, frequency)
 	if err != nil {
 		log.Printf("Failed to prepare updates for frequency %s: %v", frequency, err)
 		return err

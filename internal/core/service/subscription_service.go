@@ -4,37 +4,36 @@ import (
 	"context"
 	"errors"
 	"log"
-	"weather-api/internal/adapter/email"
 	"weather-api/internal/adapter/repository/postgres"
 	"weather-api/internal/adapter/weather"
 	"weather-api/internal/core/domain"
-	"weather-api/internal/util/emailutil"
 )
+
+type EmailNotifier interface {
+	SendConfirmationEmail(subscription *domain.Subscription) error
+}
 
 type SubscriptionService struct {
 	repo          postgres.SubscriptionRepository
-	weatherSvc    WeatherService
 	weatherClient weather.Provider
-	emailSvc      email.EmailSender
 	tokenSvc      TokenService
 	cityRepo      postgres.CityRepository
+	emailNotifier EmailNotifier
 }
 
 func NewSubscriptionService(
 	repo postgres.SubscriptionRepository,
 	cityRepo postgres.CityRepository,
-	weatherSvc WeatherService,
 	weatherClient weather.Provider,
-	emailSvc email.EmailSender,
 	tokenSvc TokenService,
+	emailNotifier EmailNotifier,
 ) *SubscriptionService {
 	return &SubscriptionService{
 		repo:          repo,
 		cityRepo:      cityRepo,
-		weatherSvc:    weatherSvc,
 		weatherClient: weatherClient,
-		emailSvc:      emailSvc,
 		tokenSvc:      tokenSvc,
+		emailNotifier: emailNotifier,
 	}
 }
 
@@ -83,9 +82,9 @@ func (s *SubscriptionService) Subscribe(ctx context.Context, email, city string,
 		return "", err
 	}
 
-	subject, htmlBody := emailutil.BuildConfirmationEmail(city, token)
-	err = s.emailSvc.SendEmail(email, subject, htmlBody)
-	if err != nil {
+	sub.City = &cityEntity
+
+	if err := s.emailNotifier.SendConfirmationEmail(&sub); err != nil {
 		log.Printf("Failed to send confirmation email: %v", err)
 		return "", err
 	}
@@ -150,35 +149,6 @@ func (s *SubscriptionService) Unsubscribe(ctx context.Context, token string) err
 	return nil
 }
 
-func (s *SubscriptionService) PrepareUpdates(ctx context.Context, frequency domain.Frequency) ([]domain.WeatherUpdate, error) {
-	subs, err := s.repo.GetSubscriptionsByFrequency(ctx, string(frequency))
-	if err != nil {
-		return nil, err
-	}
-
-	citySubscriptions := make(map[string][]domain.Subscription)
-	for _, sub := range subs {
-		if !sub.IsConfirmed {
-			continue
-		}
-		citySubscriptions[sub.City.Name] = append(citySubscriptions[sub.City.Name], sub)
-	}
-
-	var updates []domain.WeatherUpdate
-	for cityName, citySubs := range citySubscriptions {
-		weather, err := s.weatherSvc.GetWeather(ctx, cityName)
-		if err != nil {
-			log.Printf("Failed to get weather for city %s: %v", cityName, err)
-			continue
-		}
-
-		for _, sub := range citySubs {
-			updates = append(updates, domain.WeatherUpdate{
-				Subscription: sub,
-				Weather:      weather,
-			})
-		}
-	}
-
-	return updates, nil
+func (s *SubscriptionService) GetSubscriptionsByFrequency(ctx context.Context, frequency domain.Frequency) ([]domain.Subscription, error) {
+	return s.repo.GetSubscriptionsByFrequency(ctx, string(frequency))
 }
