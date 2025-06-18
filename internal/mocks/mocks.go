@@ -57,7 +57,7 @@ func (m *MockWeatherProvider) GetWeather(ctx context.Context, city string) (doma
 	args := m.Called(ctx, city)
 	return args.Get(0).(domain.Weather), args.Error(1)
 }
-func (m *MockWeatherProvider) ValidateCity(ctx context.Context, city string) error {
+func (m *MockWeatherProvider) CheckCityExists(ctx context.Context, city string) error {
 	args := m.Called(ctx, city)
 	return args.Error(0)
 }
