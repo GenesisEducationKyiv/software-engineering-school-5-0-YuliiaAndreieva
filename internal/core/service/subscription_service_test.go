@@ -34,7 +34,7 @@ func TestSubscriptionService_Subscribe(t *testing.T) {
 		expectedErr   error
 	}{
 		{
-			name: "happy path – city already cached",
+			name: "happy path – city already in database",
 			setupMocks: func(subRepo *mocks.MockSubscriptionRepository, cityRepo *mocks.MockCityRepo,
 				weatherProv *mocks.MockWeatherProvider, emailSvc *mocks.MockEmailService,
 				tokenSvc *mocks.MockTokenService) {
@@ -62,7 +62,7 @@ func TestSubscriptionService_Subscribe(t *testing.T) {
 			expectedErr:   nil,
 		},
 		{
-			name: "city not cached – ValidateCity succeeds",
+			name: "city is not in database – CheckCityExists returns nil",
 			setupMocks: func(subRepo *mocks.MockSubscriptionRepository, cityRepo *mocks.MockCityRepo,
 				weatherProv *mocks.MockWeatherProvider, emailSvc *mocks.MockEmailService,
 				tokenSvc *mocks.MockTokenService) {
@@ -70,7 +70,7 @@ func TestSubscriptionService_Subscribe(t *testing.T) {
 				cityRepo.On("GetByName", ctx, cityName).
 					Return(domain.City{}, domain.ErrCityNotFound)
 
-				weatherProv.On("ValidateCity", ctx, cityName).Return(nil)
+				weatherProv.On("CheckCityExists", ctx, cityName).Return(nil)
 
 				cityRepo.On("Create", ctx, domain.City{Name: cityName}).
 					Return(cityRow, nil)
@@ -116,7 +116,7 @@ func TestSubscriptionService_Subscribe(t *testing.T) {
 
 				cityRepo.On("GetByName", ctx, cityName).
 					Return(domain.City{}, domain.ErrCityNotFound)
-				weatherProv.On("ValidateCity", ctx, cityName).
+				weatherProv.On("CheckCityExists", ctx, cityName).
 					Return(domain.ErrCityNotFound)
 			},
 			expectedToken: "",
