@@ -2,12 +2,20 @@
 
 All commands should be run from the root of the project.
 
-## Scripts (Linux/Mac)
+## Scripts (Recommended)
 
 - `./scripts/run-unit-tests.sh`: Runs all unit tests.
 - `./scripts/run-integration-tests.sh`: Runs all integration tests.
 - `./scripts/run-e2e-tests.sh`: Runs all End-to-End (E2E) tests.
 - `./scripts/run-all-tests.sh`: Runs all unit, integration, and E2E tests.
+
+## Makefile
+
+- `make test-unit`: Runs all unit tests.
+- `make test-integration`: Runs all integration tests.
+- `make test-e2e`: Runs all End-to-End (E2E) tests.
+- `make test-all`: Runs all unit, integration, and E2E tests.
+- `make clean`: Stops and removes all test-related Docker containers and volumes.
 
 ## Manual Execution
 
