@@ -1,0 +1,82 @@
+name: Tests
+
+on:
+  push:
+    branches: [ "*" ]
+  pull_request:
+    branches: [ "*" ]
+
+jobs:
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Go Environment
+      uses: ./.github/actions/setup
+    
+    - name: Run Unit Tests
+      run: go test -v ./internal/core/service/... -tags=unit
+
+  integration-tests:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup Go Environment
+      uses: ./.github/actions/setup
+    
+    - name: Start Integration Test Environment
+      run: docker-compose -f docker-compose.test.yml up -d postgres-integration mailhog
+    
+    - name: Wait for services
+      run: sleep 15
+    
+    - name: Run Integration Tests
+      run: go test -v ./tests/integration/... -tags=integration
+    
+    - name: Stop Integration Test Environment
+      if: always()
+      run: docker-compose -f docker-compose.test.yml down
+
+  e2e-tests:
+    name: E2E Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Go Environment
+      uses: ./.github/actions/setup
+    
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: tests/package-lock.json
+    
+    - name: Start E2E Test Environment
+      run: docker-compose -f docker-compose.test.yml up -d postgres-e2e mailhog
+    
+    - name: Wait for services
+      run: sleep 15
+    
+    - name: Install Playwright dependencies
+      working-directory: tests
+      run: |
+        cd tests
+        npm ci
+        npx playwright install --with-deps
+    
+    - name: Run E2E Tests
+      working-directory: tests
+      run: npm run test:e2e
+    
+    - name: Stop E2E Test Environment
+      if: always()
+      run: docker-compose -f docker-compose.test.yml down

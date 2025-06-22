@@ -1,6 +1,6 @@
 services:
-  postgres-test:
-    image: postgres:15-alpine
+  postgres-integration:
+    image: postgres:15
     environment:
       POSTGRES_DB: weather_test
       POSTGRES_USER: test
@@ -13,13 +13,29 @@ services:
       timeout: 5s
       retries: 5
 
+  postgres-e2e:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: weather_test
+      POSTGRES_USER: test
+      POSTGRES_PASSWORD: test
+    ports:
+      - "5434:5432"  # E2E tests
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U test -d weather_test"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   mailhog:
     image: mailhog/mailhog:latest
     ports:
       - "1025:1025"
+      - "8025:8025"
     depends_on:
-      postgres-test:
+      postgres-integration:
         condition: service_healthy
 
 volumes:
-  postgres_test_data: 
+  postgres_integration_data:
+  postgres_e2e_data: 
