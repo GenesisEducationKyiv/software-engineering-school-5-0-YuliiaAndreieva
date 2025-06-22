@@ -4,13 +4,10 @@
 package integration
 
 import (
-	"bytes"
 	"database/sql"
-	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
-	"net/http/httptest"
 	"strconv"
 	"strings"
 	"testing"
@@ -19,7 +16,6 @@ import (
 	"weather-api/internal/adapter/weather"
 	"weather-api/internal/core/service"
 
-	"github.com/gin-gonic/gin"
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
@@ -210,40 +206,4 @@ func SetupTestServices(t *testing.T) *TestServices {
 		EmailService:         emailService,
 		Cleanup:              cleanup,
 	}
-}
-
-type TestServer struct {
-	router   *gin.Engine
-	services *TestServices
-}
-
-func (ts *TestServer) cleanup() {
-	if ts.services != nil {
-		ts.services.Cleanup()
-	}
-}
-
-func (ts *TestServer) performRequest(method, path string, body interface{}) *httptest.ResponseRecorder {
-	var reqBody []byte
-	var err error
-
-	if body != nil {
-		reqBody, err = json.Marshal(body)
-		if err != nil {
-			panic(err)
-		}
-	}
-
-	req, err := http.NewRequest(method, path, bytes.NewBuffer(reqBody))
-	if err != nil {
-		panic(err)
-	}
-
-	if body != nil {
-		req.Header.Set("Content-Type", "application/json")
-	}
-
-	w := httptest.NewRecorder()
-	ts.router.ServeHTTP(w, req)
-	return w
 }
