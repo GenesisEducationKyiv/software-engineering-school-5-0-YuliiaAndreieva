@@ -114,7 +114,7 @@ func SetupTestDatabase(t *testing.T) *sql.DB {
 	err = db.Ping()
 	require.NoError(t, err)
 
-	m, err := migrate.New("file://D:/university/genesis/software-engineering-school-5-0-YuliiaAndreieva/migrations", testConfig.DBConnStr)
+	m, err := migrate.New("file://../../migrations", testConfig.DBConnStr)
 	require.NoError(t, err)
 
 	err = m.Up()
