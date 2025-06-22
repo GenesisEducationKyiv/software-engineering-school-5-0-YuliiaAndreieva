@@ -64,7 +64,7 @@ func getMailHogMessages(t *testing.T) []mailHogMessage {
 		return []mailHogMessage{}
 	}
 
-	resp, err := http.Get("http://localhost:1025/api/v2/messages")
+	resp, err := http.Get("http://localhost:8025/api/v2/messages")
 	require.NoError(t, err)
 	defer resp.Body.Close()
 
@@ -82,7 +82,7 @@ func clearMailHogMessages(t *testing.T) {
 		return
 	}
 
-	req, err := http.NewRequest("DELETE", "http://localhost:1025/api/v1/messages", nil)
+	req, err := http.NewRequest("DELETE", "http://localhost:8025/api/v1/messages", nil)
 	require.NoError(t, err)
 
 	client := &http.Client{Timeout: 2 * time.Second}
