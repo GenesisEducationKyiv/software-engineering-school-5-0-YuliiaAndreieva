@@ -8,7 +8,10 @@ import (
 	"net/http"
 	"strconv"
 	"time"
+	"weather-api/internal/adapter/weather/openweathermap"
+	"weather-api/internal/adapter/weather/weatherapi"
 	"weather-api/internal/util/configutil"
+	"weather-api/internal/util/logger"
 
 	"weather-api/internal/adapter/email"
 	"weather-api/internal/adapter/repository/postgres"
@@ -48,23 +51,47 @@ func main() {
 		log.Fatalf("Failed to apply migrations: %v", err)
 	}
 
+	fileLogger, err := logger.NewFileLogger("logs", "provider_responses.log")
+	if err != nil {
+		log.Fatalf("Failed to initialize file logger: %v", err)
+	}
+	defer func() {
+		if closeErr := fileLogger.Close(); closeErr != nil {
+			log.Printf("Error closing file logger: %v", closeErr)
+		}
+	}()
+
 	emailAdapter := email.NewEmailSender(cfg.SMTPHost, cfg.SMTPPort, cfg.SMTPUser, cfg.SMTPPass)
-	weatherAdapter := weather.NewWeatherAPIClient(
+
+	httpClient := &http.Client{Timeout: 5 * time.Second}
+
+	weatherAPIProvider := weatherapi.NewClient(
 		cfg.WeatherAPIKey,
-		"http://api.weatherapi.com/v1",
-		&http.Client{Timeout: 5 * time.Second},
+		cfg.WeatherAPIBaseURL,
+		httpClient,
+		fileLogger,
 	)
+
+	openWeatherMapProvider := openweathermap.NewClient(
+		cfg.OpenWeatherMapAPIKey,
+		cfg.OpenWeatherMapBaseURL,
+		httpClient,
+		fileLogger,
+	)
+
+	chainProvider := weather.NewChainWeatherProvider(openWeatherMapProvider, weatherAPIProvider)
+
 	subscriptionRepo := postgres.NewSubscriptionRepo(db)
 	cityRepo := postgres.NewCityRepository(db)
 
-	weatherService := service.NewWeatherService(weatherAdapter)
+	weatherService := service.NewWeatherService(chainProvider)
 	tokenService := service.NewTokenService()
 	emailService := service.NewEmailService(emailAdapter)
 
 	subscriptionService := service.NewSubscriptionService(
 		subscriptionRepo,
 		cityRepo,
-		weatherAdapter,
+		chainProvider,
 		tokenService,
 		emailService,
 	)

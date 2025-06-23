@@ -10,8 +10,13 @@ services:
     depends_on:
       - postgres
     environment:
-      - DB_CONN_STR=postgres://user:password@postgres:5432/weather?sslmode=disable
+      - DB_CONN_STR=postgres://user:password@postgres:5432/weatherapi?sslmode=disable
       - WEATHER_API_KEY=${WEATHER_API_KEY}
+      - WEATHER_API_BASE_URL=${WEATHER_API_BASE_URL}
+      - OPENWEATHERMAP_API_KEY=${OPENWEATHERMAP_API_KEY}
+      - OPENWEATHERMAP_BASE_URL=${OPENWEATHERMAP_BASE_URL}
+      - BASE_URL=${BASE_URL}
+      - PORT=${PORT}
       - SMTP_HOST=${SMTP_HOST}
       - SMTP_PORT=${SMTP_PORT}
       - SMTP_USER=${SMTP_USER}
@@ -24,7 +29,7 @@ services:
     environment:
       - POSTGRES_USER=user
       - POSTGRES_PASSWORD=password
-      - POSTGRES_DB=weather
+      - POSTGRES_DB=weatherapi
     ports:
       - "5432:5432"
     restart: unless-stopped

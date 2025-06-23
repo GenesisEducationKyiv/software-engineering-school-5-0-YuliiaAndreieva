@@ -5,14 +5,17 @@ import (
 )
 
 type Config struct {
-	DBConnStr     string `envconfig:"DB_CONN_STR" required:"true"`
-	WeatherAPIKey string `envconfig:"WEATHER_API_KEY" required:"true"`
-	SMTPHost      string `envconfig:"SMTP_HOST" required:"true"`
-	SMTPPort      int    `envconfig:"SMTP_PORT" default:"587"`
-	SMTPUser      string `envconfig:"SMTP_USER" required:"true"`
-	SMTPPass      string `envconfig:"SMTP_PASS" required:"true"`
-	Port          int    `envconfig:"PORT" default:"8080"`
-	BaseURL       string `envconfig:"BASE_URL" default:"http://localhost:8080"`
+	DBConnStr             string `envconfig:"DB_CONN_STR" required:"true"`
+	WeatherAPIKey         string `envconfig:"WEATHER_API_KEY" required:"true"`
+	WeatherAPIBaseURL     string `envconfig:"WEATHER_API_BASE_URL" default:"http://api.weatherapi.com/v1"`
+	OpenWeatherMapAPIKey  string `envconfig:"OPENWEATHERMAP_API_KEY" required:"true"`
+	OpenWeatherMapBaseURL string `envconfig:"OPENWEATHERMAP_BASE_URL" default:"https://api.openweathermap.org/data/2.5"`
+	SMTPHost              string `envconfig:"SMTP_HOST" required:"true"`
+	SMTPPort              int    `envconfig:"SMTP_PORT" default:"587"`
+	SMTPUser              string `envconfig:"SMTP_USER" required:"true"`
+	SMTPPass              string `envconfig:"SMTP_PASS" required:"true"`
+	Port                  int    `envconfig:"PORT" default:"8080"`
+	BaseURL               string `envconfig:"BASE_URL" default:"http://localhost:8080"`
 }
 
 func LoadConfig() (*Config, error) {
