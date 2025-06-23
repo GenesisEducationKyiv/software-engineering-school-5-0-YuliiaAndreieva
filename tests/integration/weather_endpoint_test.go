@@ -105,7 +105,7 @@ func TestWeatherEndpoint_Integration(t *testing.T) {
 		var response map[string]interface{}
 		err := json.Unmarshal(w.Body.Bytes(), &response)
 		assert.NoError(t, err)
-		assert.Equal(t, "City parameter is required", response["error"])
+		assert.Equal(t, "city parameter is required", response["error"])
 	})
 
 	t.Run("GetWeather - Different Cities", func(t *testing.T) {

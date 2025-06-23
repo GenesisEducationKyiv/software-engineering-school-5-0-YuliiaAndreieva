@@ -1,16 +1,7 @@
 package domain
 
 import (
-	"errors"
 	"time"
-)
-
-var (
-	ErrCityNotFound           = errors.New("city not found")
-	ErrInvalidInput           = errors.New("invalid input")
-	ErrEmailAlreadySubscribed = errors.New("email already subscribed")
-	ErrInvalidToken           = errors.New("invalid token")
-	ErrTokenNotFound          = errors.New("token not found")
 )
 
 type Frequency string
