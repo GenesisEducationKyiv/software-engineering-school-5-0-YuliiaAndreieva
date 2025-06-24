@@ -7,11 +7,11 @@ import (
 )
 
 type SchedulerService struct {
-	weatherUpdateService *WeatherUpdateService
-	emailService         *EmailService
+	weatherUpdateService WeatherUpdateService
+	emailService         EmailService
 }
 
-func NewSchedulerService(weatherUpdateService *WeatherUpdateService, emailService *EmailService) *SchedulerService {
+func NewSchedulerService(weatherUpdateService WeatherUpdateService, emailService EmailService) *SchedulerService {
 	return &SchedulerService{
 		weatherUpdateService: weatherUpdateService,
 		emailService:         emailService,

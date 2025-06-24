@@ -24,6 +24,11 @@ func (m *MockEmailNotifier) SendConfirmationEmail(subscription *domain.Subscript
 	return args.Error(0)
 }
 
+func (m *MockEmailNotifier) SendUpdates(updates []domain.WeatherUpdate) error {
+	args := m.Called(updates)
+	return args.Error(0)
+}
+
 func TestSubscriptionService_Subscribe(t *testing.T) {
 	ctx := context.Background()
 	const (

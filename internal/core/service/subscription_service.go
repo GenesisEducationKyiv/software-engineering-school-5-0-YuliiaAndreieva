@@ -9,16 +9,19 @@ import (
 	"weather-api/internal/core/domain"
 )
 
-type EmailNotifier interface {
-	SendConfirmationEmail(subscription *domain.Subscription) error
+type SubscriptionService interface {
+	Subscribe(ctx context.Context, email, city string, frequency domain.Frequency) (string, error)
+	Confirm(ctx context.Context, token string) error
+	Unsubscribe(ctx context.Context, token string) error
+	GetSubscriptionsByFrequency(ctx context.Context, frequency domain.Frequency) ([]domain.Subscription, error)
 }
 
-type SubscriptionService struct {
+type SubscriptionServiceImpl struct {
 	repo          postgres.SubscriptionRepository
 	weatherClient weather.Provider
 	tokenSvc      TokenService
 	cityRepo      postgres.CityRepository
-	emailNotifier EmailNotifier
+	emailService  EmailService
 }
 
 func NewSubscriptionService(
@@ -26,18 +29,18 @@ func NewSubscriptionService(
 	cityRepo postgres.CityRepository,
 	weatherClient weather.Provider,
 	tokenSvc TokenService,
-	emailNotifier EmailNotifier,
-) *SubscriptionService {
-	return &SubscriptionService{
+	emailService EmailService,
+) *SubscriptionServiceImpl {
+	return &SubscriptionServiceImpl{
 		repo:          repo,
 		cityRepo:      cityRepo,
 		weatherClient: weatherClient,
 		tokenSvc:      tokenSvc,
-		emailNotifier: emailNotifier,
+		emailService:  emailService,
 	}
 }
 
-func (s *SubscriptionService) Subscribe(ctx context.Context, email, city string, frequency domain.Frequency) (string, error) {
+func (s *SubscriptionServiceImpl) Subscribe(ctx context.Context, email, city string, frequency domain.Frequency) (string, error) {
 	cityEntity, err := s.cityRepo.GetByName(ctx, city)
 	if err != nil {
 		if errors.Is(err, domain.ErrCityNotFound) {
@@ -84,7 +87,7 @@ func (s *SubscriptionService) Subscribe(ctx context.Context, email, city string,
 
 	sub.City = &cityEntity
 
-	if err := s.emailNotifier.SendConfirmationEmail(&sub); err != nil {
+	if err := s.emailService.SendConfirmationEmail(&sub); err != nil {
 		log.Printf("Failed to send confirmation email: %v", err)
 		return "", err
 	}
@@ -93,7 +96,7 @@ func (s *SubscriptionService) Subscribe(ctx context.Context, email, city string,
 	return token, nil
 }
 
-func (s *SubscriptionService) Confirm(ctx context.Context, token string) error {
+func (s *SubscriptionServiceImpl) Confirm(ctx context.Context, token string) error {
 	log.Printf("Attempting to confirm subscription")
 
 	if token == "" {
@@ -124,7 +127,7 @@ func (s *SubscriptionService) Confirm(ctx context.Context, token string) error {
 	return nil
 }
 
-func (s *SubscriptionService) Unsubscribe(ctx context.Context, token string) error {
+func (s *SubscriptionServiceImpl) Unsubscribe(ctx context.Context, token string) error {
 	log.Printf("Attempting to unsubscribe")
 
 	if token == "" {
@@ -149,6 +152,6 @@ func (s *SubscriptionService) Unsubscribe(ctx context.Context, token string) err
 	return nil
 }
 
-func (s *SubscriptionService) GetSubscriptionsByFrequency(ctx context.Context, frequency domain.Frequency) ([]domain.Subscription, error) {
+func (s *SubscriptionServiceImpl) GetSubscriptionsByFrequency(ctx context.Context, frequency domain.Frequency) ([]domain.Subscription, error) {
 	return s.repo.GetSubscriptionsByFrequency(ctx, string(frequency))
 }

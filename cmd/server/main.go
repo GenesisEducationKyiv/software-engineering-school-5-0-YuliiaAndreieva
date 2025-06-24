@@ -61,7 +61,7 @@ func main() {
 		}
 	}()
 
-	emailAdapter := email.NewEmailSender(cfg.SMTPHost, cfg.SMTPPort, cfg.SMTPUser, cfg.SMTPPass)
+	emailAdapter := email.NewSender(cfg.SMTPHost, cfg.SMTPPort, cfg.SMTPUser, cfg.SMTPPass)
 
 	httpClient := &http.Client{Timeout: 5 * time.Second}
 

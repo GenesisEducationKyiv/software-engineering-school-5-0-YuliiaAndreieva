@@ -6,22 +6,26 @@ import (
 	"weather-api/internal/core/domain"
 )
 
-type WeatherUpdateService struct {
-	subscriptionService *SubscriptionService
+type WeatherUpdateService interface {
+	PrepareUpdates(ctx context.Context, frequency domain.Frequency) ([]domain.WeatherUpdate, error)
+}
+
+type WeatherUpdateServiceImpl struct {
+	subscriptionService SubscriptionService
 	weatherService      WeatherService
 }
 
 func NewWeatherUpdateService(
-	subscriptionService *SubscriptionService,
+	subscriptionService SubscriptionService,
 	weatherService WeatherService,
-) *WeatherUpdateService {
-	return &WeatherUpdateService{
+) WeatherUpdateService {
+	return &WeatherUpdateServiceImpl{
 		subscriptionService: subscriptionService,
 		weatherService:      weatherService,
 	}
 }
 
-func (s *WeatherUpdateService) PrepareUpdates(ctx context.Context, frequency domain.Frequency) ([]domain.WeatherUpdate, error) {
+func (s *WeatherUpdateServiceImpl) PrepareUpdates(ctx context.Context, frequency domain.Frequency) ([]domain.WeatherUpdate, error) {
 	subs, err := s.subscriptionService.GetSubscriptionsByFrequency(ctx, frequency)
 	if err != nil {
 		return nil, err

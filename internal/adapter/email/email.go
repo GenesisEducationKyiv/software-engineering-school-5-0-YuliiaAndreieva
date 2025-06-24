@@ -8,7 +8,7 @@ import (
 	"github.com/jordan-wright/email"
 )
 
-type EmailSender interface {
+type Sender interface {
 	SendEmail(to string, subject string, body string) error
 }
 type emailSender struct {
@@ -18,7 +18,7 @@ type emailSender struct {
 	pass string
 }
 
-func NewEmailSender(host string, port int, user, pass string) EmailSender {
+func NewSender(host string, port int, user, pass string) Sender {
 	return &emailSender{host: host, port: port, user: user, pass: pass}
 }
 

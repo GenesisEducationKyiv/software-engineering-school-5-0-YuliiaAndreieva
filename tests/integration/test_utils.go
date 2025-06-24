@@ -6,6 +6,8 @@ package integration
 import (
 	"database/sql"
 	"fmt"
+	"github.com/golang-migrate/migrate/v4"
+	_ "github.com/go
 	"io"
 	"net/http"
 	"strconv"
@@ -13,16 +15,10 @@ import (
 	"testing"
 	"weather-api/internal/adapter/email"
 	"weather-api/internal/adapter/repository/postgres"
-	"weather-api/internal/adapter/weather"
+	"weather-api/internal/adapter/weather/weatherapi"
 	"weather-api/internal/core/service"
-
 	"github.com/golang-migrate/migrate/v4"
-	_ "github.com/golang-migrate/migrate/v4/database/postgres"
-	_ "github.com/golang-migrate/migrate/v4/source/file"
-	"github.com/stretchr/testify/require"
 )
-
-type MockHTTPClient struct{}
 
 func (m *MockHTTPClient) Do(req *http.Request) (*http.Response, error) {
 	url := req.URL.String()
@@ -33,7 +29,6 @@ func (m *MockHTTPClient) Do(req *http.Request) (*http.Response, error) {
 			cityName = strings.Split(parts[1], "&")[0]
 		}
 	}
-
 	if cityName == "" {
 		cityName = "Kyiv"
 	}
@@ -159,10 +154,10 @@ func CreateTestDatabase(t *testing.T) (*sql.DB, func()) {
 
 type TestServices struct {
 	DB                   *sql.DB
-	SubscriptionService  *service.SubscriptionService
+	SubscriptionService  service.SubscriptionService
 	WeatherService       service.WeatherService
-	WeatherUpdateService *service.WeatherUpdateService
-	EmailService         *service.EmailService
+	WeatherUpdateService service.WeatherUpdateService
+	EmailService         service.EmailService
 	Cleanup              func()
 }
 
@@ -174,11 +169,14 @@ func SetupTestServices(t *testing.T) *TestServices {
 	smtpPort, err := strconv.Atoi(testConfig.SMTPPort)
 	require.NoError(t, err)
 
-	emailAdapter := email.NewEmailSender(testConfig.SMTPHost, smtpPort, testConfig.SMTPUser, testConfig.SMTPPass)
-	weatherAdapter := weather.NewWeatherAPIClient(
+	emailAdapter := email.NewSender(testConfig.SMTPHost, smtpPort, testConfig.SMTPUser, testConfig.SMTPPass)
+	mockLogger := &MockLogger{}
+
+	weatherAdapter := weatherapi.NewClient(
 		testConfig.WeatherAPIKey,
 		"http://api.weatherapi.com/v1",
 		&MockHTTPClient{},
+		mockLogger,
 	)
 
 	subscriptionRepo := postgres.NewSubscriptionRepo(db)
@@ -206,4 +204,9 @@ func SetupTestServices(t *testing.T) *TestServices {
 		EmailService:         emailService,
 		Cleanup:              cleanup,
 	}
+}
+
+type MockLogger struct{}
+
+func (m *MockLogger) Log(provider string, data []byte) {
 }

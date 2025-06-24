@@ -7,17 +7,22 @@ import (
 	"weather-api/internal/util/emailutil"
 )
 
-type EmailService struct {
-	emailSvc email.EmailSender
+type EmailService interface {
+	SendUpdates(updates []domain.WeatherUpdate) error
+	SendConfirmationEmail(subscription *domain.Subscription) error
 }
 
-func NewEmailService(emailSvc email.EmailSender) *EmailService {
-	return &EmailService{
+type EmailServiceImpl struct {
+	emailSvc email.Sender
+}
+
+func NewEmailService(emailSvc email.Sender) EmailService {
+	return &EmailServiceImpl{
 		emailSvc: emailSvc,
 	}
 }
 
-func (s *EmailService) SendUpdates(updates []domain.WeatherUpdate) error {
+func (s *EmailServiceImpl) SendUpdates(updates []domain.WeatherUpdate) error {
 	for _, update := range updates {
 		subject, htmlBody := emailutil.BuildWeatherUpdateEmail(
 			update.Subscription.City.Name,
@@ -36,7 +41,7 @@ func (s *EmailService) SendUpdates(updates []domain.WeatherUpdate) error {
 	return nil
 }
 
-func (s *EmailService) SendConfirmationEmail(subscription *domain.Subscription) error {
+func (s *EmailServiceImpl) SendConfirmationEmail(subscription *domain.Subscription) error {
 	subject, htmlBody := emailutil.BuildConfirmationEmail(subscription.City.Name, subscription.Token)
 
 	if err := s.emailSvc.SendEmail(subscription.Email, subject, htmlBody); err != nil {
