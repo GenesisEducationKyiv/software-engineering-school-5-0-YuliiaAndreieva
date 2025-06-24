@@ -57,9 +57,15 @@ func (m *MockWeatherProvider) GetWeather(ctx context.Context, city string) (doma
 	args := m.Called(ctx, city)
 	return args.Get(0).(domain.Weather), args.Error(1)
 }
+
 func (m *MockWeatherProvider) CheckCityExists(ctx context.Context, city string) error {
 	args := m.Called(ctx, city)
 	return args.Error(0)
+}
+
+func (m *MockWeatherProvider) Name() string {
+	args := m.Called()
+	return args.String(0)
 }
 
 type MockWeatherService struct{ mock.Mock }

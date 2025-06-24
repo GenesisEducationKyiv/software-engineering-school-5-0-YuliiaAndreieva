@@ -14,6 +14,9 @@ export default defineConfig({
     env: {
       DB_CONN_STR: 'postgres://test:test@localhost:5434/weather_test?sslmode=disable',
       WEATHER_API_KEY: 'test-api-key',
+      WEATHER_API_BASE_URL: 'test-url',
+      OPENWEATHERMAP_API_KEY: 'test-api-key',
+      OPENWEATHERMAP_BASE_URL: 'test-url',
       SMTP_HOST: 'localhost',
       SMTP_PORT: '1025',
       SMTP_USER: 'test@example.com',
