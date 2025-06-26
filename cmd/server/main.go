@@ -125,22 +125,24 @@ func main() {
 	schedulerService := service.NewSchedulerService(weatherUpdateService, emailService)
 	cron := cron.New()
 	_, err = cron.AddFunc("* * * * *", func() {
-		err := schedulerService.SendWeatherUpdates(context.Background(), domain.FrequencyHourly)
-		if err != nil {
-			return
+		updateErr := schedulerService.SendWeatherUpdates(context.Background(), domain.FrequencyHourly)
+		if updateErr != nil {
+			log.Printf("Unable to send hourly weather updates: %v", updateErr)
 		}
 	})
 	if err != nil {
+		log.Printf("Unable to add hourly cron job: %v", err)
 		return
 	}
 
 	_, err = cron.AddFunc("0 0 * * *", func() {
-		err := schedulerService.SendWeatherUpdates(context.Background(), domain.FrequencyDaily)
-		if err != nil {
-			return
+		updateErr := schedulerService.SendWeatherUpdates(context.Background(), domain.FrequencyDaily)
+		if updateErr != nil {
+			log.Printf("Unable to send daily weather updates: %v", updateErr)
 		}
 	})
 	if err != nil {
+		log.Printf("Unable to add daily cron job: %v", err)
 		return
 	}
 
