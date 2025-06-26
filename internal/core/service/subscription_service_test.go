@@ -10,6 +10,7 @@ import (
 	"weather-api/internal/mocks"
 
 	"weather-api/internal/core/domain"
+	"weather-api/internal/core/repository"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -58,8 +59,11 @@ func TestSubscriptionService_Subscribe(t *testing.T) {
 
 				cityRepo.On("GetByName", ctx, cityName).Return(cityRow, nil)
 
-				subRepo.On("IsSubscriptionExists", ctx, email, cityRow.ID, domain.FrequencyDaily).
-					Return(false, nil)
+				subRepo.On("IsSubscriptionExists", ctx, repository.IsSubscriptionExistsOptions{
+					Email:     email,
+					CityID:    cityRow.ID,
+					Frequency: domain.FrequencyDaily,
+				}).Return(false, nil)
 
 				tokenSvc.On("GenerateToken").Return(tokenStr, nil)
 
@@ -93,8 +97,11 @@ func TestSubscriptionService_Subscribe(t *testing.T) {
 				cityRepo.On("Create", ctx, domain.City{Name: cityName}).
 					Return(cityRow, nil)
 
-				subRepo.On("IsSubscriptionExists", ctx, email, cityRow.ID, domain.FrequencyDaily).
-					Return(false, nil)
+				subRepo.On("IsSubscriptionExists", ctx, repository.IsSubscriptionExistsOptions{
+					Email:     email,
+					CityID:    cityRow.ID,
+					Frequency: domain.FrequencyDaily,
+				}).Return(false, nil)
 
 				tokenSvc.On("GenerateToken").Return(tokenStr, nil)
 
@@ -121,8 +128,11 @@ func TestSubscriptionService_Subscribe(t *testing.T) {
 				tokenSvc *mocks.MockTokenService) {
 
 				cityRepo.On("GetByName", ctx, cityName).Return(cityRow, nil)
-				subRepo.On("IsSubscriptionExists", ctx, email, cityRow.ID, domain.FrequencyDaily).
-					Return(true, nil)
+				subRepo.On("IsSubscriptionExists", ctx, repository.IsSubscriptionExistsOptions{
+					Email:     email,
+					CityID:    cityRow.ID,
+					Frequency: domain.FrequencyDaily,
+				}).Return(true, nil)
 			},
 			expectedToken: "",
 			expectedErr:   domain.ErrEmailAlreadySubscribed,
@@ -157,7 +167,11 @@ func TestSubscriptionService_Subscribe(t *testing.T) {
 				subRepo, cityRepo, weatherProv, tokenSvc, emailNotifier,
 			)
 
-			token, err := s.Subscribe(ctx, email, cityName, domain.FrequencyDaily)
+			token, err := s.Subscribe(ctx, repository.SubscribeOptions{
+				Email:     email,
+				City:      cityName,
+				Frequency: domain.FrequencyDaily,
+			})
 			assert.Equal(t, tt.expectedToken, token)
 			assert.Equal(t, tt.expectedErr, err)
 
@@ -209,7 +223,7 @@ func TestSubscriptionService_Confirm(t *testing.T) {
 				r.On("UpdateSubscription", ctx, subConfirmed).
 					Return(errors.New("db error"))
 			},
-			expectErr: errors.New("db error"),
+			expectErr: errors.New("unable to update subscription confirmation: db error"),
 		},
 	}
 
@@ -265,7 +279,7 @@ func TestSubscriptionService_Unsubscribe(t *testing.T) {
 				r.On("DeleteSubscription", ctx, token).
 					Return(errors.New("db error"))
 			},
-			expectErr: errors.New("db error"),
+			expectErr: errors.New("unable to delete subscription: db error"),
 		},
 	}
 

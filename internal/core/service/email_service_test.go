@@ -4,7 +4,9 @@
 package service_test
 
 import (
+	"errors"
 	"testing"
+	"weather-api/internal/adapter/email"
 	"weather-api/internal/util/emailutil"
 
 	"github.com/stretchr/testify/assert"
@@ -43,11 +45,31 @@ func TestEmailService_SendUpdates(t *testing.T) {
 				},
 			},
 			setupMocks: func(es *mocks.MockEmailService) {
-				subKyiv, bodyKyiv := emailutil.BuildWeatherUpdateEmail("Kyiv", 20.5, 60, "Sunny", "token1")
-				subLviv, bodyLviv := emailutil.BuildWeatherUpdateEmail("Lviv", 18.0, 65, "Cloudy", "token2")
+				subKyiv, bodyKyiv := emailutil.BuildWeatherUpdateEmail(emailutil.WeatherUpdateEmailOptions{
+					City:        "Kyiv",
+					Temperature: 20.5,
+					Humidity:    60,
+					Description: "Sunny",
+					Token:       "token1",
+				})
+				subLviv, bodyLviv := emailutil.BuildWeatherUpdateEmail(emailutil.WeatherUpdateEmailOptions{
+					City:        "Lviv",
+					Temperature: 18.0,
+					Humidity:    65,
+					Description: "Cloudy",
+					Token:       "token2",
+				})
 
-				es.On("SendEmail", "user1@example.com", subKyiv, bodyKyiv).Return(nil).Once()
-				es.On("SendEmail", "user2@example.com", subLviv, bodyLviv).Return(nil).Once()
+				es.On("SendEmail", email.SendEmailOptions{
+					To:      "user1@example.com",
+					Subject: subKyiv,
+					Body:    bodyKyiv,
+				}).Return(nil).Once()
+				es.On("SendEmail", email.SendEmailOptions{
+					To:      "user2@example.com",
+					Subject: subLviv,
+					Body:    bodyLviv,
+				}).Return(nil).Once()
 			},
 			verifyMocks: func(t *testing.T, es *mocks.MockEmailService) {
 				es.AssertExpectations(t)
@@ -66,9 +88,18 @@ func TestEmailService_SendUpdates(t *testing.T) {
 				},
 			},
 			setupMocks: func(es *mocks.MockEmailService) {
-				subj, body := emailutil.BuildWeatherUpdateEmail("Kyiv", 20.5, 60, "Sunny", "token1")
-				es.On("SendEmail", "user1@example.com", subj, body).
-					Return(assert.AnError).Once()
+				subj, body := emailutil.BuildWeatherUpdateEmail(emailutil.WeatherUpdateEmailOptions{
+					City:        "Kyiv",
+					Temperature: 20.5,
+					Humidity:    60,
+					Description: "Sunny",
+					Token:       "token1",
+				})
+				es.On("SendEmail", email.SendEmailOptions{
+					To:      "user1@example.com",
+					Subject: subj,
+					Body:    body,
+				}).Return(assert.AnError).Once()
 			},
 			verifyMocks: func(t *testing.T, es *mocks.MockEmailService) {
 				es.AssertExpectations(t)
@@ -79,7 +110,7 @@ func TestEmailService_SendUpdates(t *testing.T) {
 			updates:    []domain.WeatherUpdate{},
 			setupMocks: func(*mocks.MockEmailService) {},
 			verifyMocks: func(t *testing.T, es *mocks.MockEmailService) {
-				es.AssertNotCalled(t, "SendEmail", mock.Anything, mock.Anything, mock.Anything)
+				es.AssertNotCalled(t, "SendEmail", mock.Anything)
 			},
 		},
 	}
@@ -115,7 +146,11 @@ func TestEmailService_SendConfirmationEmail(t *testing.T) {
 			},
 			setupMocks: func(es *mocks.MockEmailService) {
 				subject, body := emailutil.BuildConfirmationEmail("Kyiv", "token123")
-				es.On("SendEmail", "user@example.com", subject, body).Return(nil).Once()
+				es.On("SendEmail", email.SendEmailOptions{
+					To:      "user@example.com",
+					Subject: subject,
+					Body:    body,
+				}).Return(nil).Once()
 			},
 			expectErr: nil,
 		},
@@ -128,9 +163,13 @@ func TestEmailService_SendConfirmationEmail(t *testing.T) {
 			},
 			setupMocks: func(es *mocks.MockEmailService) {
 				subject, body := emailutil.BuildConfirmationEmail("Kyiv", "token123")
-				es.On("SendEmail", "user@example.com", subject, body).Return(assert.AnError).Once()
+				es.On("SendEmail", email.SendEmailOptions{
+					To:      "user@example.com",
+					Subject: subject,
+					Body:    body,
+				}).Return(assert.AnError).Once()
 			},
-			expectErr: assert.AnError,
+			expectErr: errors.New("unable to send confirmation email to user@example.com: assert.AnError general error for testing"),
 		},
 	}
 

@@ -11,14 +11,16 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	"weather-api/internal/util/configutil"
-
 	"weather-api/internal/adapter/email"
 	"weather-api/internal/adapter/repository/postgres"
 	"weather-api/internal/adapter/weather"
+	"weather-api/internal/adapter/weather/openweathermap"
+	"weather-api/internal/adapter/weather/weatherapi"
 	"weather-api/internal/core/domain"
 	"weather-api/internal/core/service"
 	httphandler "weather-api/internal/handler/http"
+	"weather-api/internal/util/configutil"
+	"weather-api/internal/util/logger"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-migrate/migrate/v4"
@@ -89,12 +91,12 @@ func (m *MockHTTPClient) Do(req *http.Request) (*http.Response, error) {
 func main() {
 	cfg, err := configutil.LoadConfig()
 	if err != nil {
-		log.Fatalf("Failed to load config: %v", err)
+		log.Fatalf("Unable to load config: %v", err)
 	}
 
 	db, err := sql.Open("postgres", cfg.DBConnStr)
 	if err != nil {
-		log.Fatalf("Failed to connect to DB: %v", err)
+		log.Fatalf("Unable to connect to DB: %v", err)
 	}
 	defer func() {
 		if err := db.Close(); err != nil {
@@ -104,31 +106,58 @@ func main() {
 
 	m, err := migrate.New("file://migrations", cfg.DBConnStr)
 	if err != nil {
-		log.Fatalf("Failed to initialize migration: %v", err)
+		log.Fatalf("Unable to initialize migration: %v", err)
 	}
 	if err := m.Up(); err != nil && !errors.Is(err, migrate.ErrNoChange) {
-		log.Fatalf("Failed to apply migrations: %v", err)
+		log.Fatalf("Unable to apply migrations: %v", err)
 	}
 
-	emailAdapter := email.NewEmailSender(cfg.SMTPHost, cfg.SMTPPort, cfg.SMTPUser, cfg.SMTPPass)
+	fileLogger, err := logger.NewFileLogger("logs", "provider_responses.log")
+	if err != nil {
+		log.Fatalf("Unable to initialize file logger: %v", err)
+	}
+	defer func() {
+		if closeErr := fileLogger.Close(); closeErr != nil {
+			log.Printf("Error closing file logger: %v", closeErr)
+		}
+	}()
 
-	weatherAdapter := weather.NewWeatherAPIClient(
-		cfg.WeatherAPIKey,
-		"http://api.weatherapi.com/v1",
-		&MockHTTPClient{},
-	)
+	emailAdapter := email.NewSender(email.SenderOptions{
+		Host: cfg.SMTPHost,
+		Port: cfg.SMTPPort,
+		User: cfg.SMTPUser,
+		Pass: cfg.SMTPPass,
+	})
+
+	mockClient := &MockHTTPClient{}
+
+	weatherAPIProvider := weatherapi.NewClient(weatherapi.ClientOptions{
+		APIKey:     cfg.WeatherAPIKey,
+		BaseURL:    cfg.WeatherAPIBaseURL,
+		HTTPClient: mockClient,
+		Logger:     fileLogger,
+	})
+
+	openWeatherMapProvider := openweathermap.NewClient(openweathermap.ClientOptions{
+		APIKey:     cfg.OpenWeatherMapAPIKey,
+		BaseURL:    cfg.OpenWeatherMapBaseURL,
+		HTTPClient: mockClient,
+		Logger:     fileLogger,
+	})
+
+	chainProvider := weather.NewChainWeatherProvider(weatherAPIProvider, openWeatherMapProvider)
 
 	subscriptionRepo := postgres.NewSubscriptionRepo(db)
 	cityRepo := postgres.NewCityRepository(db)
 
-	weatherService := service.NewWeatherService(weatherAdapter)
+	weatherService := service.NewWeatherService(chainProvider)
 	tokenService := service.NewTokenService()
 	emailService := service.NewEmailService(emailAdapter)
 
 	subscriptionService := service.NewSubscriptionService(
 		subscriptionRepo,
 		cityRepo,
-		weatherAdapter,
+		chainProvider,
 		tokenService,
 		emailService,
 	)
@@ -191,6 +220,6 @@ func main() {
 
 	log.Printf("Test server running on %s (with mocked Weather API)", srv.Addr)
 	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-		log.Fatalf("Server failed: %v", err)
+		log.Fatalf("Server error: %v", err)
 	}
 }

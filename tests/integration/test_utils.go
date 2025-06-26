@@ -6,8 +6,6 @@ package integration
 import (
 	"database/sql"
 	"fmt"
-	"github.com/golang-migrate/migrate/v4"
-	_ "github.com/go
 	"io"
 	"net/http"
 	"strconv"
@@ -17,8 +15,12 @@ import (
 	"weather-api/internal/adapter/repository/postgres"
 	"weather-api/internal/adapter/weather/weatherapi"
 	"weather-api/internal/core/service"
+
 	"github.com/golang-migrate/migrate/v4"
+	"github.com/stretchr/testify/require"
 )
+
+type MockHTTPClient struct{}
 
 func (m *MockHTTPClient) Do(req *http.Request) (*http.Response, error) {
 	url := req.URL.String()
@@ -126,18 +128,18 @@ func CleanupTestDatabase(t *testing.T, db *sql.DB) {
 	for _, table := range tables {
 		_, err := db.Exec(fmt.Sprintf("DELETE FROM %s", table))
 		if err != nil {
-			t.Logf("Warning: failed to clean table %s: %v", table, err)
+			t.Logf("Warning: unable to clean table %s: %v", table, err)
 		}
 	}
 
 	_, err := db.Exec("ALTER SEQUENCE cities_id_seq RESTART WITH 1")
 	if err != nil {
-		t.Logf("Warning: failed to reset cities sequence: %v", err)
+		t.Logf("Warning: unable to reset cities sequence: %v", err)
 	}
 
 	_, err = db.Exec("ALTER SEQUENCE subscriptions_id_seq RESTART WITH 1")
 	if err != nil {
-		t.Logf("Warning: failed to reset subscriptions sequence: %v", err)
+		t.Logf("Warning: unable to reset subscriptions sequence: %v", err)
 	}
 }
 
@@ -169,15 +171,20 @@ func SetupTestServices(t *testing.T) *TestServices {
 	smtpPort, err := strconv.Atoi(testConfig.SMTPPort)
 	require.NoError(t, err)
 
-	emailAdapter := email.NewSender(testConfig.SMTPHost, smtpPort, testConfig.SMTPUser, testConfig.SMTPPass)
+	emailAdapter := email.NewSender(email.SenderOptions{
+		Host: testConfig.SMTPHost,
+		Port: smtpPort,
+		User: testConfig.SMTPUser,
+		Pass: testConfig.SMTPPass,
+	})
 	mockLogger := &MockLogger{}
 
-	weatherAdapter := weatherapi.NewClient(
-		testConfig.WeatherAPIKey,
-		"http://api.weatherapi.com/v1",
-		&MockHTTPClient{},
-		mockLogger,
-	)
+	weatherAdapter := weatherapi.NewClient(weatherapi.ClientOptions{
+		APIKey:     testConfig.WeatherAPIKey,
+		BaseURL:    "http://api.weatherapi.com/v1",
+		HTTPClient: &MockHTTPClient{},
+		Logger:     mockLogger,
+	})
 
 	subscriptionRepo := postgres.NewSubscriptionRepo(db)
 	cityRepo := postgres.NewCityRepository(db)
