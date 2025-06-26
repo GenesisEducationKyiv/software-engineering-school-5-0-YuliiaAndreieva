@@ -20,12 +20,19 @@ type Client struct {
 	logger     weather.ProviderLogger
 }
 
-func NewClient(apiKey, baseURL string, httpClient weather.HTTPDoer, logger weather.ProviderLogger) *Client {
+type ClientOptions struct {
+	APIKey     string
+	BaseURL    string
+	HTTPClient weather.HTTPDoer
+	Logger     weather.ProviderLogger
+}
+
+func NewClient(opts ClientOptions) *Client {
 	return &Client{
-		apiKey:     apiKey,
-		baseURL:    baseURL,
-		httpClient: httpClient,
-		logger:     logger,
+		apiKey:     opts.APIKey,
+		baseURL:    opts.BaseURL,
+		httpClient: opts.HTTPClient,
+		logger:     opts.Logger,
 	}
 }
 

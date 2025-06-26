@@ -2,7 +2,9 @@ package mocks
 
 import (
 	"context"
+	"weather-api/internal/adapter/email"
 	"weather-api/internal/core/domain"
+	"weather-api/internal/core/repository"
 
 	"github.com/stretchr/testify/mock"
 )
@@ -41,8 +43,8 @@ func (m *MockSubscriptionRepository) DeleteSubscription(ctx context.Context, tok
 	return args.Error(0)
 }
 
-func (m *MockSubscriptionRepository) IsSubscriptionExists(ctx context.Context, email string, cityID int64, frequency domain.Frequency) (bool, error) {
-	args := m.Called(ctx, email, cityID, frequency)
+func (m *MockSubscriptionRepository) IsSubscriptionExists(ctx context.Context, opts repository.IsSubscriptionExistsOptions) (bool, error) {
+	args := m.Called(ctx, opts)
 	return args.Bool(0), args.Error(1)
 }
 
@@ -79,8 +81,8 @@ type MockEmailService struct {
 	mock.Mock
 }
 
-func (m *MockEmailService) SendEmail(to, subject, body string) error {
-	args := m.Called(to, subject, body)
+func (m *MockEmailService) SendEmail(opts email.SendEmailOptions) error {
+	args := m.Called(opts)
 	return args.Error(0)
 }
 

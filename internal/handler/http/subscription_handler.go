@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"weather-api/internal/core/domain"
+	"weather-api/internal/core/repository"
 	"weather-api/internal/core/service"
 	httperrors "weather-api/internal/handler/http/errors"
 	"weather-api/internal/handler/http/request"
@@ -37,7 +38,11 @@ func (h *SubscriptionHandler) Subscribe(c *gin.Context) {
 
 	log.Printf("Received subscription request for city: %s, frequency: %s", req.City, req.Frequency)
 
-	_, err := h.subscriptionService.Subscribe(c, req.Email, req.City, req.Frequency)
+	_, err := h.subscriptionService.Subscribe(c, repository.SubscribeOptions{
+		Email:     req.Email,
+		City:      req.City,
+		Frequency: req.Frequency,
+	})
 	if err != nil {
 		log.Printf("Failed to process subscription: %v", err)
 		switch {

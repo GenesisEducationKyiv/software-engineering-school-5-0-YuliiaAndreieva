@@ -24,15 +24,19 @@ func NewEmailService(emailSvc email.Sender) EmailService {
 
 func (s *EmailServiceImpl) SendUpdates(updates []domain.WeatherUpdate) error {
 	for _, update := range updates {
-		subject, htmlBody := emailutil.BuildWeatherUpdateEmail(
-			update.Subscription.City.Name,
-			update.Weather.Temperature,
-			update.Weather.Humidity,
-			update.Weather.Description,
-			update.Subscription.Token,
-		)
+		subject, htmlBody := emailutil.BuildWeatherUpdateEmail(emailutil.WeatherUpdateEmailOptions{
+			City:        update.Subscription.City.Name,
+			Temperature: update.Weather.Temperature,
+			Humidity:    update.Weather.Humidity,
+			Description: update.Weather.Description,
+			Token:       update.Subscription.Token,
+		})
 
-		if err := s.emailSvc.SendEmail(update.Subscription.Email, subject, htmlBody); err != nil {
+		if err := s.emailSvc.SendEmail(email.SendEmailOptions{
+			To:      update.Subscription.Email,
+			Subject: subject,
+			Body:    htmlBody,
+		}); err != nil {
 			log.Printf("Failed to send email to %s: %v", update.Subscription.Email, err)
 			continue
 		}
@@ -44,7 +48,11 @@ func (s *EmailServiceImpl) SendUpdates(updates []domain.WeatherUpdate) error {
 func (s *EmailServiceImpl) SendConfirmationEmail(subscription *domain.Subscription) error {
 	subject, htmlBody := emailutil.BuildConfirmationEmail(subscription.City.Name, subscription.Token)
 
-	if err := s.emailSvc.SendEmail(subscription.Email, subject, htmlBody); err != nil {
+	if err := s.emailSvc.SendEmail(email.SendEmailOptions{
+		To:      subscription.Email,
+		Subject: subject,
+		Body:    htmlBody,
+	}); err != nil {
 		log.Printf("Failed to send confirmation email to %s: %v", subscription.Email, err)
 		return err
 	}

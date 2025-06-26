@@ -61,23 +61,28 @@ func main() {
 		}
 	}()
 
-	emailAdapter := email.NewSender(cfg.SMTPHost, cfg.SMTPPort, cfg.SMTPUser, cfg.SMTPPass)
+	emailAdapter := email.NewSender(email.SenderOptions{
+		Host: cfg.SMTPHost,
+		Port: cfg.SMTPPort,
+		User: cfg.SMTPUser,
+		Pass: cfg.SMTPPass,
+	})
 
 	httpClient := &http.Client{Timeout: 5 * time.Second}
 
-	weatherAPIProvider := weatherapi.NewClient(
-		cfg.WeatherAPIKey,
-		cfg.WeatherAPIBaseURL,
-		httpClient,
-		fileLogger,
-	)
+	weatherAPIProvider := weatherapi.NewClient(weatherapi.ClientOptions{
+		APIKey:     cfg.WeatherAPIKey,
+		BaseURL:    cfg.WeatherAPIBaseURL,
+		HTTPClient: httpClient,
+		Logger:     fileLogger,
+	})
 
-	openWeatherMapProvider := openweathermap.NewClient(
-		cfg.OpenWeatherMapAPIKey,
-		cfg.OpenWeatherMapBaseURL,
-		httpClient,
-		fileLogger,
-	)
+	openWeatherMapProvider := openweathermap.NewClient(openweathermap.ClientOptions{
+		APIKey:     cfg.OpenWeatherMapAPIKey,
+		BaseURL:    cfg.OpenWeatherMapBaseURL,
+		HTTPClient: httpClient,
+		Logger:     fileLogger,
+	})
 
 	chainProvider := weather.NewChainWeatherProvider(openWeatherMapProvider, weatherAPIProvider)
 

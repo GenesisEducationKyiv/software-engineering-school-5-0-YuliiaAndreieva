@@ -152,7 +152,7 @@ func (r *subscriptionRepository) IsTokenExists(ctx context.Context, token string
 	return exists, nil
 }
 
-func (r *subscriptionRepository) IsSubscriptionExists(ctx context.Context, email string, cityID int64, frequency domain.Frequency) (bool, error) {
+func (r *subscriptionRepository) IsSubscriptionExists(ctx context.Context, opts repository.IsSubscriptionExistsOptions) (bool, error) {
 	var exists bool
 	query := `
         SELECT EXISTS(
@@ -160,7 +160,7 @@ func (r *subscriptionRepository) IsSubscriptionExists(ctx context.Context, email
             WHERE email = $1 AND city_id = $2 AND frequency = $3
         )
     `
-	err := r.db.QueryRowContext(ctx, query, email, cityID, frequency).Scan(&exists)
+	err := r.db.QueryRowContext(ctx, query, opts.Email, opts.CityID, opts.Frequency).Scan(&exists)
 	if err != nil {
 		return false, err
 	}

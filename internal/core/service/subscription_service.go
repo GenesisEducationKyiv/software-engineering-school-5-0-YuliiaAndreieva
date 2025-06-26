@@ -10,7 +10,7 @@ import (
 )
 
 type SubscriptionService interface {
-	Subscribe(ctx context.Context, email, city string, frequency domain.Frequency) (string, error)
+	Subscribe(ctx context.Context, opts repository.SubscribeOptions) (string, error)
 	Confirm(ctx context.Context, token string) error
 	Unsubscribe(ctx context.Context, token string) error
 	GetSubscriptionsByFrequency(ctx context.Context, frequency domain.Frequency) ([]domain.Subscription, error)
@@ -40,17 +40,17 @@ func NewSubscriptionService(
 	}
 }
 
-func (s *SubscriptionServiceImpl) Subscribe(ctx context.Context, email, city string, frequency domain.Frequency) (string, error) {
-	cityEntity, err := s.cityRepo.GetByName(ctx, city)
+func (s *SubscriptionServiceImpl) Subscribe(ctx context.Context, opts repository.SubscribeOptions) (string, error) {
+	cityEntity, err := s.cityRepo.GetByName(ctx, opts.City)
 	if err != nil {
 		if errors.Is(err, domain.ErrCityNotFound) {
-			if err := s.weatherClient.CheckCityExists(ctx, city); err != nil {
+			if err := s.weatherClient.CheckCityExists(ctx, opts.City); err != nil {
 				if errors.Is(err, domain.ErrCityNotFound) {
 					return "", domain.ErrCityNotFound
 				}
 				return "", err
 			}
-			cityEntity, err = s.cityRepo.Create(ctx, domain.City{Name: city})
+			cityEntity, err = s.cityRepo.Create(ctx, domain.City{Name: opts.City})
 			if err != nil {
 				return "", err
 			}
@@ -59,7 +59,11 @@ func (s *SubscriptionServiceImpl) Subscribe(ctx context.Context, email, city str
 		}
 	}
 
-	exists, err := s.repo.IsSubscriptionExists(ctx, email, cityEntity.ID, frequency)
+	exists, err := s.repo.IsSubscriptionExists(ctx, repository.IsSubscriptionExistsOptions{
+		Email:     opts.Email,
+		CityID:    cityEntity.ID,
+		Frequency: opts.Frequency,
+	})
 	if err != nil {
 		return "", err
 	}
@@ -74,9 +78,9 @@ func (s *SubscriptionServiceImpl) Subscribe(ctx context.Context, email, city str
 	}
 
 	sub := domain.Subscription{
-		Email:       email,
+		Email:       opts.Email,
 		CityID:      cityEntity.ID,
-		Frequency:   frequency,
+		Frequency:   opts.Frequency,
 		Token:       token,
 		IsConfirmed: false,
 	}

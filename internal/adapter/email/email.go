@@ -9,8 +9,22 @@ import (
 )
 
 type Sender interface {
-	SendEmail(to string, subject string, body string) error
+	SendEmail(opts SendEmailOptions) error
 }
+
+type SenderOptions struct {
+	Host string
+	Port int
+	User string
+	Pass string
+}
+
+type SendEmailOptions struct {
+	To      string
+	Subject string
+	Body    string
+}
+
 type emailSender struct {
 	host string
 	port int
@@ -18,26 +32,31 @@ type emailSender struct {
 	pass string
 }
 
-func NewSender(host string, port int, user, pass string) Sender {
-	return &emailSender{host: host, port: port, user: user, pass: pass}
+func NewSender(opts SenderOptions) Sender {
+	return &emailSender{
+		host: opts.Host,
+		port: opts.Port,
+		user: opts.User,
+		pass: opts.Pass,
+	}
 }
 
-func (e *emailSender) SendEmail(to, subject, body string) error {
-	log.Printf("Attempting to send email to: %s, subject: %s, from: %s", to, subject, e.user)
+func (e *emailSender) SendEmail(opts SendEmailOptions) error {
+	log.Printf("Attempting to send email to: %s, subject: %s, from: %s", opts.To, opts.Subject, e.user)
 
 	msg := email.NewEmail()
 	msg.From = e.user
-	msg.To = []string{to}
-	msg.Subject = subject
-	msg.HTML = []byte(body)
+	msg.To = []string{opts.To}
+	msg.Subject = opts.Subject
+	msg.HTML = []byte(opts.Body)
 
 	addr := e.host + ":" + strconv.Itoa(e.port)
 	err := msg.Send(addr, smtp.PlainAuth("", e.user, e.pass, e.host))
 	if err != nil {
-		log.Printf("Failed to send email to %s: %v", to, err)
+		log.Printf("Failed to send email to %s: %v", opts.To, err)
 		return err
 	}
 
-	log.Printf("Successfully sent email to: %s", to)
+	log.Printf("Successfully sent email to: %s", opts.To)
 	return nil
 }
