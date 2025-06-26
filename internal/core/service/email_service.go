@@ -37,7 +37,7 @@ func (s *EmailServiceImpl) SendUpdates(updates []domain.WeatherUpdate) error {
 			Subject: subject,
 			Body:    htmlBody,
 		}); err != nil {
-			log.Printf("Failed to send email to %s: %v", update.Subscription.Email, err)
+			log.Printf("Unable to send email to %s: %v", update.Subscription.Email, err)
 			continue
 		}
 	}
@@ -53,7 +53,7 @@ func (s *EmailServiceImpl) SendConfirmationEmail(subscription *domain.Subscripti
 		Subject: subject,
 		Body:    htmlBody,
 	}); err != nil {
-		log.Printf("Failed to send confirmation email to %s: %v", subscription.Email, err)
+		log.Printf("Unable to send confirmation email to %s: %v", subscription.Email, err)
 		return err
 	}
 

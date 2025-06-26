@@ -53,7 +53,7 @@ func (e *emailSender) SendEmail(opts SendEmailOptions) error {
 	addr := e.host + ":" + strconv.Itoa(e.port)
 	err := msg.Send(addr, smtp.PlainAuth("", e.user, e.pass, e.host))
 	if err != nil {
-		log.Printf("Failed to send email to %s: %v", opts.To, err)
+		log.Printf("Unable to send email to %s: %v", opts.To, err)
 		return err
 	}
 

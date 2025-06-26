@@ -22,7 +22,7 @@ func (r *subscriptionRepository) CreateSubscription(ctx context.Context, sub dom
 	query := `INSERT INTO subscriptions (email, city_id, frequency, token, is_confirmed) VALUES ($1, $2, $3, $4, $5)`
 	_, err := r.db.ExecContext(ctx, query, sub.Email, sub.CityID, sub.Frequency, sub.Token, sub.IsConfirmed)
 	if err != nil {
-		log.Printf("Failed to create subscription: %v", err)
+		log.Printf("Unable to create subscription: %v", err)
 		return err
 	}
 	log.Printf("Successfully created subscription")
@@ -51,7 +51,7 @@ func (r *subscriptionRepository) UpdateSubscription(ctx context.Context, sub dom
 	query := `UPDATE subscriptions SET is_confirmed = $1 WHERE token = $2`
 	result, err := r.db.ExecContext(ctx, query, sub.IsConfirmed, sub.Token)
 	if err != nil {
-		log.Printf("Failed to update subscription: %v", err)
+		log.Printf("Unable to update subscription: %v", err)
 		return err
 	}
 
@@ -75,7 +75,7 @@ func (r *subscriptionRepository) DeleteSubscription(ctx context.Context, token s
 	query := `DELETE FROM subscriptions WHERE token = $1`
 	result, err := r.db.ExecContext(ctx, query, token)
 	if err != nil {
-		log.Printf("Failed to delete subscription: %v", err)
+		log.Printf("Unable to delete subscription: %v", err)
 		return err
 	}
 
@@ -145,7 +145,7 @@ func (r *subscriptionRepository) IsTokenExists(ctx context.Context, token string
 	var exists bool
 	err := r.db.QueryRowContext(ctx, query, token).Scan(&exists)
 	if err != nil {
-		log.Printf("Failed to check token existence: %v", err)
+		log.Printf("Unable to check token existence: %v", err)
 		return false, err
 	}
 	log.Printf("Token existence check result: %v", exists)

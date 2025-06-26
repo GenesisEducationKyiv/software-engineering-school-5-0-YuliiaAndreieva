@@ -21,12 +21,12 @@ func NewSchedulerService(weatherUpdateService WeatherUpdateService, emailService
 func (s *SchedulerService) SendWeatherUpdates(ctx context.Context, frequency domain.Frequency) error {
 	updates, err := s.weatherUpdateService.PrepareUpdates(ctx, frequency)
 	if err != nil {
-		log.Printf("Failed to prepare updates for frequency %s: %v", frequency, err)
+		log.Printf("Unable to prepare updates for frequency %s: %v", frequency, err)
 		return err
 	}
 
 	if err := s.emailService.SendUpdates(updates); err != nil {
-		log.Printf("Failed to send updates for frequency %s: %v", frequency, err)
+		log.Printf("Unable to send updates for frequency %s: %v", frequency, err)
 		return err
 	}
 

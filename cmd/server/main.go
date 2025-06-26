@@ -30,12 +30,12 @@ import (
 func main() {
 	cfg, err := configutil.LoadConfig()
 	if err != nil {
-		log.Fatalf("Failed to load config: %v", err)
+		log.Fatalf("Unable to load config: %v", err)
 	}
 
 	db, err := sql.Open("postgres", cfg.DBConnStr)
 	if err != nil {
-		log.Fatalf("Failed to connect to DB: %v", err)
+		log.Fatalf("Unable to connect to DB: %v", err)
 	}
 	defer func() {
 		if err := db.Close(); err != nil {
@@ -45,15 +45,15 @@ func main() {
 
 	m, err := migrate.New("file://migrations", cfg.DBConnStr)
 	if err != nil {
-		log.Fatalf("Failed to initialize migration: %v", err)
+		log.Fatalf("Unable to initialize migration: %v", err)
 	}
 	if err := m.Up(); err != nil && !errors.Is(err, migrate.ErrNoChange) {
-		log.Fatalf("Failed to apply migrations: %v", err)
+		log.Fatalf("Unable to apply migrations: %v", err)
 	}
 
 	fileLogger, err := logger.NewFileLogger("logs", "provider_responses.log")
 	if err != nil {
-		log.Fatalf("Failed to initialize file logger: %v", err)
+		log.Fatalf("Unable to initialize file logger: %v", err)
 	}
 	defer func() {
 		if closeErr := fileLogger.Close(); closeErr != nil {
@@ -157,6 +157,6 @@ func main() {
 
 	log.Printf("Server running on %s", srv.Addr)
 	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-		log.Fatalf("Server failed: %v", err)
+		log.Fatalf("Server error: %v", err)
 	}
 }

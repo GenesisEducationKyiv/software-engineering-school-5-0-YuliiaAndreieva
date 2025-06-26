@@ -3,6 +3,7 @@ package weatherapi
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -54,7 +55,7 @@ func (c *Client) GetWeather(ctx context.Context, city string) (domain.Weather, e
 		c.baseURL+"/current.json?key="+c.apiKey+"&q="+url.QueryEscape(city),
 		nil)
 	if err != nil {
-		log.Printf("Failed to create HTTP request: %v", err)
+		log.Printf("Unable to create HTTP request: %v", err)
 		return domain.Weather{}, err
 	}
 
@@ -73,7 +74,7 @@ func (c *Client) GetWeather(ctx context.Context, city string) (domain.Weather, e
 
 	env, err := jsonutil.Decode[currentEnvelope](teeReader)
 	if err != nil {
-		log.Printf("Failed to decode JSON: %v", err)
+		log.Printf("Unable to decode JSON: %v", err)
 		return domain.Weather{}, weather.NewProviderError(c.Name(), 500, err.Error())
 	}
 
@@ -96,14 +97,12 @@ func (c *Client) CheckCityExists(ctx context.Context, city string) error {
 		c.baseURL+"/search.json?key="+c.apiKey+"&q="+url.QueryEscape(city),
 		nil)
 	if err != nil {
-		log.Printf("Failed to create HTTP request: %v", err)
-		return err
+		return fmt.Errorf("creating request: %w", err)
 	}
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		log.Printf("Failed to make request: %v", err)
-		return err
+		return fmt.Errorf("making request: %w", err)
 	}
 	defer func() {
 		if closeErr := resp.Body.Close(); closeErr != nil {
@@ -117,8 +116,7 @@ func (c *Client) CheckCityExists(ctx context.Context, city string) error {
 	var results []searchItem
 	results, err = jsonutil.Decode[[]searchItem](teeReader)
 	if err != nil {
-		log.Printf("Failed to decode results: %v", err)
-		return err
+		return fmt.Errorf("decoding request: %w", err)
 	}
 
 	c.logger.Log(c.Name(), logBuffer.Bytes())

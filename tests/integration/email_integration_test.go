@@ -88,8 +88,7 @@ func clearMailHogMessages(t *testing.T) {
 	client := &http.Client{Timeout: 2 * time.Second}
 	resp, err := client.Do(req)
 	if err != nil {
-		t.Logf("Failed to clear MailHog messages: %v", err)
-		return
+		t.Logf("Unable to clear MailHog messages: %v", err)
 	}
 	defer resp.Body.Close()
 

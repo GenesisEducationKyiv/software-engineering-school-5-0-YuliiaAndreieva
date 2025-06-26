@@ -62,7 +62,7 @@ func (c *Client) GetWeather(ctx context.Context, city string) (domain.Weather, e
 
 	weatherResp, err := jsonutil.Decode[Response](teeReader)
 	if err != nil {
-		log.Printf("Failed to decode openweathermap response: %v", err)
+		log.Printf("Unable to decode openweathermap response: %v", err)
 		return domain.Weather{}, weather.NewProviderError(c.Name(), 500, err.Error())
 	}
 
@@ -84,12 +84,12 @@ func (c *Client) CheckCityExists(ctx context.Context, city string) error {
 	endpoint := fmt.Sprintf("%s/weather?q=%s&appid=%s&units=metric", c.baseURL, url.QueryEscape(city), c.apiKey)
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
 	if err != nil {
-		return err
+		return fmt.Errorf("creating request: %w", err)
 	}
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return err
+		return fmt.Errorf("sending request: %w", err)
 	}
 	defer func() {
 		if closeErr := resp.Body.Close(); closeErr != nil {
@@ -99,7 +99,7 @@ func (c *Client) CheckCityExists(ctx context.Context, city string) error {
 
 	bodyBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return weather.NewProviderError(c.Name(), 500, "failed to read response body")
+		return weather.NewProviderError(c.Name(), 500, "unable to read response body")
 	}
 
 	c.logger.Log(c.Name(), bodyBytes)

@@ -28,7 +28,7 @@ var weatherAPIErrors = map[int]ErrorInfo{
 	LocationNotProvided: {Message: "Location parameter required"},
 	InvalidURL:          {Message: "Invalid request format"},
 	LocationNotFound:    {Message: "City not found"},
-	InvalidKey:          {Message: "Authentication failed"},
+	InvalidKey:          {Message: "Authentication error"},
 	QuotaExceeded:       {Message: "Service temporarily unavailable - quota exceeded"},
 	KeyDisabled:         {Message: "Service temporarily unavailable"},
 	NoAccess:            {Message: "Service feature not available"},

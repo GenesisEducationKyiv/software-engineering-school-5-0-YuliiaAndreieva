@@ -21,7 +21,7 @@ type OpenWeatherErrorInfo struct {
 
 var openWeatherMapErrors = map[int]OpenWeatherErrorInfo{
 	CityNotFound:       {Message: "City not found"},
-	Unauthorized:       {Message: "Authentication failed"},
+	Unauthorized:       {Message: "Authentication error"},
 	RateLimitExceeded:  {Message: "Service temporarily unavailable - rate limit exceeded"},
 	InternalError:      {Message: "Weather service temporarily unavailable"},
 	BadGateway:         {Message: "Weather service temporarily unavailable"},

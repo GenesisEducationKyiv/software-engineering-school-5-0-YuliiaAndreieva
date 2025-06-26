@@ -22,7 +22,7 @@ func (r *cityRepo) Create(ctx context.Context, city domain.City) (domain.City, e
 	query := `INSERT INTO cities (name) VALUES ($1) RETURNING id`
 	err := r.db.QueryRowContext(ctx, query, city.Name).Scan(&city.ID)
 	if err != nil {
-		log.Printf("Failed to create city %s: %v", city.Name, err)
+		log.Printf("Unable to create city %s: %v", city.Name, err)
 		return domain.City{}, err
 	}
 
@@ -41,7 +41,7 @@ func (r *cityRepo) GetByName(ctx context.Context, name string) (domain.City, err
 			log.Printf("City not found: %s", name)
 			return domain.City{}, domain.ErrCityNotFound
 		}
-		log.Printf("Failed to get city %s: %v", name, err)
+		log.Printf("Unable to get city %s: %v", name, err)
 		return domain.City{}, err
 	}
 

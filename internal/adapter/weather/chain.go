@@ -24,13 +24,13 @@ func (h *ProviderHandler) HandleGetWeather(ctx context.Context, city string) (do
 		return weather, nil
 	}
 
-	log.Printf("Provider %s failed: %v. Trying next provider...", h.provider.Name(), err)
+	log.Printf("Provider %s error: %v. Trying next provider...", h.provider.Name(), err)
 
 	if h.next != nil {
 		return h.next.HandleGetWeather(ctx, city)
 	}
 
-	return domain.Weather{}, errors.New("all weatherapi providers failed")
+	return domain.Weather{}, errors.New("all weather providers unavailable")
 }
 
 func (h *ProviderHandler) HandleCheckCityExists(ctx context.Context, city string) error {

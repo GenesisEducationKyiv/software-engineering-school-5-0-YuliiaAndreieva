@@ -13,11 +13,11 @@ import (
 type MockFailingProvider struct{}
 
 func (m *MockFailingProvider) GetWeather(ctx context.Context, city string) (domain.Weather, error) {
-	return domain.Weather{}, errors.New("first provider failed")
+	return domain.Weather{}, errors.New("first provider error")
 }
 
 func (m *MockFailingProvider) CheckCityExists(ctx context.Context, city string) error {
-	return errors.New("first provider failed")
+	return errors.New("first provider error")
 }
 
 func (m *MockFailingProvider) Name() string {
@@ -82,8 +82,8 @@ func TestChainWeatherProvider_AllProvidersFail(t *testing.T) {
 		t.Fatal("Expected error when all providers fail")
 	}
 
-	if err.Error() != "all weatherapi providers failed" {
-		t.Errorf("Expected 'all weatherapi providers failed', got: %s", err.Error())
+	if err.Error() != "all weather providers unavailable" {
+		t.Errorf("Expected 'all weather providers unavailable', got: %s", err.Error())
 	}
 
 	err = chain.CheckCityExists(context.Background(), "Kyiv")

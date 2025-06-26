@@ -31,7 +31,7 @@ func (h *SubscriptionHandler) Subscribe(c *gin.Context) {
 	}
 
 	if err := req.Validate(); err != nil {
-		log.Printf("Validation failed: %v", err)
+		log.Printf("Validation error: %v", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
@@ -44,7 +44,7 @@ func (h *SubscriptionHandler) Subscribe(c *gin.Context) {
 		Frequency: req.Frequency,
 	})
 	if err != nil {
-		log.Printf("Failed to process subscription: %v", err)
+		log.Printf("Unable to process subscription: %v", err)
 		switch {
 		case errors.Is(err, domain.ErrEmailAlreadySubscribed):
 			c.JSON(http.StatusConflict, gin.H{"error": httperrors.ErrEmailAlreadySubscribed.Error()})
@@ -71,7 +71,7 @@ func (h *SubscriptionHandler) Confirm(c *gin.Context) {
 	log.Printf("Received confirmation request")
 
 	if err := h.subscriptionService.Confirm(c, token); err != nil {
-		log.Printf("Failed to confirm subscription: %v", err)
+		log.Printf("Unable to confirm subscription: %v", err)
 		switch {
 		case errors.Is(err, domain.ErrInvalidToken):
 			c.JSON(http.StatusBadRequest, gin.H{"error": httperrors.ErrInvalidToken.Error()})
@@ -98,7 +98,7 @@ func (h *SubscriptionHandler) Unsubscribe(c *gin.Context) {
 	log.Printf("Received unsubscribe request")
 
 	if err := h.subscriptionService.Unsubscribe(c, token); err != nil {
-		log.Printf("Failed to unsubscribe: %v", err)
+		log.Printf("Unable to unsubscribe: %v", err)
 		switch {
 		case errors.Is(err, domain.ErrInvalidToken):
 			c.JSON(http.StatusBadRequest, gin.H{"error": httperrors.ErrInvalidToken.Error()})

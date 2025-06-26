@@ -73,7 +73,7 @@ func (s *SubscriptionServiceImpl) Subscribe(ctx context.Context, opts repository
 
 	token, err := s.tokenSvc.GenerateToken()
 	if err != nil {
-		log.Printf("Failed to generate token: %v", err)
+		log.Printf("Unable to generate token: %v", err)
 		return "", err
 	}
 
@@ -85,14 +85,14 @@ func (s *SubscriptionServiceImpl) Subscribe(ctx context.Context, opts repository
 		IsConfirmed: false,
 	}
 	if err := s.repo.CreateSubscription(ctx, sub); err != nil {
-		log.Printf("Failed to create subscription in repository: %v", err)
+		log.Printf("Unable to create subscription in repository: %v", err)
 		return "", err
 	}
 
 	sub.City = &cityEntity
 
 	if err := s.emailService.SendConfirmationEmail(&sub); err != nil {
-		log.Printf("Failed to send confirmation email: %v", err)
+		log.Printf("Unable to send confirmation email: %v", err)
 		return "", err
 	}
 
@@ -109,7 +109,7 @@ func (s *SubscriptionServiceImpl) Confirm(ctx context.Context, token string) err
 
 	exists, err := s.repo.IsTokenExists(ctx, token)
 	if err != nil {
-		log.Printf("Failed to check token existence: %v", err)
+		log.Printf("Unable to check token existence: %v", err)
 		return err
 	}
 	if !exists {
@@ -118,12 +118,12 @@ func (s *SubscriptionServiceImpl) Confirm(ctx context.Context, token string) err
 
 	sub, err := s.repo.GetSubscriptionByToken(ctx, token)
 	if err != nil {
-		log.Printf("Failed to get subscription: %v", err)
+		log.Printf("Unable to get subscription: %v", err)
 		return err
 	}
 	sub.IsConfirmed = true
 	if err := s.repo.UpdateSubscription(ctx, sub); err != nil {
-		log.Printf("Failed to update subscription confirmation: %v", err)
+		log.Printf("Unable to update subscription confirmation: %v", err)
 		return err
 	}
 
@@ -140,7 +140,7 @@ func (s *SubscriptionServiceImpl) Unsubscribe(ctx context.Context, token string)
 
 	exists, err := s.repo.IsTokenExists(ctx, token)
 	if err != nil {
-		log.Printf("Failed to check token existence: %v", err)
+		log.Printf("Unable to check token existence: %v", err)
 		return err
 	}
 	if !exists {
@@ -148,7 +148,7 @@ func (s *SubscriptionServiceImpl) Unsubscribe(ctx context.Context, token string)
 	}
 
 	if err := s.repo.DeleteSubscription(ctx, token); err != nil {
-		log.Printf("Failed to delete subscription: %v", err)
+		log.Printf("Unable to delete subscription: %v", err)
 		return err
 	}
 

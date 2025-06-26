@@ -43,7 +43,7 @@ func (s *WeatherUpdateServiceImpl) PrepareUpdates(ctx context.Context, frequency
 	for cityName, citySubs := range citySubscriptions {
 		weather, err := s.weatherService.GetWeather(ctx, cityName)
 		if err != nil {
-			log.Printf("Failed to get weather for city %s: %v", cityName, err)
+			log.Printf("Unable to get weather for city %s: %v", cityName, err)
 			continue
 		}
 
