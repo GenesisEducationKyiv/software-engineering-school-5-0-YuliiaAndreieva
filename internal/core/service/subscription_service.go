@@ -43,18 +43,19 @@ func NewSubscriptionService(
 func (s *SubscriptionServiceImpl) Subscribe(ctx context.Context, opts repository.SubscribeOptions) (string, error) {
 	cityEntity, err := s.cityRepo.GetByName(ctx, opts.City)
 	if err != nil {
-		if errors.Is(err, domain.ErrCityNotFound) {
-			if err := s.weatherClient.CheckCityExists(ctx, opts.City); err != nil {
-				if errors.Is(err, domain.ErrCityNotFound) {
-					return "", domain.ErrCityNotFound
-				}
-				return "", err
+		if !errors.Is(err, domain.ErrCityNotFound) {
+			return "", err
+		}
+
+		if err := s.weatherClient.CheckCityExists(ctx, opts.City); err != nil {
+			if errors.Is(err, domain.ErrCityNotFound) {
+				return "", domain.ErrCityNotFound
 			}
-			cityEntity, err = s.cityRepo.Create(ctx, domain.City{Name: opts.City})
-			if err != nil {
-				return "", err
-			}
-		} else {
+			return "", err
+		}
+
+		cityEntity, err = s.cityRepo.Create(ctx, domain.City{Name: opts.City})
+		if err != nil {
 			return "", err
 		}
 	}
