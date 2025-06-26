@@ -5,18 +5,14 @@ import (
 	"database/sql"
 	"log"
 	"weather-api/internal/core/domain"
+	"weather-api/internal/core/repository"
 )
-
-type CityRepository interface {
-	Create(ctx context.Context, city domain.City) (domain.City, error)
-	GetByName(ctx context.Context, name string) (domain.City, error)
-}
 
 type cityRepo struct {
 	db *sql.DB
 }
 
-func NewCityRepository(db *sql.DB) CityRepository {
+func NewCityRepository(db *sql.DB) repository.CityRepository {
 	return &cityRepo{db: db}
 }
 

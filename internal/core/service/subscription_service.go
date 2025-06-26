@@ -4,9 +4,9 @@ import (
 	"context"
 	"errors"
 	"log"
-	"weather-api/internal/adapter/repository/postgres"
 	"weather-api/internal/adapter/weather"
 	"weather-api/internal/core/domain"
+	"weather-api/internal/core/repository"
 )
 
 type SubscriptionService interface {
@@ -17,16 +17,16 @@ type SubscriptionService interface {
 }
 
 type SubscriptionServiceImpl struct {
-	repo          postgres.SubscriptionRepository
+	repo          repository.SubscriptionRepository
 	weatherClient weather.Provider
 	tokenSvc      TokenService
-	cityRepo      postgres.CityRepository
+	cityRepo      repository.CityRepository
 	emailService  EmailService
 }
 
 func NewSubscriptionService(
-	repo postgres.SubscriptionRepository,
-	cityRepo postgres.CityRepository,
+	repo repository.SubscriptionRepository,
+	cityRepo repository.CityRepository,
 	weatherClient weather.Provider,
 	tokenSvc TokenService,
 	emailService EmailService,

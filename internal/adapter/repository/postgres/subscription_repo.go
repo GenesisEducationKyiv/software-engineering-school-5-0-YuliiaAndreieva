@@ -6,22 +6,14 @@ import (
 	"errors"
 	"log"
 	"weather-api/internal/core/domain"
+	"weather-api/internal/core/repository"
 )
 
-type SubscriptionRepository interface {
-	CreateSubscription(ctx context.Context, sub domain.Subscription) error
-	GetSubscriptionByToken(ctx context.Context, token string) (domain.Subscription, error)
-	UpdateSubscription(ctx context.Context, sub domain.Subscription) error
-	DeleteSubscription(ctx context.Context, token string) error
-	GetSubscriptionsByFrequency(ctx context.Context, frequency string) ([]domain.Subscription, error)
-	IsTokenExists(ctx context.Context, token string) (bool, error)
-	IsSubscriptionExists(ctx context.Context, email string, cityID int64, frequency domain.Frequency) (bool, error)
-}
 type subscriptionRepository struct {
 	db *sql.DB
 }
 
-func NewSubscriptionRepo(db *sql.DB) SubscriptionRepository {
+func NewSubscriptionRepo(db *sql.DB) repository.SubscriptionRepository {
 	return &subscriptionRepository{db: db}
 }
 
