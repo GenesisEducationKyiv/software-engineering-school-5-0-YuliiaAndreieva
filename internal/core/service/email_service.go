@@ -1,6 +1,8 @@
 package service
 
 import (
+	"errors"
+	"fmt"
 	"log"
 	"weather-api/internal/adapter/email"
 	"weather-api/internal/core/domain"
@@ -37,7 +39,8 @@ func (s *EmailServiceImpl) SendUpdates(updates []domain.WeatherUpdate) error {
 			Subject: subject,
 			Body:    htmlBody,
 		}); err != nil {
-			log.Printf("Unable to send email to %s: %v", update.Subscription.Email, err)
+			msg := fmt.Sprintf("unable to send email to %s: %v", update.Subscription.Email, err)
+			log.Print(msg)
 			continue
 		}
 	}
@@ -53,8 +56,9 @@ func (s *EmailServiceImpl) SendConfirmationEmail(subscription *domain.Subscripti
 		Subject: subject,
 		Body:    htmlBody,
 	}); err != nil {
-		log.Printf("Unable to send confirmation email to %s: %v", subscription.Email, err)
-		return err
+		msg := fmt.Sprintf("unable to send confirmation email to %s: %v", subscription.Email, err)
+		log.Print(msg)
+		return errors.New(msg)
 	}
 
 	return nil

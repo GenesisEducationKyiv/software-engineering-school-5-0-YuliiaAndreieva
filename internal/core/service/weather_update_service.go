@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"weather-api/internal/core/domain"
 )
@@ -43,7 +44,8 @@ func (s *WeatherUpdateServiceImpl) PrepareUpdates(ctx context.Context, frequency
 	for cityName, citySubs := range citySubscriptions {
 		weather, err := s.weatherService.GetWeather(ctx, cityName)
 		if err != nil {
-			log.Printf("Unable to get weather for city %s: %v", cityName, err)
+			msg := fmt.Sprintf("unable to get weather for city %s: %v", cityName, err)
+			log.Print(msg)
 			continue
 		}
 

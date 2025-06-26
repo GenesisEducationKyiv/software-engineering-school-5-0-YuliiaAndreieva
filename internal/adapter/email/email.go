@@ -1,6 +1,8 @@
 package email
 
 import (
+	"errors"
+	"fmt"
 	"log"
 	"net/smtp"
 	"strconv"
@@ -53,8 +55,9 @@ func (e *emailSender) SendEmail(opts SendEmailOptions) error {
 	addr := e.host + ":" + strconv.Itoa(e.port)
 	err := msg.Send(addr, smtp.PlainAuth("", e.user, e.pass, e.host))
 	if err != nil {
-		log.Printf("Unable to send email to %s: %v", opts.To, err)
-		return err
+		msg := fmt.Sprintf("unable to send email to %s: %v", opts.To, err)
+		log.Print(msg)
+		return errors.New(msg)
 	}
 
 	log.Printf("Successfully sent email to: %s", opts.To)

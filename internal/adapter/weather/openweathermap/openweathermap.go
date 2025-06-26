@@ -3,6 +3,7 @@ package openweathermap
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -44,12 +45,16 @@ func (c *Client) GetWeather(ctx context.Context, city string) (domain.Weather, e
 	endpoint := fmt.Sprintf("%s/weather?q=%s&appid=%s&units=metric", c.baseURL, url.QueryEscape(city), c.apiKey)
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
 	if err != nil {
-		return domain.Weather{}, err
+		msg := fmt.Sprintf("unable to create HTTP request for city %s: %v", city, err)
+		log.Print(msg)
+		return domain.Weather{}, errors.New(msg)
 	}
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return domain.Weather{}, err
+		msg := fmt.Sprintf("unable to make HTTP request for city %s: %v", city, err)
+		log.Print(msg)
+		return domain.Weather{}, errors.New(msg)
 	}
 	defer func() {
 		if closeErr := resp.Body.Close(); closeErr != nil {
@@ -62,8 +67,9 @@ func (c *Client) GetWeather(ctx context.Context, city string) (domain.Weather, e
 
 	weatherResp, err := jsonutil.Decode[Response](teeReader)
 	if err != nil {
-		log.Printf("Unable to decode openweathermap response: %v", err)
-		return domain.Weather{}, weather.NewProviderError(c.Name(), 500, err.Error())
+		msg := fmt.Sprintf("unable to decode openweathermap response: %v", err)
+		log.Print(msg)
+		return domain.Weather{}, weather.NewProviderError(c.Name(), 500, msg)
 	}
 
 	c.logger.Log(c.Name(), logBuffer.Bytes())
@@ -84,12 +90,16 @@ func (c *Client) CheckCityExists(ctx context.Context, city string) error {
 	endpoint := fmt.Sprintf("%s/weather?q=%s&appid=%s&units=metric", c.baseURL, url.QueryEscape(city), c.apiKey)
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
 	if err != nil {
-		return fmt.Errorf("creating request: %w", err)
+		msg := fmt.Sprintf("creating request: %v", err)
+		log.Print(msg)
+		return errors.New(msg)
 	}
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return fmt.Errorf("sending request: %w", err)
+		msg := fmt.Sprintf("sending request: %v", err)
+		log.Print(msg)
+		return errors.New(msg)
 	}
 	defer func() {
 		if closeErr := resp.Body.Close(); closeErr != nil {

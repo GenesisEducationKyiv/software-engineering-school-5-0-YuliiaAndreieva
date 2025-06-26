@@ -3,6 +3,8 @@ package postgres
 import (
 	"context"
 	"database/sql"
+	"errors"
+	"fmt"
 	"log"
 	"weather-api/internal/core/domain"
 	"weather-api/internal/core/repository"
@@ -22,8 +24,9 @@ func (r *cityRepo) Create(ctx context.Context, city domain.City) (domain.City, e
 	query := `INSERT INTO cities (name) VALUES ($1) RETURNING id`
 	err := r.db.QueryRowContext(ctx, query, city.Name).Scan(&city.ID)
 	if err != nil {
-		log.Printf("Unable to create city %s: %v", city.Name, err)
-		return domain.City{}, err
+		msg := fmt.Sprintf("unable to create city %s: %v", city.Name, err)
+		log.Print(msg)
+		return domain.City{}, errors.New(msg)
 	}
 
 	log.Printf("Successfully created city: %s with ID: %d", city.Name, city.ID)
@@ -41,8 +44,9 @@ func (r *cityRepo) GetByName(ctx context.Context, name string) (domain.City, err
 			log.Printf("City not found: %s", name)
 			return domain.City{}, domain.ErrCityNotFound
 		}
-		log.Printf("Unable to get city %s: %v", name, err)
-		return domain.City{}, err
+		msg := fmt.Sprintf("unable to get city %s: %v", name, err)
+		log.Print(msg)
+		return domain.City{}, errors.New(msg)
 	}
 
 	log.Printf("Successfully found city: %s with ID: %d", city.Name, city.ID)

@@ -1,6 +1,7 @@
 package logger
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -15,13 +16,17 @@ type FileLogger struct {
 
 func NewFileLogger(logDir, fileName string) (*FileLogger, error) {
 	if err := os.MkdirAll(logDir, 0755); err != nil {
-		return nil, fmt.Errorf("unable to create log directory: %w", err)
+		msg := fmt.Sprintf("unable to create log directory: %v", err)
+		log.Print(msg)
+		return nil, errors.New(msg)
 	}
 
 	filePath := filepath.Join(logDir, fileName)
 	file, err := os.OpenFile(filePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
-		return nil, fmt.Errorf("unable to open log file: %w", err)
+		msg := fmt.Sprintf("unable to open log file: %v", err)
+		log.Print(msg)
+		return nil, errors.New(msg)
 	}
 
 	return &FileLogger{

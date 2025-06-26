@@ -3,6 +3,7 @@ package weatherapi
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -55,13 +56,16 @@ func (c *Client) GetWeather(ctx context.Context, city string) (domain.Weather, e
 		c.baseURL+"/current.json?key="+c.apiKey+"&q="+url.QueryEscape(city),
 		nil)
 	if err != nil {
-		log.Printf("Unable to create HTTP request: %v", err)
-		return domain.Weather{}, err
+		msg := fmt.Sprintf("unable to create HTTP request: %v", err)
+		log.Print(msg)
+		return domain.Weather{}, errors.New(msg)
 	}
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return domain.Weather{}, err
+		msg := fmt.Sprintf("unable to make HTTP request for city %s: %v", city, err)
+		log.Print(msg)
+		return domain.Weather{}, errors.New(msg)
 	}
 	defer func() {
 		if closeErr := resp.Body.Close(); closeErr != nil {
@@ -74,8 +78,9 @@ func (c *Client) GetWeather(ctx context.Context, city string) (domain.Weather, e
 
 	env, err := jsonutil.Decode[currentEnvelope](teeReader)
 	if err != nil {
-		log.Printf("Unable to decode JSON: %v", err)
-		return domain.Weather{}, weather.NewProviderError(c.Name(), 500, err.Error())
+		msg := fmt.Sprintf("unable to decode JSON: %v", err)
+		log.Print(msg)
+		return domain.Weather{}, weather.NewProviderError(c.Name(), 500, msg)
 	}
 
 	c.logger.Log(c.Name(), logBuffer.Bytes())
@@ -97,12 +102,16 @@ func (c *Client) CheckCityExists(ctx context.Context, city string) error {
 		c.baseURL+"/search.json?key="+c.apiKey+"&q="+url.QueryEscape(city),
 		nil)
 	if err != nil {
-		return fmt.Errorf("creating request: %w", err)
+		msg := fmt.Sprintf("creating request: %v", err)
+		log.Print(msg)
+		return errors.New(msg)
 	}
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return fmt.Errorf("making request: %w", err)
+		msg := fmt.Sprintf("unable to make HTTP request for city %s: %v", city, err)
+		log.Print(msg)
+		return errors.New(msg)
 	}
 	defer func() {
 		if closeErr := resp.Body.Close(); closeErr != nil {
@@ -116,7 +125,9 @@ func (c *Client) CheckCityExists(ctx context.Context, city string) error {
 	var results []searchItem
 	results, err = jsonutil.Decode[[]searchItem](teeReader)
 	if err != nil {
-		return fmt.Errorf("decoding request: %w", err)
+		msg := fmt.Sprintf("decoding request: %v", err)
+		log.Print(msg)
+		return errors.New(msg)
 	}
 
 	c.logger.Log(c.Name(), logBuffer.Bytes())

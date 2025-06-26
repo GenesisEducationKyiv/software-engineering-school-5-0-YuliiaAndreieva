@@ -2,6 +2,8 @@ package service
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"log"
 	"weather-api/internal/core/domain"
 )
@@ -21,13 +23,15 @@ func NewSchedulerService(weatherUpdateService WeatherUpdateService, emailService
 func (s *SchedulerService) SendWeatherUpdates(ctx context.Context, frequency domain.Frequency) error {
 	updates, err := s.weatherUpdateService.PrepareUpdates(ctx, frequency)
 	if err != nil {
-		log.Printf("Unable to prepare updates for frequency %s: %v", frequency, err)
-		return err
+		msg := fmt.Sprintf("unable to prepare updates for frequency %s: %v", frequency, err)
+		log.Print(msg)
+		return errors.New(msg)
 	}
 
 	if err := s.emailService.SendUpdates(updates); err != nil {
-		log.Printf("Unable to send updates for frequency %s: %v", frequency, err)
-		return err
+		msg := fmt.Sprintf("unable to send updates for frequency %s: %v", frequency, err)
+		log.Print(msg)
+		return errors.New(msg)
 	}
 
 	return nil
