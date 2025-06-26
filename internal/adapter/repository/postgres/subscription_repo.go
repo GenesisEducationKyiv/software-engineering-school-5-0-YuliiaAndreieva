@@ -37,7 +37,7 @@ func (r *subscriptionRepository) GetSubscriptionByToken(ctx context.Context, tok
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			log.Printf("No subscription found")
-			return domain.Subscription{}, errors.New("subscription not found")
+			return domain.Subscription{}, domain.ErrSubscriptionNotFound
 		}
 		log.Printf("Error getting subscription: %v", err)
 		return domain.Subscription{}, err
@@ -63,7 +63,7 @@ func (r *subscriptionRepository) UpdateSubscription(ctx context.Context, sub dom
 
 	if rowsAffected == 0 {
 		log.Printf("No subscription found to update")
-		return errors.New("subscription not found")
+		return domain.ErrSubscriptionNotFound
 	}
 
 	log.Printf("Successfully updated subscription")
@@ -87,7 +87,7 @@ func (r *subscriptionRepository) DeleteSubscription(ctx context.Context, token s
 
 	if rowsAffected == 0 {
 		log.Printf("No subscription found to delete")
-		return errors.New("subscription not found")
+		return domain.ErrSubscriptionNotFound
 	}
 
 	log.Printf("Successfully deleted subscription")

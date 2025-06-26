@@ -10,6 +10,7 @@ var (
 	ErrEmailAlreadySubscribed = errors.New("email already subscribed")
 	ErrInvalidToken           = errors.New("invalid token")
 	ErrTokenNotFound          = errors.New("token not found")
+	ErrSubscriptionNotFound   = errors.New("subscription not found")
 )
 
 type ValidationError struct {
