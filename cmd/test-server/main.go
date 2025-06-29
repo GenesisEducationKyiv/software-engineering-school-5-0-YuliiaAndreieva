@@ -1,0 +1,194 @@
+package main
+
+import (
+	"context"
+	"database/sql"
+	"errors"
+	"fmt"
+	"io"
+	"log"
+	"net/http"
+	"strconv"
+	"strings"
+	"time"
+	"weather-api/internal/util/configutil"
+
+	"weather-api/internal/adapter/email"
+	"weather-api/internal/adapter/repository/postgres"
+	"weather-api/internal/adapter/weather"
+	"weather-api/internal/core/domain"
+	"weather-api/internal/core/service"
+	httphandler "weather-api/internal/handler/http"
+
+	"github.com/gin-gonic/gin"
+	"github.com/golang-migrate/migrate/v4"
+	_ "github.com/golang-migrate/migrate/v4/database/postgres"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
+	"github.com/robfig/cron/v3"
+)
+
+type MockHTTPClient struct{}
+
+func (m *MockHTTPClient) Do(req *http.Request) (*http.Response, error) {
+	url := req.URL.String()
+	var cityName string
+	if strings.Contains(url, "q=") {
+		parts := strings.Split(url, "q=")
+		if len(parts) > 1 {
+			cityName = strings.Split(parts[1], "&")[0]
+		}
+	}
+
+	if cityName == "" {
+		cityName = "Kyiv"
+	}
+
+	weatherResponse := fmt.Sprintf(`{
+		"location": {
+			"name": "%s",
+			"region": "Test Region",
+			"country": "Ukraine",
+			"lat": 50.45,
+			"lon": 30.52,
+			"localtime": "2024-01-01 12:00"
+		},
+		"current": {
+			"temp_c": 20.5,
+			"humidity": 60,
+			"condition": {
+				"text": "Sunny"
+			}
+		}
+	}`, cityName)
+
+	searchResponse := fmt.Sprintf(`[
+		{
+			"id": 1,
+			"name": "%s",
+			"region": "Test Region",
+			"country": "Ukraine",
+			"lat": 50.45,
+			"lon": 30.52
+		}
+	]`, cityName)
+
+	var responseBody string
+	if strings.Contains(req.URL.Path, "/search.json") {
+		responseBody = searchResponse
+	} else {
+		responseBody = weatherResponse
+	}
+
+	return &http.Response{
+		StatusCode: http.StatusOK,
+		Body:       io.NopCloser(strings.NewReader(responseBody)),
+		Header:     make(http.Header),
+	}, nil
+}
+
+func main() {
+	cfg, err := configutil.LoadConfig()
+	if err != nil {
+		log.Fatalf("Failed to load config: %v", err)
+	}
+
+	db, err := sql.Open("postgres", cfg.DBConnStr)
+	if err != nil {
+		log.Fatalf("Failed to connect to DB: %v", err)
+	}
+	defer func() {
+		if err := db.Close(); err != nil {
+			log.Printf("Error closing database connection: %v", err)
+		}
+	}()
+
+	m, err := migrate.New("file://migrations", cfg.DBConnStr)
+	if err != nil {
+		log.Fatalf("Failed to initialize migration: %v", err)
+	}
+	if err := m.Up(); err != nil && !errors.Is(err, migrate.ErrNoChange) {
+		log.Fatalf("Failed to apply migrations: %v", err)
+	}
+
+	emailAdapter := email.NewEmailSender(cfg.SMTPHost, cfg.SMTPPort, cfg.SMTPUser, cfg.SMTPPass)
+
+	weatherAdapter := weather.NewWeatherAPIClient(
+		cfg.WeatherAPIKey,
+		"http://api.weatherapi.com/v1",
+		&MockHTTPClient{},
+	)
+
+	subscriptionRepo := postgres.NewSubscriptionRepo(db)
+	cityRepo := postgres.NewCityRepository(db)
+
+	weatherService := service.NewWeatherService(weatherAdapter)
+	tokenService := service.NewTokenService()
+	emailService := service.NewEmailService(emailAdapter)
+
+	subscriptionService := service.NewSubscriptionService(
+		subscriptionRepo,
+		cityRepo,
+		weatherAdapter,
+		tokenService,
+		emailService,
+	)
+
+	weatherUpdateService := service.NewWeatherUpdateService(subscriptionService, weatherService)
+
+	weatherHandler := httphandler.NewWeatherHandler(weatherService)
+	subscriptionHandler := httphandler.NewSubscriptionHandler(subscriptionService)
+
+	r := gin.Default()
+
+	r.Static("/web", "./web")
+
+	api := r.Group("/api")
+	{
+		api.GET("/weather", weatherHandler.GetWeather)
+		api.POST("/subscribe", subscriptionHandler.Subscribe)
+		api.GET("/confirm/:token", subscriptionHandler.Confirm)
+		api.GET("/unsubscribe/:token", subscriptionHandler.Unsubscribe)
+	}
+
+	r.NoRoute(func(c *gin.Context) {
+		c.File("./web/index.html")
+	})
+
+	schedulerService := service.NewSchedulerService(weatherUpdateService, emailService)
+	cron := cron.New()
+	_, err = cron.AddFunc("* * * * *", func() {
+		err := schedulerService.SendWeatherUpdates(context.Background(), domain.FrequencyHourly)
+		if err != nil {
+			return
+		}
+	})
+	if err != nil {
+		return
+	}
+
+	_, err = cron.AddFunc("0 0 * * *", func() {
+		err := schedulerService.SendWeatherUpdates(context.Background(), domain.FrequencyDaily)
+		if err != nil {
+			return
+		}
+	})
+	if err != nil {
+		return
+	}
+
+	cron.Start()
+
+	port := strconv.Itoa(cfg.Port)
+
+	srv := &http.Server{
+		Addr:         ":" + port,
+		Handler:      r,
+		ReadTimeout:  10 * time.Second,
+		WriteTimeout: 10 * time.Second,
+	}
+
+	log.Printf("Test server running on %s (with mocked Weather API)", srv.Addr)
+	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		log.Fatalf("Server failed: %v", err)
+	}
+}

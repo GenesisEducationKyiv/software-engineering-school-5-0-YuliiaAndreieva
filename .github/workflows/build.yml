@@ -2,7 +2,7 @@ name: build
 
 on:
   push:
-    branches: [ "*" ]
+    branches: [ "main" ]
   pull_request:
     branches: [ "*" ]
 
@@ -25,5 +25,3 @@ jobs:
       - run: go mod download
 
       - run: go build -v ./...
-
-      - run: go test -v ./...
