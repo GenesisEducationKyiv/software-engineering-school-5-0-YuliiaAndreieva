@@ -1,11 +1,12 @@
-package util
+package emailutil
 
 import (
 	"strconv"
+	"weather-api/internal/util/configutil"
 )
 
 func BuildConfirmationEmail(city, token string) (subject, body string) {
-	baseURL := GetBaseURL()
+	baseURL := configutil.GetBaseURL()
 	confirmURL := baseURL + "/api/confirm/" + token
 	subject = "Confirm Subscription"
 	body = "<html><body>" +
@@ -17,16 +18,24 @@ func BuildConfirmationEmail(city, token string) (subject, body string) {
 	return
 }
 
-func BuildWeatherUpdateEmail(city string, temperature float64, humidity int, description, token string) (subject, body string) {
-	baseURL := GetBaseURL()
-	unsubscribeURL := baseURL + "/api/unsubscribe/" + token
+type WeatherUpdateEmailOptions struct {
+	City        string
+	Temperature float64
+	Humidity    int
+	Description string
+	Token       string
+}
+
+func BuildWeatherUpdateEmail(opts WeatherUpdateEmailOptions) (subject, body string) {
+	baseURL := configutil.GetBaseURL()
+	unsubscribeURL := baseURL + "/api/unsubscribe/" + opts.Token
 	subject = "Weather Update"
-	tempStr := strconv.FormatFloat(temperature, 'f', 2, 64)
-	humidStr := strconv.Itoa(humidity)
+	tempStr := strconv.FormatFloat(opts.Temperature, 'f', 2, 64)
+	humidStr := strconv.Itoa(opts.Humidity)
 
 	body = "<html><body>" +
-		"<p>Weather in " + city + ": Temp " + tempStr + "°C, Humidity " +
-		humidStr + "%, " + description + "</p>" +
+		"<p>Weather in " + opts.City + ": Temp " + tempStr + "°C, Humidity " +
+		humidStr + "%, " + opts.Description + "</p>" +
 		`<p><a href="` + unsubscribeURL +
 		`" style="color: #0066cc; text-decoration: underline;">Unsubscribe</a></p>` +
 		"</body></html>"

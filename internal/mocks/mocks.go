@@ -2,7 +2,9 @@ package mocks
 
 import (
 	"context"
+	"weather-api/internal/adapter/email"
 	"weather-api/internal/core/domain"
+	"weather-api/internal/core/repository"
 
 	"github.com/stretchr/testify/mock"
 )
@@ -21,6 +23,11 @@ func (m *MockSubscriptionRepository) CreateSubscription(ctx context.Context, sub
 	return args.Error(0)
 }
 
+func (m *MockSubscriptionRepository) UpdateLastSentAt(ctx context.Context, id int64) error {
+	args := m.Called(ctx, id)
+	return args.Error(0)
+}
+
 func (m *MockSubscriptionRepository) GetSubscriptionByToken(ctx context.Context, token string) (domain.Subscription, error) {
 	args := m.Called(ctx, token)
 	return args.Get(0).(domain.Subscription), args.Error(1)
@@ -36,8 +43,8 @@ func (m *MockSubscriptionRepository) DeleteSubscription(ctx context.Context, tok
 	return args.Error(0)
 }
 
-func (m *MockSubscriptionRepository) IsEmailSubscribed(ctx context.Context, email string) (bool, error) {
-	args := m.Called(ctx, email)
+func (m *MockSubscriptionRepository) IsSubscriptionExists(ctx context.Context, opts repository.IsSubscriptionExistsOptions) (bool, error) {
+	args := m.Called(ctx, opts)
 	return args.Bool(0), args.Error(1)
 }
 
@@ -46,12 +53,27 @@ func (m *MockSubscriptionRepository) IsTokenExists(ctx context.Context, token st
 	return args.Bool(0), args.Error(1)
 }
 
-type MockWeatherService struct {
-	mock.Mock
+type MockWeatherProvider struct{ mock.Mock }
+
+func (m *MockWeatherProvider) GetWeather(ctx context.Context, city string) (domain.Weather, error) {
+	args := m.Called(ctx, city)
+	return args.Get(0).(domain.Weather), args.Error(1)
 }
 
-func (m *MockWeatherService) GetWeather(city string) (domain.Weather, error) {
-	args := m.Called(city)
+func (m *MockWeatherProvider) CheckCityExists(ctx context.Context, city string) error {
+	args := m.Called(ctx, city)
+	return args.Error(0)
+}
+
+func (m *MockWeatherProvider) Name() string {
+	args := m.Called()
+	return args.String(0)
+}
+
+type MockWeatherService struct{ mock.Mock }
+
+func (s *MockWeatherService) GetWeather(ctx context.Context, city string) (domain.Weather, error) {
+	args := s.Called(ctx, city)
 	return args.Get(0).(domain.Weather), args.Error(1)
 }
 
@@ -59,8 +81,8 @@ type MockEmailService struct {
 	mock.Mock
 }
 
-func (m *MockEmailService) SendEmail(to, subject, body string) error {
-	args := m.Called(to, subject, body)
+func (m *MockEmailService) SendEmail(opts email.SendEmailOptions) error {
+	args := m.Called(opts)
 	return args.Error(0)
 }
 
@@ -71,4 +93,15 @@ type MockTokenService struct {
 func (m *MockTokenService) GenerateToken() (string, error) {
 	args := m.Called()
 	return args.String(0), args.Error(1)
+}
+
+type MockCityRepo struct{ mock.Mock }
+
+func (m *MockCityRepo) GetByName(ctx context.Context, name string) (domain.City, error) {
+	args := m.Called(ctx, name)
+	return args.Get(0).(domain.City), args.Error(1)
+}
+func (m *MockCityRepo) Create(ctx context.Context, city domain.City) (domain.City, error) {
+	args := m.Called(ctx, city)
+	return args.Get(0).(domain.City), args.Error(1)
 }

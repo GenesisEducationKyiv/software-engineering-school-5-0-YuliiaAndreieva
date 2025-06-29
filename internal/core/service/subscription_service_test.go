@@ -1,3 +1,6 @@
+//go:build unit
+// +build unit
+
 package service
 
 import (
@@ -6,251 +9,297 @@ import (
 	"testing"
 	"weather-api/internal/mocks"
 
+	"weather-api/internal/core/domain"
+	"weather-api/internal/core/repository"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-
-	"weather-api/internal/core/domain"
-	"weather-api/internal/util"
 )
+
+type MockEmailNotifier struct {
+	mock.Mock
+}
+
+func (m *MockEmailNotifier) SendConfirmationEmail(subscription *domain.Subscription) error {
+	args := m.Called(subscription)
+	return args.Error(0)
+}
+
+func (m *MockEmailNotifier) SendUpdates(updates []domain.WeatherUpdate) error {
+	args := m.Called(updates)
+	return args.Error(0)
+}
 
 func TestSubscriptionService_Subscribe(t *testing.T) {
 	ctx := context.Background()
-	email := "user1@example.com"
-	city := "Kyiv"
-	frequency := domain.FrequencyDaily
+	const (
+		email    = "user@example.com"
+		cityName = "Kyiv"
+		tokenStr = "token123"
+	)
+	cityRow := domain.City{ID: 1, Name: cityName}
 
 	tests := []struct {
-		name          string
-		email         string
-		city          string
-		frequency     domain.Frequency
-		setupMocks    func(repo *mocks.MockSubscriptionRepository, weatherSvc *mocks.MockWeatherService, emailSvc *mocks.MockEmailService, tokenSvc *mocks.MockTokenService)
-		verifyMocks   func(t *testing.T, repo *mocks.MockSubscriptionRepository, weatherSvc *mocks.MockWeatherService, emailSvc *mocks.MockEmailService, tokenSvc *mocks.MockTokenService)
+		name       string
+		setupMocks func(
+			subRepo *mocks.MockSubscriptionRepository,
+			cityRepo *mocks.MockCityRepo,
+			weatherProv *mocks.MockWeatherProvider,
+			emailNotifier *MockEmailNotifier,
+			tokenSvc *mocks.MockTokenService,
+		)
 		expectedToken string
-		expectedError error
+		expectedErr   error
 	}{
 		{
-			name:      "success",
-			email:     email,
-			city:      city,
-			frequency: frequency,
-			setupMocks: func(repo *mocks.MockSubscriptionRepository, weatherSvc *mocks.MockWeatherService, emailSvc *mocks.MockEmailService, tokenSvc *mocks.MockTokenService) {
-				token := "token123"
-				repo.On("IsEmailSubscribed", ctx, email).Return(false, nil)
-				weatherSvc.On("GetWeather", city).Return(domain.Weather{Temperature: 20.5, Humidity: 60, Description: "Sunny"}, nil)
-				tokenSvc.On("GenerateToken").Return(token, nil)
+			name: "happy path – city already in database",
+			setupMocks: func(subRepo *mocks.MockSubscriptionRepository, cityRepo *mocks.MockCityRepo,
+				weatherProv *mocks.MockWeatherProvider, emailNotifier *MockEmailNotifier,
+				tokenSvc *mocks.MockTokenService) {
+
+				cityRepo.On("GetByName", ctx, cityName).Return(cityRow, nil)
+
+				subRepo.On("IsSubscriptionExists", ctx, repository.IsSubscriptionExistsOptions{
+					Email:     email,
+					CityID:    cityRow.ID,
+					Frequency: domain.FrequencyDaily,
+				}).Return(false, nil)
+
+				tokenSvc.On("GenerateToken").Return(tokenStr, nil)
+
 				sub := domain.Subscription{
 					Email:       email,
-					City:        city,
-					Frequency:   frequency,
-					Token:       token,
+					CityID:      cityRow.ID,
+					Frequency:   domain.FrequencyDaily,
+					Token:       tokenStr,
 					IsConfirmed: false,
 				}
-				repo.On("CreateSubscription", ctx, sub).Return(nil)
-				subject, body := util.BuildConfirmationEmail(city, token)
-				emailSvc.On("SendEmail", email, subject, body).Return(nil)
+				subRepo.On("CreateSubscription", ctx, sub).Return(nil)
+
+				expectedSub := sub
+				expectedSub.City = &cityRow
+				emailNotifier.On("SendConfirmationEmail", &expectedSub).Return(nil)
 			},
-			verifyMocks: func(t *testing.T, repo *mocks.MockSubscriptionRepository, weatherSvc *mocks.MockWeatherService, emailSvc *mocks.MockEmailService, tokenSvc *mocks.MockTokenService) {
-				tokenSvc.AssertExpectations(t)
-				repo.AssertExpectations(t)
-				emailSvc.AssertExpectations(t)
-				weatherSvc.AssertExpectations(t)
-			},
-			expectedToken: "token123",
-			expectedError: nil,
+			expectedToken: tokenStr,
+			expectedErr:   nil,
 		},
 		{
-			name:      "email already subscribed",
-			email:     email,
-			city:      city,
-			frequency: frequency,
-			setupMocks: func(repo *mocks.MockSubscriptionRepository, weatherSvc *mocks.MockWeatherService, emailSvc *mocks.MockEmailService, tokenSvc *mocks.MockTokenService) {
-				repo.On("IsEmailSubscribed", ctx, email).Return(true, nil)
+			name: "city is not in database – CheckCityExists returns nil",
+			setupMocks: func(subRepo *mocks.MockSubscriptionRepository, cityRepo *mocks.MockCityRepo,
+				weatherProv *mocks.MockWeatherProvider, emailNotifier *MockEmailNotifier,
+				tokenSvc *mocks.MockTokenService) {
+
+				cityRepo.On("GetByName", ctx, cityName).
+					Return(domain.City{}, domain.ErrCityNotFound)
+
+				weatherProv.On("CheckCityExists", ctx, cityName).Return(nil)
+
+				cityRepo.On("Create", ctx, domain.City{Name: cityName}).
+					Return(cityRow, nil)
+
+				subRepo.On("IsSubscriptionExists", ctx, repository.IsSubscriptionExistsOptions{
+					Email:     email,
+					CityID:    cityRow.ID,
+					Frequency: domain.FrequencyDaily,
+				}).Return(false, nil)
+
+				tokenSvc.On("GenerateToken").Return(tokenStr, nil)
+
+				sub := domain.Subscription{
+					Email:       email,
+					CityID:      cityRow.ID,
+					Frequency:   domain.FrequencyDaily,
+					Token:       tokenStr,
+					IsConfirmed: false,
+				}
+				subRepo.On("CreateSubscription", ctx, sub).Return(nil)
+
+				expectedSub := sub
+				expectedSub.City = &cityRow
+				emailNotifier.On("SendConfirmationEmail", &expectedSub).Return(nil)
 			},
-			verifyMocks: func(t *testing.T, repo *mocks.MockSubscriptionRepository, weatherSvc *mocks.MockWeatherService, emailSvc *mocks.MockEmailService, tokenSvc *mocks.MockTokenService) {
-				repo.AssertExpectations(t)
-				weatherSvc.AssertNotCalled(t, "GetWeather", mock.Anything)
-				emailSvc.AssertNotCalled(t, "SendEmail", mock.Anything, mock.Anything, mock.Anything)
-				tokenSvc.AssertNotCalled(t, "GenerateToken")
+			expectedToken: tokenStr,
+			expectedErr:   nil,
+		},
+		{
+			name: "email already subscribed",
+			setupMocks: func(subRepo *mocks.MockSubscriptionRepository, cityRepo *mocks.MockCityRepo,
+				weatherProv *mocks.MockWeatherProvider, emailNotifier *MockEmailNotifier,
+				tokenSvc *mocks.MockTokenService) {
+
+				cityRepo.On("GetByName", ctx, cityName).Return(cityRow, nil)
+				subRepo.On("IsSubscriptionExists", ctx, repository.IsSubscriptionExistsOptions{
+					Email:     email,
+					CityID:    cityRow.ID,
+					Frequency: domain.FrequencyDaily,
+				}).Return(true, nil)
 			},
 			expectedToken: "",
-			expectedError: domain.ErrEmailAlreadySubscribed,
+			expectedErr:   domain.ErrEmailAlreadySubscribed,
+		},
+		{
+			name: "ValidateCity returns not found",
+			setupMocks: func(subRepo *mocks.MockSubscriptionRepository, cityRepo *mocks.MockCityRepo,
+				weatherProv *mocks.MockWeatherProvider, emailNotifier *MockEmailNotifier,
+				tokenSvc *mocks.MockTokenService) {
+
+				cityRepo.On("GetByName", ctx, cityName).
+					Return(domain.City{}, domain.ErrCityNotFound)
+				weatherProv.On("CheckCityExists", ctx, cityName).
+					Return(domain.ErrCityNotFound)
+			},
+			expectedToken: "",
+			expectedErr:   domain.ErrCityNotFound,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			repo := &mocks.MockSubscriptionRepository{}
-			weatherSvc := &mocks.MockWeatherService{}
-			emailSvc := &mocks.MockEmailService{}
+			subRepo := &mocks.MockSubscriptionRepository{}
+			cityRepo := &mocks.MockCityRepo{}
+			weatherProv := &mocks.MockWeatherProvider{}
+			emailNotifier := &MockEmailNotifier{}
 			tokenSvc := &mocks.MockTokenService{}
-			service := NewSubscriptionService(repo, weatherSvc, emailSvc, tokenSvc)
 
-			tt.setupMocks(repo, weatherSvc, emailSvc, tokenSvc)
+			tt.setupMocks(subRepo, cityRepo, weatherProv, emailNotifier, tokenSvc)
 
-			token, err := service.Subscribe(ctx, tt.email, tt.city, tt.frequency)
+			s := NewSubscriptionService(
+				subRepo, cityRepo, weatherProv, tokenSvc, emailNotifier,
+			)
 
+			token, err := s.Subscribe(ctx, repository.SubscribeOptions{
+				Email:     email,
+				City:      cityName,
+				Frequency: domain.FrequencyDaily,
+			})
 			assert.Equal(t, tt.expectedToken, token)
-			assert.Equal(t, tt.expectedError, err)
-			tt.verifyMocks(t, repo, weatherSvc, emailSvc, tokenSvc)
+			assert.Equal(t, tt.expectedErr, err)
+
+			subRepo.AssertExpectations(t)
+			cityRepo.AssertExpectations(t)
+			weatherProv.AssertExpectations(t)
+			emailNotifier.AssertExpectations(t)
+			tokenSvc.AssertExpectations(t)
 		})
 	}
 }
 
 func TestSubscriptionService_Confirm(t *testing.T) {
 	ctx := context.Background()
-	token := "token123"
+	const token = "tok123"
 
 	tests := []struct {
-		name          string
-		token         string
-		setupMocks    func(repo *mocks.MockSubscriptionRepository, weatherSvc *mocks.MockWeatherService, emailSvc *mocks.MockEmailService, tokenSvc *mocks.MockTokenService)
-		verifyMocks   func(t *testing.T, repo *mocks.MockSubscriptionRepository, weatherSvc *mocks.MockWeatherService, emailSvc *mocks.MockEmailService, tokenSvc *mocks.MockTokenService)
-		expectedError error
+		name       string
+		setupMocks func(r *mocks.MockSubscriptionRepository)
+		expectErr  error
 	}{
 		{
-			name:  "success",
-			token: token,
-			setupMocks: func(repo *mocks.MockSubscriptionRepository, weatherSvc *mocks.MockWeatherService, emailSvc *mocks.MockEmailService, tokenSvc *mocks.MockTokenService) {
-				repo.On("IsTokenExists", ctx, token).Return(true, nil)
-				sub := domain.Subscription{
-					Email:       "user1@example.com",
-					City:        "Kyiv",
-					Frequency:   domain.FrequencyDaily,
-					Token:       token,
-					IsConfirmed: false,
-				}
-				repo.On("GetSubscriptionByToken", ctx, token).Return(sub, nil)
-				updatedSub := sub
-				updatedSub.IsConfirmed = true
-				repo.On("UpdateSubscription", ctx, updatedSub).Return(nil)
+			name: "successfully confirms subscription",
+			setupMocks: func(r *mocks.MockSubscriptionRepository) {
+				r.On("IsTokenExists", ctx, token).Return(true, nil)
+				sub := domain.Subscription{Token: token, IsConfirmed: false}
+				r.On("GetSubscriptionByToken", ctx, token).Return(sub, nil)
+				subConfirmed := sub
+				subConfirmed.IsConfirmed = true
+				r.On("UpdateSubscription", ctx, subConfirmed).Return(nil)
 			},
-			verifyMocks: func(t *testing.T, repo *mocks.MockSubscriptionRepository, weatherSvc *mocks.MockWeatherService, emailSvc *mocks.MockEmailService, tokenSvc *mocks.MockTokenService) {
-				repo.AssertExpectations(t)
-				weatherSvc.AssertNotCalled(t, "GetWeather", mock.Anything)
-				emailSvc.AssertNotCalled(t, "SendEmail", mock.Anything, mock.Anything, mock.Anything)
-				tokenSvc.AssertNotCalled(t, "GenerateToken")
-			},
-			expectedError: nil,
+			expectErr: nil,
 		},
 		{
-			name:  "token not found",
-			token: token,
-			setupMocks: func(repo *mocks.MockSubscriptionRepository, weatherSvc *mocks.MockWeatherService, emailSvc *mocks.MockEmailService, tokenSvc *mocks.MockTokenService) {
-				repo.On("IsTokenExists", ctx, token).Return(false, nil)
+			name: "token not found",
+			setupMocks: func(r *mocks.MockSubscriptionRepository) {
+				r.On("IsTokenExists", ctx, token).Return(false, nil)
 			},
-			verifyMocks: func(t *testing.T, repo *mocks.MockSubscriptionRepository, weatherSvc *mocks.MockWeatherService, emailSvc *mocks.MockEmailService, tokenSvc *mocks.MockTokenService) {
-				repo.AssertExpectations(t)
-				repo.AssertNotCalled(t, "GetSubscriptionByToken", mock.Anything, mock.Anything)
-				repo.AssertNotCalled(t, "UpdateSubscription", mock.Anything, mock.Anything)
-				weatherSvc.AssertNotCalled(t, "GetWeather", mock.Anything)
-				emailSvc.AssertNotCalled(t, "SendEmail", mock.Anything, mock.Anything, mock.Anything)
-				tokenSvc.AssertNotCalled(t, "GenerateToken")
-			},
-			expectedError: domain.ErrTokenNotFound,
+			expectErr: domain.ErrTokenNotFound,
 		},
 		{
-			name:  "update subscription error",
-			token: token,
-			setupMocks: func(repo *mocks.MockSubscriptionRepository, weatherSvc *mocks.MockWeatherService, emailSvc *mocks.MockEmailService, tokenSvc *mocks.MockTokenService) {
-				repo.On("IsTokenExists", ctx, token).Return(true, nil)
-				sub := domain.Subscription{
-					Email:       "user1@example.com",
-					City:        "Kyiv",
-					Frequency:   domain.FrequencyDaily,
-					Token:       token,
-					IsConfirmed: false,
-				}
-				repo.On("GetSubscriptionByToken", ctx, token).Return(sub, nil)
-				updatedSub := sub
-				updatedSub.IsConfirmed = true
-				repo.On("UpdateSubscription", ctx, updatedSub).Return(errors.New("db error"))
+			name: "update fails",
+			setupMocks: func(r *mocks.MockSubscriptionRepository) {
+				r.On("IsTokenExists", ctx, token).Return(true, nil)
+				sub := domain.Subscription{Token: token, IsConfirmed: false}
+				r.On("GetSubscriptionByToken", ctx, token).Return(sub, nil)
+				subConfirmed := sub
+				subConfirmed.IsConfirmed = true
+				r.On("UpdateSubscription", ctx, subConfirmed).
+					Return(errors.New("db error"))
 			},
-			verifyMocks: func(t *testing.T, repo *mocks.MockSubscriptionRepository, weatherSvc *mocks.MockWeatherService, emailSvc *mocks.MockEmailService, tokenSvc *mocks.MockTokenService) {
-				repo.AssertExpectations(t)
-				weatherSvc.AssertNotCalled(t, "GetWeather", mock.Anything)
-				emailSvc.AssertNotCalled(t, "SendEmail", mock.Anything, mock.Anything, mock.Anything)
-				tokenSvc.AssertNotCalled(t, "GenerateToken")
-			},
-			expectedError: errors.New("db error"),
+			expectErr: errors.New("unable to update subscription confirmation: db error"),
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			repo := &mocks.MockSubscriptionRepository{}
-			weatherSvc := &mocks.MockWeatherService{}
-			emailSvc := &mocks.MockEmailService{}
+			cityRepo := &mocks.MockCityRepo{}
+			weatherProv := &mocks.MockWeatherProvider{}
+			emailNotifier := &MockEmailNotifier{}
 			tokenSvc := &mocks.MockTokenService{}
-			service := NewSubscriptionService(repo, weatherSvc, emailSvc, tokenSvc)
 
-			tt.setupMocks(repo, weatherSvc, emailSvc, tokenSvc)
+			tt.setupMocks(repo)
 
-			err := service.Confirm(ctx, tt.token)
+			s := NewSubscriptionService(
+				repo, cityRepo, weatherProv, tokenSvc, emailNotifier,
+			)
 
-			assert.Equal(t, tt.expectedError, err)
-			tt.verifyMocks(t, repo, weatherSvc, emailSvc, tokenSvc)
+			err := s.Confirm(ctx, token)
+			assert.Equal(t, tt.expectErr, err)
+			repo.AssertExpectations(t)
 		})
 	}
 }
 
 func TestSubscriptionService_Unsubscribe(t *testing.T) {
 	ctx := context.Background()
-	token := "token123"
+	const token = "tok123"
 
 	tests := []struct {
-		name          string
-		token         string
-		setupMocks    func(repo *mocks.MockSubscriptionRepository, weatherSvc *mocks.MockWeatherService, emailSvc *mocks.MockEmailService, tokenSvc *mocks.MockTokenService)
-		verifyMocks   func(t *testing.T, repo *mocks.MockSubscriptionRepository, weatherSvc *mocks.MockWeatherService, emailSvc *mocks.MockEmailService, tokenSvc *mocks.MockTokenService)
-		expectedError error
+		name       string
+		setupMocks func(r *mocks.MockSubscriptionRepository)
+		expectErr  error
 	}{
 		{
-			name:  "success",
-			token: token,
-			setupMocks: func(repo *mocks.MockSubscriptionRepository, weatherSvc *mocks.MockWeatherService, emailSvc *mocks.MockEmailService, tokenSvc *mocks.MockTokenService) {
-				repo.On("IsTokenExists", ctx, token).Return(true, nil)
-				repo.On("DeleteSubscription", ctx, token).Return(nil)
+			name: "successfully unsubscribes",
+			setupMocks: func(r *mocks.MockSubscriptionRepository) {
+				r.On("IsTokenExists", ctx, token).Return(true, nil)
+				r.On("DeleteSubscription", ctx, token).Return(nil)
 			},
-			verifyMocks: func(t *testing.T, repo *mocks.MockSubscriptionRepository, weatherSvc *mocks.MockWeatherService, emailSvc *mocks.MockEmailService, tokenSvc *mocks.MockTokenService) {
-				repo.AssertExpectations(t)
-				weatherSvc.AssertNotCalled(t, "GetWeather", mock.Anything)
-				emailSvc.AssertNotCalled(t, "SendEmail", mock.Anything, mock.Anything, mock.Anything)
-				tokenSvc.AssertNotCalled(t, "GenerateToken")
-			},
-			expectedError: nil,
+			expectErr: nil,
 		},
 		{
-			name:  "deletion error",
-			token: token,
-			setupMocks: func(repo *mocks.MockSubscriptionRepository, weatherSvc *mocks.MockWeatherService, emailSvc *mocks.MockEmailService, tokenSvc *mocks.MockTokenService) {
-				repo.On("IsTokenExists", ctx, token).Return(true, nil)
-				repo.On("DeleteSubscription", ctx, token).Return(errors.New("not found"))
+			name: "token not found",
+			setupMocks: func(r *mocks.MockSubscriptionRepository) {
+				r.On("IsTokenExists", ctx, token).Return(false, nil)
 			},
-			verifyMocks: func(t *testing.T, repo *mocks.MockSubscriptionRepository, weatherSvc *mocks.MockWeatherService, emailSvc *mocks.MockEmailService, tokenSvc *mocks.MockTokenService) {
-				repo.AssertExpectations(t)
-				weatherSvc.AssertNotCalled(t, "GetWeather", mock.Anything)
-				emailSvc.AssertNotCalled(t, "SendEmail", mock.Anything, mock.Anything, mock.Anything)
-				tokenSvc.AssertNotCalled(t, "GenerateToken")
+			expectErr: domain.ErrTokenNotFound,
+		},
+		{
+			name: "delete fails",
+			setupMocks: func(r *mocks.MockSubscriptionRepository) {
+				r.On("IsTokenExists", ctx, token).Return(true, nil)
+				r.On("DeleteSubscription", ctx, token).
+					Return(errors.New("db error"))
 			},
-			expectedError: errors.New("not found"),
+			expectErr: errors.New("unable to delete subscription: db error"),
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			repo := &mocks.MockSubscriptionRepository{}
-			weatherSvc := &mocks.MockWeatherService{}
-			emailSvc := &mocks.MockEmailService{}
+			cityRepo := &mocks.MockCityRepo{}
+			weatherProv := &mocks.MockWeatherProvider{}
+			emailNotifier := &MockEmailNotifier{}
 			tokenSvc := &mocks.MockTokenService{}
-			service := NewSubscriptionService(repo, weatherSvc, emailSvc, tokenSvc)
 
-			tt.setupMocks(repo, weatherSvc, emailSvc, tokenSvc)
+			tt.setupMocks(repo)
 
-			err := service.Unsubscribe(ctx, tt.token)
+			s := NewSubscriptionService(
+				repo, cityRepo, weatherProv, tokenSvc, emailNotifier,
+			)
 
-			assert.Equal(t, tt.expectedError, err)
-			tt.verifyMocks(t, repo, weatherSvc, emailSvc, tokenSvc)
+			err := s.Unsubscribe(ctx, token)
+			assert.Equal(t, tt.expectErr, err)
+			repo.AssertExpectations(t)
 		})
 	}
 }

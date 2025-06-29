@@ -1,50 +1,65 @@
 package service
 
 import (
-	"context"
+	"errors"
+	"fmt"
 	"log"
+	"weather-api/internal/adapter/email"
 	"weather-api/internal/core/domain"
-	"weather-api/internal/core/port"
-	"weather-api/internal/util"
+	"weather-api/internal/util/emailutil"
 )
 
-type EmailService struct {
-	repo       port.SubscriptionRepository
-	weatherSvc port.WeatherService
-	emailSvc   port.EmailService
+type EmailService interface {
+	SendUpdates(updates []domain.WeatherUpdate) error
+	SendConfirmationEmail(subscription *domain.Subscription) error
 }
 
-func NewEmailService(repo port.SubscriptionRepository, weatherSvc port.WeatherService, emailSvc port.EmailService) *EmailService {
-	return &EmailService{
-		repo:       repo,
-		weatherSvc: weatherSvc,
-		emailSvc:   emailSvc,
+type EmailServiceImpl struct {
+	emailSvc email.Sender
+}
+
+func NewEmailService(emailSvc email.Sender) EmailService {
+	return &EmailServiceImpl{
+		emailSvc: emailSvc,
 	}
 }
 
-func (s *EmailService) SendUpdates(ctx context.Context, frequency domain.Frequency) {
-	subs, err := s.repo.GetSubscriptionsByFrequency(ctx, string(frequency))
-	if err != nil {
-		log.Printf("Failed to get %s subscriptions: %v", frequency, err)
-		return
-	}
-	s.sendUpdates(subs)
-}
+func (s *EmailServiceImpl) SendUpdates(updates []domain.WeatherUpdate) error {
+	for _, update := range updates {
+		subject, htmlBody := emailutil.BuildWeatherUpdateEmail(emailutil.WeatherUpdateEmailOptions{
+			City:        update.Subscription.City.Name,
+			Temperature: update.Weather.Temperature,
+			Humidity:    update.Weather.Humidity,
+			Description: update.Weather.Description,
+			Token:       update.Subscription.Token,
+		})
 
-func (s *EmailService) sendUpdates(subs []domain.Subscription) {
-	for _, sub := range subs {
-		if !sub.IsConfirmed {
+		if err := s.emailSvc.SendEmail(email.SendEmailOptions{
+			To:      update.Subscription.Email,
+			Subject: subject,
+			Body:    htmlBody,
+		}); err != nil {
+			msg := fmt.Sprintf("unable to send email to %s: %v", update.Subscription.Email, err)
+			log.Print(msg)
 			continue
 		}
-		weather, err := s.weatherSvc.GetWeather(sub.City)
-		if err != nil {
-			log.Printf("Failed to get weather for %s: %v", sub.City, err)
-			return
-		}
-
-		subject, htmlBody := util.BuildWeatherUpdateEmail(sub.City, weather.Temperature, weather.Humidity, weather.Description, sub.Token)
-		if err := s.emailSvc.SendEmail(sub.Email, subject, htmlBody); err != nil {
-			log.Printf("Failed to send email to %s: %v", sub.Email, err)
-		}
 	}
+
+	return nil
+}
+
+func (s *EmailServiceImpl) SendConfirmationEmail(subscription *domain.Subscription) error {
+	subject, htmlBody := emailutil.BuildConfirmationEmail(subscription.City.Name, subscription.Token)
+
+	if err := s.emailSvc.SendEmail(email.SendEmailOptions{
+		To:      subscription.Email,
+		Subject: subject,
+		Body:    htmlBody,
+	}); err != nil {
+		msg := fmt.Sprintf("unable to send confirmation email to %s: %v", subscription.Email, err)
+		log.Print(msg)
+		return errors.New(msg)
+	}
+
+	return nil
 }

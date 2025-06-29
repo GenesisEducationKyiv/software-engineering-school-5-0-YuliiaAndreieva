@@ -1,3 +1,6 @@
+//go:build unit
+// +build unit
+
 package service
 
 import (
@@ -5,19 +8,17 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-
-	"weather-api/internal/core/port"
 )
 
 func TestTokenService_GenerateToken(t *testing.T) {
 	tests := []struct {
 		name   string
-		setup  func() port.TokenService
+		setup  func() TokenService
 		verify func(t *testing.T, token string, err error)
 	}{
 		{
 			name: "success",
-			setup: func() port.TokenService {
+			setup: func() TokenService {
 				return NewTokenService()
 			},
 			verify: func(t *testing.T, token string, err error) {
