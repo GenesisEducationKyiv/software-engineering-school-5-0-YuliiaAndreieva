@@ -1,4 +1,4 @@
-package util
+package configutil
 
 import (
 	"github.com/kelseyhightower/envconfig"

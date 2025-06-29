@@ -5,7 +5,7 @@ import (
 	"weather-api/internal/adapter/email"
 	"weather-api/internal/adapter/repository/postgres"
 	"weather-api/internal/core/domain"
-	"weather-api/internal/util"
+	"weather-api/internal/util/emailutil"
 )
 
 type EmailService struct {
@@ -24,7 +24,7 @@ func NewEmailService(repo postgres.SubscriptionRepository, weatherSvc WeatherSer
 
 func (s *EmailService) SendUpdates(updates []domain.WeatherUpdate) error {
 	for _, update := range updates {
-		subject, htmlBody := util.BuildWeatherUpdateEmail(
+		subject, htmlBody := emailutil.BuildWeatherUpdateEmail(
 			update.Subscription.City.Name,
 			update.Weather.Temperature,
 			update.Weather.Humidity,

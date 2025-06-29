@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"strconv"
 	"time"
+	"weather-api/internal/util/configutil"
 
 	"weather-api/internal/adapter/email"
 	"weather-api/internal/adapter/repository/postgres"
@@ -15,7 +16,6 @@ import (
 	"weather-api/internal/core/domain"
 	"weather-api/internal/core/service"
 	httphandler "weather-api/internal/handler/http"
-	"weather-api/internal/util"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-migrate/migrate/v4"
@@ -25,7 +25,7 @@ import (
 )
 
 func main() {
-	cfg, err := util.LoadConfig()
+	cfg, err := configutil.LoadConfig()
 	if err != nil {
 		log.Fatalf("Failed to load config: %v", err)
 	}
@@ -53,8 +53,6 @@ func main() {
 		cfg.WeatherAPIKey,
 		"http://api.weatherapi.com/v1",
 		&http.Client{Timeout: 5 * time.Second},
-		weather.NewParser(),
-		weather.NewValidator(),
 	)
 	subscriptionRepo := postgres.NewSubscriptionRepo(db)
 	cityRepo := postgres.NewCityRepository(db)
