@@ -4,17 +4,17 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"log"
 	"net/http"
 	"strconv"
-	"time"
 	"weather-api/internal/adapter/cache/metrics"
 	"weather-api/internal/adapter/cache/redis"
 	"weather-api/internal/adapter/weather/openweathermap"
 	"weather-api/internal/adapter/weather/weatherapi"
 	"weather-api/internal/util/configutil"
 	"weather-api/internal/util/logger"
+
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	"weather-api/internal/adapter/email"
 	"weather-api/internal/adapter/repository/postgres"
@@ -72,7 +72,7 @@ func main() {
 		Pass: cfg.SMTPPass,
 	})
 
-	httpClient := &http.Client{Timeout: 5 * time.Second}
+	httpClient := &http.Client{Timeout: cfg.HTTPClientTimeout}
 
 	weatherAPIProvider := weatherapi.NewClient(weatherapi.ClientOptions{
 		APIKey:     cfg.WeatherAPIKey,
@@ -96,13 +96,13 @@ func main() {
 	promRegistry := prometheus.NewRegistry()
 
 	cache := redis.New(redis.CacheOptions{
-		Address:      "redis:6379",
-		Ttl:          10 * time.Minute,
-		DialTimeout:  5 * time.Second,
-		ReadTimeout:  3 * time.Second,
-		WriteTimeout: 3 * time.Second,
-		PoolSize:     10,
-		MinIdleConns: 5,
+		Address:      cfg.RedisAddress,
+		TTL:          cfg.RedisTTL,
+		DialTimeout:  cfg.RedisDialTimeout,
+		ReadTimeout:  cfg.RedisReadTimeout,
+		WriteTimeout: cfg.RedisWriteTimeout,
+		PoolSize:     cfg.RedisPoolSize,
+		MinIdleConns: cfg.RedisMinIdleConns,
 	})
 	cacheMetrics := metrics.NewCacheMetrics(promRegistry)
 	cacheWithMetrics := metrics.NewCacheWithMetrics(cache, cacheMetrics)
@@ -173,8 +173,8 @@ func main() {
 	srv := &http.Server{
 		Addr:         ":" + port,
 		Handler:      r,
-		ReadTimeout:  10 * time.Second,
-		WriteTimeout: 10 * time.Second,
+		ReadTimeout:  cfg.HTTPReadTimeout,
+		WriteTimeout: cfg.HTTPWriteTimeout,
 	}
 
 	log.Printf("Server running on %s", srv.Addr)

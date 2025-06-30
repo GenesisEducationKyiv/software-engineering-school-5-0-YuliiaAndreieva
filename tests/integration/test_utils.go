@@ -12,7 +12,7 @@ import (
 	"strings"
 	"testing"
 	"time"
-	"weather-api/internal/adapter/cache/
+	"weather-api/internal/adapter/cache/redis"
 	"weather-api/internal/adapter/email"
 	"weather-api/internal/adapter/repository/postgres"
 	"weather-api/internal/adapter/weather/weatherapi"
@@ -190,7 +190,7 @@ func SetupTestServices(t *testing.T) *TestServices {
 
 	cache := redis.New(redis.CacheOptions{
 		Address:      "localhost:6379",
-		Ttl:          time.Minute,
+		TTL:          time.Minute,
 		DialTimeout:  2 * time.Second,
 		ReadTimeout:  2 * time.Second,
 		WriteTimeout: 2 * time.Second,

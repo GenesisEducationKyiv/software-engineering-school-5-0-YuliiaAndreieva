@@ -25,7 +25,7 @@ type Cache struct {
 
 type CacheOptions struct {
 	Address      string
-	Ttl          time.Duration
+	TTL          time.Duration
 	DialTimeout  time.Duration
 	ReadTimeout  time.Duration
 	WriteTimeout time.Duration
@@ -44,7 +44,7 @@ func New(opts CacheOptions) WeatherCache {
 	})
 	return &Cache{
 		client: rdb,
-		ttl:    opts.Ttl,
+		ttl:    opts.TTL,
 	}
 }
 
