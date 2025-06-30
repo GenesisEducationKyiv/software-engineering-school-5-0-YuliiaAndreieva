@@ -105,3 +105,23 @@ func (m *MockCityRepo) Create(ctx context.Context, city domain.City) (domain.Cit
 	args := m.Called(ctx, city)
 	return args.Get(0).(domain.City), args.Error(1)
 }
+
+type MockWeatherCache struct{ mock.Mock }
+
+func (m *MockWeatherCache) Get(ctx context.Context, city string) (*domain.Weather, error) {
+	args := m.Called(ctx, city)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*domain.Weather), args.Error(1)
+}
+
+func (m *MockWeatherCache) Set(ctx context.Context, city string, value domain.Weather) error {
+	args := m.Called(ctx, city, value)
+	return args.Error(0)
+}
+
+func (m *MockWeatherCache) Close() error {
+	args := m.Called()
+	return args.Error(0)
+}

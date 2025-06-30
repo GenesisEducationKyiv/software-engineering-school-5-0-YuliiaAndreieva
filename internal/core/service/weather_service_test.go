@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 
 	"weather-api/internal/core/domain"
 	"weather-api/internal/mocks"
@@ -58,9 +59,13 @@ func TestWeatherService_GetWeather(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			providerMock := &mocks.MockWeatherProvider{}
+			cacheMock := &mocks.MockWeatherCache{}
 			tt.setupMocks(providerMock)
 
-			ws := NewWeatherService(providerMock)
+			cacheMock.On("Get", ctx, tt.city).Return(nil, nil)
+			cacheMock.On("Set", ctx, tt.city, mock.Anything).Return(nil)
+
+			ws := NewWeatherService(providerMock, cacheMock)
 
 			result, err := ws.GetWeather(ctx, tt.city)
 

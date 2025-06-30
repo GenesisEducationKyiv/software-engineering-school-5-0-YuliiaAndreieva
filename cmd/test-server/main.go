@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"weather-api/internal/adapter/cache/redis"
 	"weather-api/internal/adapter/email"
 	"weather-api/internal/adapter/repository/postgres"
 	"weather-api/internal/adapter/weather"
@@ -147,10 +148,20 @@ func main() {
 
 	chainProvider := weather.NewChainWeatherProvider(weatherAPIProvider, openWeatherMapProvider)
 
+	cache := redis.New(redis.CacheOptions{
+		Address:      "localhost:6379",
+		Ttl:          time.Minute,
+		DialTimeout:  2 * time.Second,
+		ReadTimeout:  2 * time.Second,
+		WriteTimeout: 2 * time.Second,
+		PoolSize:     2,
+		MinIdleConns: 1,
+	})
+
 	subscriptionRepo := postgres.NewSubscriptionRepo(db)
 	cityRepo := postgres.NewCityRepository(db)
 
-	weatherService := service.NewWeatherService(chainProvider)
+	weatherService := service.NewWeatherService(chainProvider, cache)
 	tokenService := service.NewTokenService()
 	emailService := service.NewEmailService(emailAdapter)
 

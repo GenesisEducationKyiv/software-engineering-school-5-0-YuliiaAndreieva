@@ -11,6 +11,8 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"time"
+	"weather-api/internal/adapter/cache/
 	"weather-api/internal/adapter/email"
 	"weather-api/internal/adapter/repository/postgres"
 	"weather-api/internal/adapter/weather/weatherapi"
@@ -186,10 +188,20 @@ func SetupTestServices(t *testing.T) *TestServices {
 		Logger:     mockLogger,
 	})
 
+	cache := redis.New(redis.CacheOptions{
+		Address:      "localhost:6379",
+		Ttl:          time.Minute,
+		DialTimeout:  2 * time.Second,
+		ReadTimeout:  2 * time.Second,
+		WriteTimeout: 2 * time.Second,
+		PoolSize:     2,
+		MinIdleConns: 1,
+	})
+
 	subscriptionRepo := postgres.NewSubscriptionRepo(db)
 	cityRepo := postgres.NewCityRepository(db)
 
-	weatherService := service.NewWeatherService(weatherAdapter)
+	weatherService := service.NewWeatherService(weatherAdapter, cache)
 	tokenService := service.NewTokenService()
 	emailService := service.NewEmailService(emailAdapter)
 
