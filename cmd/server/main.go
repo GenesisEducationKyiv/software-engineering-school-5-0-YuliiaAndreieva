@@ -4,10 +4,13 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"log"
 	"net/http"
 	"strconv"
 	"time"
+	"weather-api/internal/adapter/cache/metrics"
+	"weather-api/internal/adapter/cache/redis"
 	"weather-api/internal/adapter/weather/openweathermap"
 	"weather-api/internal/adapter/weather/weatherapi"
 	"weather-api/internal/util/configutil"
@@ -24,6 +27,7 @@ import (
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/robfig/cron/v3"
 )
 
@@ -89,7 +93,20 @@ func main() {
 	subscriptionRepo := postgres.NewSubscriptionRepo(db)
 	cityRepo := postgres.NewCityRepository(db)
 
-	weatherService := service.NewWeatherService(chainProvider)
+	promRegistry := prometheus.NewRegistry()
+
+	cache := redis.New(redis.CacheOptions{
+		Address:      "redis:6379",
+		Ttl:          10 * time.Minute,
+		DialTimeout:  5 * time.Second,
+		ReadTimeout:  3 * time.Second,
+		WriteTimeout: 3 * time.Second,
+		PoolSize:     10,
+		MinIdleConns: 5,
+	})
+	cacheMetrics := metrics.NewCacheMetrics(promRegistry)
+	cacheWithMetrics := metrics.NewCacheWithMetrics(cache, cacheMetrics)
+	weatherService := service.NewWeatherService(chainProvider, cacheWithMetrics)
 	tokenService := service.NewTokenService()
 	emailService := service.NewEmailService(emailAdapter)
 
@@ -116,7 +133,10 @@ func main() {
 		api.POST("/subscribe", subscriptionHandler.Subscribe)
 		api.GET("/confirm/:token", subscriptionHandler.Confirm)
 		api.GET("/unsubscribe/:token", subscriptionHandler.Unsubscribe)
+		api.GET("/metrics", gin.WrapH(promhttp.HandlerFor(promRegistry, promhttp.HandlerOpts{})))
 	}
+
+	r.GET("/metrics", gin.WrapH(promhttp.Handler()))
 
 	r.NoRoute(func(c *gin.Context) {
 		c.File("./web/index.html")
