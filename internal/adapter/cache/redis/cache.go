@@ -87,6 +87,9 @@ func (c *Cache) Set(ctx context.Context, city string, value domain.Weather) erro
 }
 
 func (c *Cache) buildKey(city string) string {
+	if city == "" {
+		return ""
+	}
 	return fmt.Sprintf("weather:city%s", strings.ToLower(city))
 }
 
