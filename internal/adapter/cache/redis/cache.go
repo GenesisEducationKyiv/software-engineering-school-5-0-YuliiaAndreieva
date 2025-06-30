@@ -5,11 +5,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/redis/go-redis/v9"
 	"strings"
 	"time"
 	"weather-api/internal/adapter/cache"
 	"weather-api/internal/core/domain"
+
+	"github.com/redis/go-redis/v9"
 )
 
 type WeatherCache interface {

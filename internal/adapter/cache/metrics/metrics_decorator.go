@@ -3,10 +3,11 @@ package metrics
 import (
 	"context"
 	"errors"
-	"github.com/redis/go-redis/v9"
 	"strings"
 	"time"
 	redisadapter "weather-api/internal/adapter/cache/redis"
+
+	"github.com/redis/go-redis/v9"
 
 	"weather-api/internal/core/domain"
 )
