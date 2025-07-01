@@ -6,121 +6,150 @@ package integration
 import (
 	"context"
 	"errors"
+	"github.com/alicebob/miniredis/v2"
+	redisv9 "github.com/redis/go-redis/v9"
+	"github.com/stretchr/testify/require"
 	"testing"
 	"time"
-	cachepkg "weather-api/internal/adapter/cache"
-	"weather-api/internal/adapter/cache/redis"
-	"weather-api/internal/core/domain"
-
-	"github.com/alicebob/miniredis/v2"
-	"github.com/stretchr/testify/require"
+	corecache "weather-api/internal/adapter/cache/core"
+	"weather-api/internal/adapter/cache/core/redis"
+	weathercache "weather-api/internal/adapter/cache/weather"
 )
 
-func newMiniRedisCache(t *testing.T) (redis.WeatherCache, *miniredis.Miniredis, func()) {
-	s, err := miniredis.Run()
-	require.NoError(t, err)
-	cache := redis.New(redis.CacheOptions{
-		Address:      s.Addr(),
+func defaultRedisOptions() redis.CacheOptions {
+	return redis.CacheOptions{
+		Address:      "localhost:6379",
 		TTL:          2 * time.Second,
 		DialTimeout:  2 * time.Second,
 		ReadTimeout:  2 * time.Second,
 		WriteTimeout: 2 * time.Second,
 		PoolSize:     2,
 		MinIdleConns: 1,
-	})
-	return cache, s, func() { cache.Close(); s.Close() }
+	}
 }
 
-func TestRedisWeatherCache_Basic(t *testing.T) {
-	cache, _, cleanup := newMiniRedisCache(t)
+func newMiniRedisCache(t *testing.T) (*redis.Cache, func()) {
+	s, err := miniredis.Run()
+	require.NoError(t, err)
+	opts := defaultRedisOptions()
+	opts.Address = s.Addr()
+	cache := redis.NewCache(opts)
+	return cache, func() { cache.Close(); s.Close() }
+}
+
+func newWeatherCache(t *testing.T) (weathercache.Cache, func()) {
+	raw, cleanup := newMiniRedisCache(t)
+	cache := weathercache.NewCache(raw)
+	return cache, cleanup
+}
+
+func newWeatherCacheWithMiniRedis(t *testing.T) (weathercache.Cache, *redis.Cache, *miniredis.Miniredis, func()) {
+	s, err := miniredis.Run()
+	require.NoError(t, err)
+	opts := defaultRedisOptions()
+	opts.Address = s.Addr()
+	raw := redis.NewCache(opts)
+	cache := weathercache.NewCache(raw)
+	cleanup := func() { raw.Close(); s.Close() }
+	return cache, raw, s, cleanup
+}
+
+func TestRedisCache_Flow(t *testing.T) {
+	cache, cleanup := newMiniRedisCache(t)
 	defer cleanup()
-
 	ctx := context.Background()
-	city := "TestCity"
-	weather := domain.Weather{
-		Temperature: 25.5,
-		Humidity:    50,
-		Description: "Sunny",
-	}
+	key := "city"
+	value := []byte("weather-data")
 
-	err := cache.Set(ctx, city, weather)
+	err := cache.Set(ctx, key, value)
 	require.NoError(t, err)
 
-	got, err := cache.Get(ctx, city)
+	got, err := cache.Get(ctx, key)
 	require.NoError(t, err)
-	require.NotNil(t, got)
-	require.Equal(t, weather, *got)
+	require.Equal(t, value, got)
 
-	weather2 := domain.Weather{
-		Temperature: 10.0,
-		Humidity:    80,
-		Description: "Rainy",
-	}
-	err = cache.Set(ctx, city, weather2)
+	value2 := []byte("weather-data-2")
+	err = cache.Set(ctx, key, value2)
 	require.NoError(t, err)
-	got, err = cache.Get(ctx, city)
+	got, err = cache.Get(ctx, key)
 	require.NoError(t, err)
-	require.NotNil(t, got)
-	require.Equal(t, weather2, *got)
+	require.Equal(t, value2, got)
 
-	got, err = cache.Get(ctx, "NoSuchCity")
+	s := cache
+	s.Close()
+}
+
+func TestRedisCache_Miss(t *testing.T) {
+	cache, cleanup := newMiniRedisCache(t)
+	defer cleanup()
+	ctx := context.Background()
+	_, err := cache.Get(ctx, "no_such_key")
+	require.ErrorIs(t, err, redisv9.Nil)
+}
+
+func TestRedisCache_InvalidKey(t *testing.T) {
+	cache, cleanup := newMiniRedisCache(t)
+	defer cleanup()
+	ctx := context.Background()
+
+	_, err := cache.Get(ctx, "")
+	require.Error(t, err)
+	err = cache.Set(ctx, "", []byte("data"))
+	require.Error(t, err)
+}
+
+func TestRedisCache_ConnectionError(t *testing.T) {
+	opts := defaultRedisOptions()
+	opts.Address = "localhost:9999"
+	cache := redis.NewCache(opts)
+	ctx := context.Background()
+	_, err := cache.Get(ctx, "any")
+	require.Error(t, err)
+}
+
+func TestWeatherCache_Miss(t *testing.T) {
+	cache, cleanup := newWeatherCache(t)
+	defer cleanup()
+	ctx := context.Background()
+	got, err := cache.Get(ctx, "no_such_key")
 	require.NoError(t, err)
 	require.Nil(t, got)
 }
 
-func TestRedisWeatherCache_InvalidKey(t *testing.T) {
-	cache, _, cleanup := newMiniRedisCache(t)
+func TestWeatherCache_InvalidKey(t *testing.T) {
+	cache, cleanup := newWeatherCache(t)
 	defer cleanup()
-
 	ctx := context.Background()
 	_, err := cache.Get(ctx, "")
-	require.Error(t, err)
-	var cacheErr *cachepkg.Error
-	require.True(t, errors.As(err, &cacheErr))
-	require.Equal(t, cachepkg.InvalidKey, cacheErr.Code)
-
-	err = cache.Set(ctx, "", domain.Weather{})
+	var cacheErr *corecache.Error
 	require.Error(t, err)
 	require.True(t, errors.As(err, &cacheErr))
-	require.Equal(t, cachepkg.InvalidKey, cacheErr.Code)
+	require.Equal(t, corecache.InvalidKey, cacheErr.Code)
 }
 
-func TestRedisWeatherCache_UnmarshalError(t *testing.T) {
-	cache, s, cleanup := newMiniRedisCache(t)
+func TestWeatherCache_UnmarshalError(t *testing.T) {
+	cache, raw, _, cleanup := newWeatherCacheWithMiniRedis(t)
 	defer cleanup()
-
 	ctx := context.Background()
 	city := "BadJsonCity"
-	key := "weather:citybadjsoncity"
-
-	s.Set(key, "not-a-json")
-	t.Log("miniredis keys:", s.Keys())
-
-	_, err := cache.Get(ctx, city)
+	err := raw.Set(ctx, city, []byte("not-a-json"))
+	require.NoError(t, err)
+	_, err = cache.Get(ctx, city)
+	var cacheErr *corecache.Error
 	require.Error(t, err)
-	var cacheErr *cachepkg.Error
 	require.True(t, errors.As(err, &cacheErr))
-	require.Equal(t, cachepkg.UnmarshalError, cacheErr.Code)
+	require.Equal(t, corecache.UnmarshalError, cacheErr.Code)
 }
 
-func TestRedisWeatherCache_RedisError(t *testing.T) {
-	cache := redis.New(redis.CacheOptions{
-		Address:      "localhost:9999",
-		TTL:          2 * time.Second,
-		DialTimeout:  1 * time.Second,
-		ReadTimeout:  1 * time.Second,
-		WriteTimeout: 1 * time.Second,
-		PoolSize:     2,
-		MinIdleConns: 1,
-	})
+func TestWeatherCache_RedisError(t *testing.T) {
+	opts := defaultRedisOptions()
+	opts.Address = "localhost:9999"
+	raw := redis.NewCache(opts)
+	cache := weathercache.NewCache(raw)
 	ctx := context.Background()
-	_, err := cache.Get(ctx, "Kyiv")
-	require.Error(t, err)
-	var cacheErr *cachepkg.Error
-	require.True(t, errors.As(err, &cacheErr))
-	require.Equal(t, cachepkg.RedisError, cacheErr.Code)
-	err = cache.Set(ctx, "Kyiv", domain.Weather{})
+	_, err := cache.Get(ctx, "any")
+	var cacheErr *corecache.Error
 	require.Error(t, err)
 	require.True(t, errors.As(err, &cacheErr))
-	require.Equal(t, cachepkg.RedisError, cacheErr.Code)
+	require.Equal(t, corecache.RedisError, cacheErr.Code)
 }

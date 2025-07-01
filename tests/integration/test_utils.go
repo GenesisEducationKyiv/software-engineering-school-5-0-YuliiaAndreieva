@@ -12,7 +12,8 @@ import (
 	"strings"
 	"testing"
 	"time"
-	"weather-api/internal/adapter/cache/redis"
+	"weather-api/internal/adapter/cache/core/redis"
+	"weather-api/internal/adapter/cache/weather"
 	"weather-api/internal/adapter/email"
 	"weather-api/internal/adapter/repository/postgres"
 	"weather-api/internal/adapter/weather/weatherapi"
@@ -188,7 +189,7 @@ func SetupTestServices(t *testing.T) *TestServices {
 		Logger:     mockLogger,
 	})
 
-	cache := redis.New(redis.CacheOptions{
+	rawCache := redis.NewCache(redis.CacheOptions{
 		Address:      "localhost:6379",
 		TTL:          time.Minute,
 		DialTimeout:  2 * time.Second,
@@ -197,6 +198,8 @@ func SetupTestServices(t *testing.T) *TestServices {
 		PoolSize:     2,
 		MinIdleConns: 1,
 	})
+
+	cache := weather.NewCache(rawCache)
 
 	subscriptionRepo := postgres.NewSubscriptionRepo(db)
 	cityRepo := postgres.NewCityRepository(db)

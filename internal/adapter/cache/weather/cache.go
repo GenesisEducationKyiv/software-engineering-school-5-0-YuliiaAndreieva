@@ -4,10 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"github.com/redis/go-redis/v9"
 	"weather-api/internal/adapter/cache/core"
 	"weather-api/internal/adapter/cache/core/metrics"
 	"weather-api/internal/core/domain"
+
+	"github.com/redis/go-redis/v9"
 )
 
 type Cache interface {

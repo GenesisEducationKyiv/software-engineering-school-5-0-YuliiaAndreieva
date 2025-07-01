@@ -1,8 +1,9 @@
 package weather
 
 import (
-	"github.com/prometheus/client_golang/prometheus"
 	"weather-api/internal/adapter/cache/core/metrics"
+
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 func NewCacheMetrics(reg prometheus.Registerer) *metrics.CacheMetrics {
