@@ -3,27 +3,32 @@ package metrics
 import (
 	"context"
 	"errors"
-	"strings"
 	"time"
-	redisadapter "weather-api/internal/adapter/cache/redis"
 
 	"github.com/redis/go-redis/v9"
-
-	"weather-api/internal/core/domain"
 )
 
+type Cache interface {
+	Get(ctx context.Context, key string) ([]byte, error)
+	Set(ctx context.Context, key string, value []byte) error
+	Close() error
+}
+
 type CacheWithMetrics struct {
-	cache   redisadapter.WeatherCache
+	cache   Cache
 	metrics *CacheMetrics
 }
 
-func NewCacheWithMetrics(cache redisadapter.WeatherCache, metrics *CacheMetrics) redisadapter.WeatherCache {
-	return &CacheWithMetrics{cache: cache, metrics: metrics}
+func NewCacheWithMetrics(cache Cache, metrics *CacheMetrics) Cache {
+	return &CacheWithMetrics{
+		cache:   cache,
+		metrics: metrics,
+	}
 }
 
-func (c *CacheWithMetrics) Get(ctx context.Context, city string) (*domain.Weather, error) {
+func (c *CacheWithMetrics) Get(ctx context.Context, key string) ([]byte, error) {
 	if c.metrics == nil {
-		return c.cache.Get(ctx, city)
+		return c.cache.Get(ctx, key)
 	}
 
 	start := time.Now()
@@ -31,7 +36,7 @@ func (c *CacheWithMetrics) Get(ctx context.Context, city string) (*domain.Weathe
 		c.metrics.OperationDuration.Observe(time.Since(start).Seconds())
 	}()
 
-	weather, err := c.cache.Get(ctx, city)
+	data, err := c.cache.Get(ctx, key)
 	if errors.Is(err, redis.Nil) {
 		c.metrics.Misses.Inc()
 		return nil, nil
@@ -41,16 +46,16 @@ func (c *CacheWithMetrics) Get(ctx context.Context, city string) (*domain.Weathe
 		return nil, err
 	}
 
-	c.metrics.Hits.WithLabelValues(strings.ToLower(city)).Inc()
-	return weather, nil
+	c.metrics.Hits.WithLabelValues(key).Inc()
+	return data, nil
 }
 
-func (c *CacheWithMetrics) Set(ctx context.Context, city string, value domain.Weather) error {
+func (c *CacheWithMetrics) Set(ctx context.Context, key string, value []byte) error {
 	if c.metrics == nil {
-		return c.cache.Set(ctx, city, value)
+		return c.cache.Set(ctx, key, value)
 	}
 
-	if city == "" {
+	if key == "" {
 		c.metrics.Skipped.Inc()
 		return nil
 	}
@@ -60,7 +65,7 @@ func (c *CacheWithMetrics) Set(ctx context.Context, city string, value domain.We
 		c.metrics.OperationDuration.Observe(time.Since(start).Seconds())
 	}()
 
-	err := c.cache.Set(ctx, city, value)
+	err := c.cache.Set(ctx, key, value)
 	if err != nil {
 		c.metrics.Errors.Inc()
 		return err

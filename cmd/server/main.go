@@ -7,8 +7,9 @@ import (
 	"log"
 	"net/http"
 	"strconv"
-	"weather-api/internal/adapter/cache/metrics"
-	"weather-api/internal/adapter/cache/redis"
+	"weather-api/internal/adapter/cache/core/metrics"
+	"weather-api/internal/adapter/cache/core/redis"
+	weathercache "weather-api/internal/adapter/cache/weather"
 	"weather-api/internal/adapter/weather/openweathermap"
 	"weather-api/internal/adapter/weather/weatherapi"
 	"weather-api/internal/util/configutil"
@@ -93,9 +94,7 @@ func main() {
 	subscriptionRepo := postgres.NewSubscriptionRepo(db)
 	cityRepo := postgres.NewCityRepository(db)
 
-	promRegistry := prometheus.NewRegistry()
-
-	cache := redis.New(redis.CacheOptions{
+	redisCache := redis.NewCache(redis.CacheOptions{
 		Address:      cfg.RedisAddress,
 		TTL:          cfg.RedisTTL,
 		DialTimeout:  cfg.RedisDialTimeout,
@@ -104,9 +103,13 @@ func main() {
 		PoolSize:     cfg.RedisPoolSize,
 		MinIdleConns: cfg.RedisMinIdleConns,
 	})
-	cacheMetrics := metrics.NewCacheMetrics(promRegistry)
-	cacheWithMetrics := metrics.NewCacheWithMetrics(cache, cacheMetrics)
-	weatherService := service.NewWeatherService(chainProvider, cacheWithMetrics)
+
+	promRegistry := prometheus.NewRegistry()
+	cacheMetrics := weathercache.NewCacheMetrics(promRegistry)
+	cacheWithMetrics := metrics.NewCacheWithMetrics(redisCache, cacheMetrics)
+	weatherCache := weathercache.NewCache(cacheWithMetrics)
+
+	weatherService := service.NewWeatherService(chainProvider, weatherCache)
 	tokenService := service.NewTokenService()
 	emailService := service.NewEmailService(emailAdapter)
 

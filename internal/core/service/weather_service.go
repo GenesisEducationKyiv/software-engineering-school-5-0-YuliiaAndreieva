@@ -3,7 +3,7 @@ package service
 import (
 	"context"
 	"log"
-	"weather-api/internal/adapter/cache/redis"
+	weathercache "weather-api/internal/adapter/cache/weather"
 	"weather-api/internal/adapter/weather"
 	"weather-api/internal/core/domain"
 )
@@ -14,10 +14,10 @@ type WeatherService interface {
 
 type weatherService struct {
 	weatherSvc weather.Provider
-	cache      redis.WeatherCache
+	cache      weathercache.Cache
 }
 
-func NewWeatherService(weatherSvc weather.Provider, cache redis.WeatherCache) WeatherService {
+func NewWeatherService(weatherSvc weather.Provider, cache weathercache.Cache) WeatherService {
 	return &weatherService{
 		weatherSvc: weatherSvc,
 		cache:      cache,
