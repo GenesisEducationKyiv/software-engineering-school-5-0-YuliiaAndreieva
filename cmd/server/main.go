@@ -109,7 +109,8 @@ func main() {
 	cacheWithMetrics := metrics.NewCacheWithMetrics(redisCache, cacheMetrics)
 	weatherCache := weathercache.NewCache(cacheWithMetrics)
 
-	weatherService := service.NewWeatherService(chainProvider, weatherCache)
+	cachedProvider := weather.NewCachedWeatherProvider(weatherCache, chainProvider)
+	weatherService := service.NewWeatherService(cachedProvider)
 	tokenService := service.NewTokenService()
 	emailService := service.NewEmailService(emailAdapter)
 
