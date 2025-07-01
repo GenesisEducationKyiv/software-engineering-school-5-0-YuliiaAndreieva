@@ -162,7 +162,8 @@ func main() {
 	subscriptionRepo := postgres.NewSubscriptionRepo(db)
 	cityRepo := postgres.NewCityRepository(db)
 
-	weatherService := service.NewWeatherService(chainProvider, weatherCache)
+	cachedProvider := weather.NewCachedWeatherProvider(weatherCache, chainProvider)
+	weatherService := service.NewWeatherService(cachedProvider)
 	tokenService := service.NewTokenService()
 	emailService := service.NewEmailService(emailAdapter)
 
