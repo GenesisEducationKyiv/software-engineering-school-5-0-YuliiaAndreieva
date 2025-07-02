@@ -1,0 +1,10 @@
+name: 'Setup Go Environment'
+description: 'Setup Go for testing'
+
+runs:
+  using: "composite"
+  steps:
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.24.3' 
