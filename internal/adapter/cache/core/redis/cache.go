@@ -2,6 +2,7 @@ package redis
 
 import (
 	"context"
+	"strings"
 	"time"
 	"weather-api/internal/adapter/cache/core"
 
@@ -42,6 +43,7 @@ func (r *Cache) Get(ctx context.Context, key string) ([]byte, error) {
 	if key == "" {
 		return nil, core.NewError(core.InvalidKey, key, nil)
 	}
+	key = normalizeKey(key)
 	result := r.client.Get(ctx, key)
 	if result.Err() != nil {
 		return nil, result.Err()
@@ -53,9 +55,14 @@ func (r *Cache) Set(ctx context.Context, key string, value []byte) error {
 	if key == "" {
 		return core.NewError(core.InvalidKey, key, nil)
 	}
-	return r.client.Set(ctx, key, value, 0).Err()
+	key = normalizeKey(key)
+	return r.client.Set(ctx, key, value, r.ttl).Err()
 }
 
 func (r *Cache) Close() error {
 	return r.client.Close()
+}
+
+func normalizeKey(key string) string {
+	return strings.ToLower(strings.TrimSpace(key))
 }
