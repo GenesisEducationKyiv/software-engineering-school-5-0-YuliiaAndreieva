@@ -26,7 +26,7 @@
           "refId": "A"
         }
       ],
-      "gridPos": { "x": 0, "y": 0, "w": 12, "h": 6 },
+      "gridPos": { "x": 0, "y": 0, "w": 8, "h": 8 },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" }
@@ -47,7 +47,7 @@
           "refId": "B"
         }
       ],
-      "gridPos": { "x": 0, "y": 6, "w": 12, "h": 6 },
+      "gridPos": { "x": 8, "y": 0, "w": 8, "h": 8 },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" }
@@ -68,7 +68,7 @@
           "refId": "C"
         }
       ],
-      "gridPos": { "x": 0, "y": 12, "w": 12, "h": 6 },
+      "gridPos": { "x": 16, "y": 0, "w": 8, "h": 8 },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" }
@@ -89,7 +89,7 @@
           "refId": "D"
         }
       ],
-      "gridPos": { "x": 0, "y": 18, "w": 12, "h": 6 },
+      "gridPos": { "x": 0, "y": 8, "w": 8, "h": 8 },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" }
@@ -98,27 +98,6 @@
     },
     {
       "id": 5,
-      "type": "timeseries",
-      "title": "Cache Key Count",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "targets": [
-        {
-          "expr": "weather_cache_key_count",
-          "refId": "E"
-        }
-      ],
-      "gridPos": { "x": 0, "y": 24, "w": 12, "h": 6 },
-      "fieldConfig": {
-        "defaults": {
-          "color": { "mode": "palette-classic" }
-        }
-      }
-    },
-    {
-      "id": 6,
       "type": "timeseries",
       "title": "Cache Operation Duration (Seconds)",
       "datasource": {
@@ -131,7 +110,7 @@
           "refId": "F"
         }
       ],
-      "gridPos": { "x": 0, "y": 30, "w": 12, "h": 6 },
+      "gridPos": { "x": 8, "y": 8, "w": 8, "h": 8 },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },

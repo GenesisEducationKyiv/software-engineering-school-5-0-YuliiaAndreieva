@@ -9,7 +9,6 @@ type CacheMetrics struct {
 	Misses            prometheus.Counter
 	Errors            prometheus.Counter
 	Skipped           prometheus.Counter
-	KeyCount          prometheus.Gauge
 	OperationDuration prometheus.Histogram
 	reg               prometheus.Registerer
 	namespace         string
@@ -61,17 +60,6 @@ func WithSkipped() CacheMetricsOption {
 	}
 }
 
-func WithKeyCount() CacheMetricsOption {
-	return func(m *CacheMetrics) {
-		m.KeyCount = prometheus.NewGauge(prometheus.GaugeOpts{
-			Namespace: m.namespace,
-			Name:      "cache_key_count",
-			Help:      "Current number of keys in cache",
-		})
-		m.reg.MustRegister(m.KeyCount)
-	}
-}
-
 func WithOperationDuration() CacheMetricsOption {
 	return func(m *CacheMetrics) {
 		m.OperationDuration = prometheus.NewHistogram(prometheus.HistogramOpts{
@@ -96,7 +84,6 @@ func NewCacheMetrics(reg prometheus.Registerer, namespace string, opts ...CacheM
 			WithMisses(),
 			WithErrors(),
 			WithSkipped(),
-			WithKeyCount(),
 			WithOperationDuration(),
 		}
 	}
