@@ -7,11 +7,15 @@ import (
 	"log"
 	"net/http"
 	"strconv"
-	"time"
+	"weather-api/internal/adapter/cache/core/metrics"
+	"weather-api/internal/adapter/cache/core/redis"
+	weathercache "weather-api/internal/adapter/cache/weather"
 	"weather-api/internal/adapter/weather/openweathermap"
 	"weather-api/internal/adapter/weather/weatherapi"
 	"weather-api/internal/util/configutil"
 	"weather-api/internal/util/logger"
+
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	"weather-api/internal/adapter/email"
 	"weather-api/internal/adapter/repository/postgres"
@@ -24,6 +28,7 @@ import (
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/robfig/cron/v3"
 )
 
@@ -68,7 +73,7 @@ func main() {
 		Pass: cfg.SMTPPass,
 	})
 
-	httpClient := &http.Client{Timeout: 5 * time.Second}
+	httpClient := &http.Client{Timeout: cfg.HTTPClientTimeout}
 
 	weatherAPIProvider := weatherapi.NewClient(weatherapi.ClientOptions{
 		APIKey:     cfg.WeatherAPIKey,
@@ -89,7 +94,23 @@ func main() {
 	subscriptionRepo := postgres.NewSubscriptionRepo(db)
 	cityRepo := postgres.NewCityRepository(db)
 
-	weatherService := service.NewWeatherService(chainProvider)
+	redisCache := redis.NewCache(redis.CacheOptions{
+		Address:      cfg.RedisAddress,
+		TTL:          cfg.RedisTTL,
+		DialTimeout:  cfg.RedisDialTimeout,
+		ReadTimeout:  cfg.RedisReadTimeout,
+		WriteTimeout: cfg.RedisWriteTimeout,
+		PoolSize:     cfg.RedisPoolSize,
+		MinIdleConns: cfg.RedisMinIdleConns,
+	})
+
+	promRegistry := prometheus.NewRegistry()
+	cacheMetrics := weathercache.NewCacheMetrics(promRegistry)
+	cacheWithMetrics := metrics.NewCacheWithMetrics(redisCache, cacheMetrics)
+	weatherCache := weathercache.NewCache(cacheWithMetrics)
+
+	cachedProvider := weather.NewCachedWeatherProvider(weatherCache, chainProvider)
+	weatherService := service.NewWeatherService(cachedProvider)
 	tokenService := service.NewTokenService()
 	emailService := service.NewEmailService(emailAdapter)
 
@@ -116,7 +137,10 @@ func main() {
 		api.POST("/subscribe", subscriptionHandler.Subscribe)
 		api.GET("/confirm/:token", subscriptionHandler.Confirm)
 		api.GET("/unsubscribe/:token", subscriptionHandler.Unsubscribe)
+		api.GET("/metrics", gin.WrapH(promhttp.HandlerFor(promRegistry, promhttp.HandlerOpts{})))
 	}
+
+	r.GET("/metrics", gin.WrapH(promhttp.Handler()))
 
 	r.NoRoute(func(c *gin.Context) {
 		c.File("./web/index.html")
@@ -153,8 +177,8 @@ func main() {
 	srv := &http.Server{
 		Addr:         ":" + port,
 		Handler:      r,
-		ReadTimeout:  10 * time.Second,
-		WriteTimeout: 10 * time.Second,
+		ReadTimeout:  cfg.HTTPReadTimeout,
+		WriteTimeout: cfg.HTTPWriteTimeout,
 	}
 
 	log.Printf("Server running on %s", srv.Addr)

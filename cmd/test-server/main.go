@@ -10,7 +10,8 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-	"time"
+	"weather-api/internal/adapter/cache/core/redis"
+	weathercache "weather-api/internal/adapter/cache/weather"
 	"weather-api/internal/adapter/email"
 	"weather-api/internal/adapter/repository/postgres"
 	"weather-api/internal/adapter/weather"
@@ -147,10 +148,22 @@ func main() {
 
 	chainProvider := weather.NewChainWeatherProvider(weatherAPIProvider, openWeatherMapProvider)
 
+	cache := redis.NewCache(redis.CacheOptions{
+		Address:      cfg.RedisAddress,
+		TTL:          cfg.RedisTTL,
+		DialTimeout:  cfg.RedisDialTimeout,
+		ReadTimeout:  cfg.RedisReadTimeout,
+		WriteTimeout: cfg.RedisWriteTimeout,
+		PoolSize:     cfg.RedisPoolSize,
+		MinIdleConns: cfg.RedisMinIdleConns,
+	})
+	weatherCache := weathercache.NewCache(cache)
+
 	subscriptionRepo := postgres.NewSubscriptionRepo(db)
 	cityRepo := postgres.NewCityRepository(db)
 
-	weatherService := service.NewWeatherService(chainProvider)
+	cachedProvider := weather.NewCachedWeatherProvider(weatherCache, chainProvider)
+	weatherService := service.NewWeatherService(cachedProvider)
 	tokenService := service.NewTokenService()
 	emailService := service.NewEmailService(emailAdapter)
 
@@ -214,8 +227,8 @@ func main() {
 	srv := &http.Server{
 		Addr:         ":" + port,
 		Handler:      r,
-		ReadTimeout:  10 * time.Second,
-		WriteTimeout: 10 * time.Second,
+		ReadTimeout:  cfg.HTTPReadTimeout,
+		WriteTimeout: cfg.HTTPWriteTimeout,
 	}
 
 	log.Printf("Test server running on %s (with mocked Weather API)", srv.Addr)

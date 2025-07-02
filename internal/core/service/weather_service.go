@@ -11,17 +11,15 @@ type WeatherService interface {
 }
 
 type weatherService struct {
-	weatherSvc weather.Provider
+	provider weather.Provider
 }
 
-func NewWeatherService(weatherSvc weather.Provider) WeatherService {
-	return &weatherService{weatherSvc: weatherSvc}
+func NewWeatherService(provider weather.Provider) WeatherService {
+	return &weatherService{
+		provider: provider,
+	}
 }
 
 func (s *weatherService) GetWeather(ctx context.Context, city string) (domain.Weather, error) {
-	weather, err := s.weatherSvc.GetWeather(ctx, city)
-	if err != nil {
-		return domain.Weather{}, err
-	}
-	return weather, nil
+	return s.provider.GetWeather(ctx, city)
 }
