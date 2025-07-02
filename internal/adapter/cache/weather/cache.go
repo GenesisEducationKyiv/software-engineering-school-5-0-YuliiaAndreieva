@@ -17,15 +17,15 @@ type Cache interface {
 	Close() error
 }
 
-type CacheIml struct {
+type CacheImpl struct {
 	cache metrics.Cache
 }
 
-func NewCache(cache metrics.Cache) *CacheIml {
-	return &CacheIml{cache: cache}
+func NewCache(cache metrics.Cache) *CacheImpl {
+	return &CacheImpl{cache: cache}
 }
 
-func (w *CacheIml) Get(ctx context.Context, city string) (*domain.Weather, error) {
+func (w *CacheImpl) Get(ctx context.Context, city string) (*domain.Weather, error) {
 	if city == "" {
 		return nil, core.NewError(core.InvalidKey, city, nil)
 	}
@@ -46,7 +46,7 @@ func (w *CacheIml) Get(ctx context.Context, city string) (*domain.Weather, error
 	return &weather, nil
 }
 
-func (w *CacheIml) Set(ctx context.Context, city string, weather domain.Weather) error {
+func (w *CacheImpl) Set(ctx context.Context, city string, weather domain.Weather) error {
 	if city == "" {
 		return core.NewError(core.InvalidKey, city, nil)
 	}
@@ -60,6 +60,6 @@ func (w *CacheIml) Set(ctx context.Context, city string, weather domain.Weather)
 	return nil
 }
 
-func (w *CacheIml) Close() error {
+func (w *CacheImpl) Close() error {
 	return w.cache.Close()
 }
