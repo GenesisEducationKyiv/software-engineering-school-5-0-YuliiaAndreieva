@@ -8,6 +8,7 @@ import (
 
 	httperrors "weather-api/internal/adapter/handler/http/errors"
 	"weather-api/internal/adapter/handler/http/request"
+	"weather-api/internal/adapter/handler/http/response"
 	"weather-api/internal/core/domain"
 	"weather-api/internal/core/ports"
 )
@@ -39,5 +40,10 @@ func (h *WeatherHandler) GetWeather(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, weather)
+	resp := response.WeatherResponse{
+		Temperature: weather.Temperature,
+		Humidity:    weather.Humidity,
+		Description: weather.Description,
+	}
+	c.JSON(http.StatusOK, resp)
 }
