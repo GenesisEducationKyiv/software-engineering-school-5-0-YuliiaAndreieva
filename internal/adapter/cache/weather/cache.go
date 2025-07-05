@@ -5,27 +5,21 @@ import (
 	"encoding/json"
 	"errors"
 	"weather-api/internal/adapter/cache/core"
-	"weather-api/internal/adapter/cache/core/metrics"
 	"weather-api/internal/core/domain"
+	"weather-api/internal/core/ports"
 
 	"github.com/redis/go-redis/v9"
 )
 
-type Cache interface {
-	Get(ctx context.Context, city string) (*domain.Weather, error)
-	Set(ctx context.Context, city string, weather domain.Weather) error
-	Close() error
+type Cache struct {
+	cache ports.Cache
 }
 
-type CacheImpl struct {
-	cache metrics.Cache
+func NewCache(cache ports.Cache) *Cache {
+	return &Cache{cache: cache}
 }
 
-func NewCache(cache metrics.Cache) *CacheImpl {
-	return &CacheImpl{cache: cache}
-}
-
-func (w *CacheImpl) Get(ctx context.Context, city string) (*domain.Weather, error) {
+func (w *Cache) Get(ctx context.Context, city string) (*domain.Weather, error) {
 	if city == "" {
 		return nil, core.NewError(core.InvalidKey, city, nil)
 	}
@@ -46,7 +40,7 @@ func (w *CacheImpl) Get(ctx context.Context, city string) (*domain.Weather, erro
 	return &weather, nil
 }
 
-func (w *CacheImpl) Set(ctx context.Context, city string, weather domain.Weather) error {
+func (w *Cache) Set(ctx context.Context, city string, weather domain.Weather) error {
 	if city == "" {
 		return core.NewError(core.InvalidKey, city, nil)
 	}
@@ -60,6 +54,6 @@ func (w *CacheImpl) Set(ctx context.Context, city string, weather domain.Weather
 	return nil
 }
 
-func (w *CacheImpl) Close() error {
+func (w *Cache) Close() error {
 	return w.cache.Close()
 }

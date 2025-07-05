@@ -2,7 +2,7 @@ package request
 
 import (
 	"strings"
-	"weather-api/internal/handler/http/errors"
+	"weather-api/internal/adapter/handler/http/errors"
 )
 
 type CityRequest struct {

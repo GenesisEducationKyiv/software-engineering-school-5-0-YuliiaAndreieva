@@ -4,20 +4,20 @@ import (
 	"errors"
 	"log"
 	"net/http"
-	"weather-api/internal/core/domain"
-	"weather-api/internal/core/repository"
-	"weather-api/internal/core/service"
-	httperrors "weather-api/internal/handler/http/errors"
-	"weather-api/internal/handler/http/request"
 
 	"github.com/gin-gonic/gin"
+
+	httperrors "weather-api/internal/adapter/handler/http/errors"
+	"weather-api/internal/adapter/handler/http/request"
+	"weather-api/internal/core/domain"
+	"weather-api/internal/core/ports"
 )
 
 type SubscriptionHandler struct {
-	subscriptionService service.SubscriptionService
+	subscriptionService ports.SubscriptionService
 }
 
-func NewSubscriptionHandler(subscriptionService service.SubscriptionService) *SubscriptionHandler {
+func NewSubscriptionHandler(subscriptionService ports.SubscriptionService) *SubscriptionHandler {
 	return &SubscriptionHandler{subscriptionService: subscriptionService}
 }
 
@@ -38,7 +38,7 @@ func (h *SubscriptionHandler) Subscribe(c *gin.Context) {
 
 	log.Printf("Received subscription request for city: %s, frequency: %s", req.City, req.Frequency)
 
-	_, err := h.subscriptionService.Subscribe(c, repository.SubscribeOptions{
+	_, err := h.subscriptionService.Subscribe(c, ports.SubscribeOptions{
 		Email:     req.Email,
 		City:      req.City,
 		Frequency: req.Frequency,

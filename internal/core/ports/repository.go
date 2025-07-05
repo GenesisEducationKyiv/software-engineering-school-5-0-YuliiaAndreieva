@@ -1,9 +1,21 @@
-package repository
+package ports
 
 import (
 	"context"
 	"weather-api/internal/core/domain"
 )
+
+type IsSubscriptionExistsOptions struct {
+	Email     string
+	CityID    int64
+	Frequency domain.Frequency
+}
+
+type SubscribeOptions struct {
+	Email     string
+	City      string
+	Frequency domain.Frequency
+}
 
 type SubscriptionRepository interface {
 	CreateSubscription(ctx context.Context, sub domain.Subscription) error
@@ -18,16 +30,4 @@ type SubscriptionRepository interface {
 type CityRepository interface {
 	Create(ctx context.Context, city domain.City) (domain.City, error)
 	GetByName(ctx context.Context, name string) (domain.City, error)
-}
-
-type IsSubscriptionExistsOptions struct {
-	Email     string
-	CityID    int64
-	Frequency domain.Frequency
-}
-
-type SubscribeOptions struct {
-	Email     string
-	City      string
-	Frequency domain.Frequency
 }

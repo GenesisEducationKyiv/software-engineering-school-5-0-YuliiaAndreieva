@@ -2,8 +2,8 @@ package request
 
 import (
 	"strings"
+	"weather-api/internal/adapter/handler/http/errors"
 	"weather-api/internal/core/domain"
-	"weather-api/internal/handler/http/errors"
 )
 
 type SubscribeRequest struct {

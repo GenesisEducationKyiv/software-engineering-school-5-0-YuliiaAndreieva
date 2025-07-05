@@ -3,19 +3,20 @@ package http
 import (
 	"errors"
 	"net/http"
-	"weather-api/internal/core/domain"
-	"weather-api/internal/core/service"
-	httperrors "weather-api/internal/handler/http/errors"
-	"weather-api/internal/handler/http/request"
 
 	"github.com/gin-gonic/gin"
+
+	httperrors "weather-api/internal/adapter/handler/http/errors"
+	"weather-api/internal/adapter/handler/http/request"
+	"weather-api/internal/core/domain"
+	"weather-api/internal/core/ports"
 )
 
 type WeatherHandler struct {
-	weatherService service.WeatherService
+	weatherService ports.WeatherService
 }
 
-func NewWeatherHandler(weatherService service.WeatherService) *WeatherHandler {
+func NewWeatherHandler(weatherService ports.WeatherService) *WeatherHandler {
 	return &WeatherHandler{weatherService: weatherService}
 }
 

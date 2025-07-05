@@ -5,16 +5,13 @@ import (
 	"encoding/base64"
 )
 
-type TokenService interface {
-	GenerateToken() (string, error)
-}
-type tokenService struct{}
+type TokenServiceImpl struct{}
 
-func NewTokenService() TokenService {
-	return &tokenService{}
+func NewTokenService() *TokenServiceImpl {
+	return &TokenServiceImpl{}
 }
 
-func (s *tokenService) GenerateToken() (string, error) {
+func (s *TokenServiceImpl) GenerateToken() (string, error) {
 	b := make([]byte, 32)
 	if _, err := rand.Read(b); err != nil {
 		return "", err

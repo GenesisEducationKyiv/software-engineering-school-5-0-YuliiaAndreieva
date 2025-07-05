@@ -7,18 +7,17 @@ import (
 	"fmt"
 	"log"
 	"weather-api/internal/core/domain"
-	"weather-api/internal/core/repository"
 )
 
-type cityRepo struct {
+type CityRepo struct {
 	db *sql.DB
 }
 
-func NewCityRepository(db *sql.DB) repository.CityRepository {
-	return &cityRepo{db: db}
+func NewCityRepository(db *sql.DB) *CityRepo {
+	return &CityRepo{db: db}
 }
 
-func (r *cityRepo) Create(ctx context.Context, city domain.City) (domain.City, error) {
+func (r *CityRepo) Create(ctx context.Context, city domain.City) (domain.City, error) {
 	log.Printf("Attempting to create city: %s", city.Name)
 
 	query := `INSERT INTO cities (name) VALUES ($1) RETURNING id`
@@ -33,7 +32,7 @@ func (r *cityRepo) Create(ctx context.Context, city domain.City) (domain.City, e
 	return city, nil
 }
 
-func (r *cityRepo) GetByName(ctx context.Context, name string) (domain.City, error) {
+func (r *CityRepo) GetByName(ctx context.Context, name string) (domain.City, error) {
 	log.Printf("Attempting to get city by name: %s", name)
 
 	var city domain.City
