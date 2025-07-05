@@ -10,7 +10,7 @@ import (
 	"weather-api/internal/mocks"
 
 	"weather-api/internal/core/domain"
-	"weather-api/internal/core/repository"
+	"weather-api/internal/core/ports"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -59,7 +59,7 @@ func TestSubscriptionService_Subscribe(t *testing.T) {
 
 				cityRepo.On("GetByName", ctx, cityName).Return(cityRow, nil)
 
-				subRepo.On("IsSubscriptionExists", ctx, repository.IsSubscriptionExistsOptions{
+				subRepo.On("IsSubscriptionExists", ctx, ports.IsSubscriptionExistsOptions{
 					Email:     email,
 					CityID:    cityRow.ID,
 					Frequency: domain.FrequencyDaily,
@@ -97,7 +97,7 @@ func TestSubscriptionService_Subscribe(t *testing.T) {
 				cityRepo.On("Create", ctx, domain.City{Name: cityName}).
 					Return(cityRow, nil)
 
-				subRepo.On("IsSubscriptionExists", ctx, repository.IsSubscriptionExistsOptions{
+				subRepo.On("IsSubscriptionExists", ctx, ports.IsSubscriptionExistsOptions{
 					Email:     email,
 					CityID:    cityRow.ID,
 					Frequency: domain.FrequencyDaily,
@@ -128,7 +128,7 @@ func TestSubscriptionService_Subscribe(t *testing.T) {
 				tokenSvc *mocks.MockTokenService) {
 
 				cityRepo.On("GetByName", ctx, cityName).Return(cityRow, nil)
-				subRepo.On("IsSubscriptionExists", ctx, repository.IsSubscriptionExistsOptions{
+				subRepo.On("IsSubscriptionExists", ctx, ports.IsSubscriptionExistsOptions{
 					Email:     email,
 					CityID:    cityRow.ID,
 					Frequency: domain.FrequencyDaily,
@@ -167,7 +167,7 @@ func TestSubscriptionService_Subscribe(t *testing.T) {
 				subRepo, cityRepo, weatherProv, tokenSvc, emailNotifier,
 			)
 
-			token, err := s.Subscribe(ctx, repository.SubscribeOptions{
+			token, err := s.Subscribe(ctx, ports.SubscribeOptions{
 				Email:     email,
 				City:      cityName,
 				Frequency: domain.FrequencyDaily,

@@ -12,11 +12,11 @@ import (
 	"net/http/httptest"
 	"os"
 	"testing"
+	httphandler "weather-api/internal/adapter/handler/http"
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	httphandler "weather-api/internal/handler/http"
 )
 
 type subscriptionTestServer struct {
