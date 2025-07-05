@@ -16,7 +16,7 @@ import (
 	"testing"
 	"time"
 	"weather-api/internal/core/domain"
-	"weather-api/internal/core/repository"
+	"weather-api/internal/core/ports"
 )
 
 type mailHogMessage struct {
@@ -119,7 +119,7 @@ func TestEmailIntegration_WithMailHog(t *testing.T) {
 				email := "confirmation@example.com"
 				city := "Rivne"
 
-				token, err := ts.SubscriptionService.Subscribe(context.Background(), repository.SubscribeOptions{
+				token, err := ts.SubscriptionService.Subscribe(context.Background(), ports.SubscribeOptions{
 					Email:     email,
 					City:      city,
 					Frequency: domain.FrequencyDaily,
@@ -144,7 +144,7 @@ func TestEmailIntegration_WithMailHog(t *testing.T) {
 				email := "update@example.com"
 				city := "Ternopil"
 
-				token, err := ts.SubscriptionService.Subscribe(context.Background(), repository.SubscribeOptions{
+				token, err := ts.SubscriptionService.Subscribe(context.Background(), ports.SubscribeOptions{
 					Email:     email,
 					City:      city,
 					Frequency: domain.FrequencyDaily,
@@ -182,7 +182,7 @@ func TestEmailIntegration_WithMailHog(t *testing.T) {
 				clearMailHogMessages(t)
 
 				for _, email := range emails {
-					token, err := ts.SubscriptionService.Subscribe(context.Background(), repository.SubscribeOptions{
+					token, err := ts.SubscriptionService.Subscribe(context.Background(), ports.SubscribeOptions{
 						Email:     email,
 						City:      city,
 						Frequency: domain.FrequencyDaily,
@@ -207,7 +207,7 @@ func TestEmailIntegration_WithMailHog(t *testing.T) {
 
 				clearMailHogMessages(t)
 
-				_, err := ts.SubscriptionService.Subscribe(context.Background(), repository.SubscribeOptions{
+				_, err := ts.SubscriptionService.Subscribe(context.Background(), ports.SubscribeOptions{
 					Email:     email,
 					City:      city,
 					Frequency: domain.FrequencyDaily,

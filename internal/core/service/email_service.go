@@ -4,8 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"weather-api/internal/adapter/email"
 	"weather-api/internal/core/domain"
+	"weather-api/internal/core/ports"
 	"weather-api/internal/util/emailutil"
 )
 
@@ -15,10 +15,10 @@ type EmailService interface {
 }
 
 type EmailServiceImpl struct {
-	emailSvc email.Sender
+	emailSvc ports.EmailSender
 }
 
-func NewEmailService(emailSvc email.Sender) EmailService {
+func NewEmailService(emailSvc ports.EmailSender) *EmailServiceImpl {
 	return &EmailServiceImpl{
 		emailSvc: emailSvc,
 	}
@@ -34,14 +34,14 @@ func (s *EmailServiceImpl) SendUpdates(updates []domain.WeatherUpdate) error {
 			Token:       update.Subscription.Token,
 		})
 
-		if err := s.emailSvc.SendEmail(email.SendEmailOptions{
+		if err := s.emailSvc.SendEmail(ports.SendEmailOptions{
 			To:      update.Subscription.Email,
 			Subject: subject,
 			Body:    htmlBody,
 		}); err != nil {
 			msg := fmt.Sprintf("unable to send email to %s: %v", update.Subscription.Email, err)
 			log.Print(msg)
-			continue
+			return errors.New(msg)
 		}
 	}
 
@@ -51,7 +51,7 @@ func (s *EmailServiceImpl) SendUpdates(updates []domain.WeatherUpdate) error {
 func (s *EmailServiceImpl) SendConfirmationEmail(subscription *domain.Subscription) error {
 	subject, htmlBody := emailutil.BuildConfirmationEmail(subscription.City.Name, subscription.Token)
 
-	if err := s.emailSvc.SendEmail(email.SendEmailOptions{
+	if err := s.emailSvc.SendEmail(ports.SendEmailOptions{
 		To:      subscription.Email,
 		Subject: subject,
 		Body:    htmlBody,

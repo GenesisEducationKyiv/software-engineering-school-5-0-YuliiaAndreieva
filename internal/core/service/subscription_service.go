@@ -5,30 +5,25 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"weather-api/internal/adapter/weather"
 	"weather-api/internal/core/domain"
-	"weather-api/internal/core/repository"
+	"weather-api/internal/core/ports"
 )
 
-type SubscriptionService interface {
-	Subscribe(ctx context.Context, opts repository.SubscribeOptions) (string, error)
-	Confirm(ctx context.Context, token string) error
-	Unsubscribe(ctx context.Context, token string) error
-	GetSubscriptionsByFrequency(ctx context.Context, frequency domain.Frequency) ([]domain.Subscription, error)
+type TokenService interface {
+	GenerateToken() (string, error)
 }
-
 type SubscriptionServiceImpl struct {
-	repo          repository.SubscriptionRepository
-	weatherClient weather.Provider
+	repo          ports.SubscriptionRepository
+	weatherClient ports.WeatherProvider
 	tokenSvc      TokenService
-	cityRepo      repository.CityRepository
+	cityRepo      ports.CityRepository
 	emailService  EmailService
 }
 
 func NewSubscriptionService(
-	repo repository.SubscriptionRepository,
-	cityRepo repository.CityRepository,
-	weatherClient weather.Provider,
+	repo ports.SubscriptionRepository,
+	cityRepo ports.CityRepository,
+	weatherClient ports.WeatherProvider,
 	tokenSvc TokenService,
 	emailService EmailService,
 ) *SubscriptionServiceImpl {
@@ -41,7 +36,7 @@ func NewSubscriptionService(
 	}
 }
 
-func (s *SubscriptionServiceImpl) Subscribe(ctx context.Context, opts repository.SubscribeOptions) (string, error) {
+func (s *SubscriptionServiceImpl) Subscribe(ctx context.Context, opts ports.SubscribeOptions) (string, error) {
 	cityEntity, err := s.cityRepo.GetByName(ctx, opts.City)
 	if err != nil {
 		if !errors.Is(err, domain.ErrCityNotFound) {
@@ -68,7 +63,7 @@ func (s *SubscriptionServiceImpl) Subscribe(ctx context.Context, opts repository
 		}
 	}
 
-	exists, err := s.repo.IsSubscriptionExists(ctx, repository.IsSubscriptionExistsOptions{
+	exists, err := s.repo.IsSubscriptionExists(ctx, ports.IsSubscriptionExistsOptions{
 		Email:     opts.Email,
 		CityID:    cityEntity.ID,
 		Frequency: opts.Frequency,

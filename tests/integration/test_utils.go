@@ -14,6 +14,7 @@ import (
 	"weather-api/internal/adapter/email"
 	"weather-api/internal/adapter/repository/postgres"
 	"weather-api/internal/adapter/weather/weatherapi"
+	"weather-api/internal/core/ports"
 	"weather-api/internal/core/service"
 
 	"github.com/golang-migrate/migrate/v4"
@@ -156,8 +157,8 @@ func CreateTestDatabase(t *testing.T) (*sql.DB, func()) {
 
 type TestServices struct {
 	DB                   *sql.DB
-	SubscriptionService  service.SubscriptionService
-	WeatherService       service.WeatherService
+	SubscriptionService  ports.SubscriptionService
+	WeatherService       ports.WeatherService
 	WeatherUpdateService service.WeatherUpdateService
 	EmailService         service.EmailService
 	Cleanup              func()

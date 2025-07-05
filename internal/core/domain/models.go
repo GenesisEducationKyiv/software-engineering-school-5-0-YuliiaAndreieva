@@ -12,26 +12,26 @@ const (
 )
 
 type Weather struct {
-	Temperature float64 `json:"temperature"`
-	Humidity    int     `json:"humidity"`
-	Description string  `json:"description"`
+	Temperature float64
+	Humidity    int
+	Description string
 }
 
 type City struct {
-	ID   int64  `json:"id"`
-	Name string `json:"name"`
+	ID   int64
+	Name string
 }
 
 type Subscription struct {
-	ID          int64     `json:"id"`
-	Email       string    `json:"email"`
-	CityID      int64     `json:"city_id"`
-	City        *City     `json:"city,omitempty"`
-	Frequency   Frequency `json:"frequency"`
-	Token       string    `json:"token"`
-	IsConfirmed bool      `json:"is_confirmed"`
-	CreatedAt   time.Time `json:"created_at"`
-	UpdatedAt   time.Time `json:"updated_at"`
+	ID          int64
+	Email       string
+	CityID      int64
+	City        *City
+	Frequency   Frequency
+	Token       string
+	IsConfirmed bool
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
 }
 
 type WeatherUpdate struct {

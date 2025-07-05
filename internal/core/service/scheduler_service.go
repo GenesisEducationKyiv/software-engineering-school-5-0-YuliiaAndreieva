@@ -8,6 +8,10 @@ import (
 	"weather-api/internal/core/domain"
 )
 
+type WeatherUpdateService interface {
+	PrepareUpdates(ctx context.Context, frequency domain.Frequency) ([]domain.WeatherUpdate, error)
+}
+
 type SchedulerService struct {
 	weatherUpdateService WeatherUpdateService
 	emailService         EmailService
