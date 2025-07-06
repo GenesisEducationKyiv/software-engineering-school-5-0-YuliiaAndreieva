@@ -1,0 +1,52 @@
+version: "2"
+
+linters:
+  enable:
+    - govet
+    - errcheck
+    - staticcheck
+    - gocyclo
+    - revive
+    - unparam
+    - godot
+  disable: []
+  exclusions:
+    rules:
+    - path: internal/mocks/.*\.go
+      linters:
+        - errcheck
+  settings:
+    errcheck:
+      check-type-assertions: true
+    gocyclo:
+      min-complexity: 15
+    revive:
+      rules:
+        - name: unexported-return
+          severity: warning
+        - name: var-naming
+          severity: error
+        - name: blank-imports
+          severity: error
+    unparam:
+      check-exported: true
+    godot:
+      scope: all
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
+
+output:
+  formats:
+    text:
+      print-linter-name: false
+      print-issued-lines: false
+      colors: false
+run:
+  timeout: 5m
