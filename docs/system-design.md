@@ -24,7 +24,7 @@
 - SMTP authentication for email delivery
 
 ### Constraints
-- Free tier limitations of WeatherAPI.com
+- 1 Million of requests per month of WeatherAPI.com
 
 ## 2. Load Estimation
 
