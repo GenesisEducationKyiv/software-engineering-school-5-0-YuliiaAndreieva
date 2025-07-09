@@ -95,6 +95,11 @@ func (m *MockTokenService) GenerateToken() (string, error) {
 	return args.String(0), args.Error(1)
 }
 
+func (m *MockTokenService) CheckTokenExists(ctx context.Context, token string) error {
+	args := m.Called(ctx, token)
+	return args.Error(0)
+}
+
 type MockCityRepo struct{ mock.Mock }
 
 func (m *MockCityRepo) GetByName(ctx context.Context, name string) (domain.City, error) {

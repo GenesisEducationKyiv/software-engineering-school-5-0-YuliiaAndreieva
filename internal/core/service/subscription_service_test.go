@@ -190,13 +190,13 @@ func TestSubscriptionService_Confirm(t *testing.T) {
 
 	tests := []struct {
 		name       string
-		setupMocks func(r *mocks.MockSubscriptionRepository)
+		setupMocks func(r *mocks.MockSubscriptionRepository, tokenSvc *mocks.MockTokenService)
 		expectErr  error
 	}{
 		{
 			name: "successfully confirms subscription",
-			setupMocks: func(r *mocks.MockSubscriptionRepository) {
-				r.On("IsTokenExists", ctx, token).Return(true, nil)
+			setupMocks: func(r *mocks.MockSubscriptionRepository, tokenSvc *mocks.MockTokenService) {
+				tokenSvc.On("CheckTokenExists", ctx, token).Return(nil)
 				sub := domain.Subscription{Token: token, IsConfirmed: false}
 				r.On("GetSubscriptionByToken", ctx, token).Return(sub, nil)
 				subConfirmed := sub
@@ -207,15 +207,15 @@ func TestSubscriptionService_Confirm(t *testing.T) {
 		},
 		{
 			name: "token not found",
-			setupMocks: func(r *mocks.MockSubscriptionRepository) {
-				r.On("IsTokenExists", ctx, token).Return(false, nil)
+			setupMocks: func(r *mocks.MockSubscriptionRepository, tokenSvc *mocks.MockTokenService) {
+				tokenSvc.On("CheckTokenExists", ctx, token).Return(domain.ErrTokenNotFound)
 			},
 			expectErr: domain.ErrTokenNotFound,
 		},
 		{
 			name: "update fails",
-			setupMocks: func(r *mocks.MockSubscriptionRepository) {
-				r.On("IsTokenExists", ctx, token).Return(true, nil)
+			setupMocks: func(r *mocks.MockSubscriptionRepository, tokenSvc *mocks.MockTokenService) {
+				tokenSvc.On("CheckTokenExists", ctx, token).Return(nil)
 				sub := domain.Subscription{Token: token, IsConfirmed: false}
 				r.On("GetSubscriptionByToken", ctx, token).Return(sub, nil)
 				subConfirmed := sub
@@ -235,7 +235,7 @@ func TestSubscriptionService_Confirm(t *testing.T) {
 			emailNotifier := &MockEmailNotifier{}
 			tokenSvc := &mocks.MockTokenService{}
 
-			tt.setupMocks(repo)
+			tt.setupMocks(repo, tokenSvc)
 
 			s := NewSubscriptionService(
 				repo, cityRepo, weatherProv, tokenSvc, emailNotifier,
@@ -244,6 +244,7 @@ func TestSubscriptionService_Confirm(t *testing.T) {
 			err := s.Confirm(ctx, token)
 			assert.Equal(t, tt.expectErr, err)
 			repo.AssertExpectations(t)
+			tokenSvc.AssertExpectations(t)
 		})
 	}
 }
@@ -254,28 +255,28 @@ func TestSubscriptionService_Unsubscribe(t *testing.T) {
 
 	tests := []struct {
 		name       string
-		setupMocks func(r *mocks.MockSubscriptionRepository)
+		setupMocks func(r *mocks.MockSubscriptionRepository, tokenSvc *mocks.MockTokenService)
 		expectErr  error
 	}{
 		{
 			name: "successfully unsubscribes",
-			setupMocks: func(r *mocks.MockSubscriptionRepository) {
-				r.On("IsTokenExists", ctx, token).Return(true, nil)
+			setupMocks: func(r *mocks.MockSubscriptionRepository, tokenSvc *mocks.MockTokenService) {
+				tokenSvc.On("CheckTokenExists", ctx, token).Return(nil)
 				r.On("DeleteSubscription", ctx, token).Return(nil)
 			},
 			expectErr: nil,
 		},
 		{
 			name: "token not found",
-			setupMocks: func(r *mocks.MockSubscriptionRepository) {
-				r.On("IsTokenExists", ctx, token).Return(false, nil)
+			setupMocks: func(r *mocks.MockSubscriptionRepository, tokenSvc *mocks.MockTokenService) {
+				tokenSvc.On("CheckTokenExists", ctx, token).Return(domain.ErrTokenNotFound)
 			},
 			expectErr: domain.ErrTokenNotFound,
 		},
 		{
 			name: "delete fails",
-			setupMocks: func(r *mocks.MockSubscriptionRepository) {
-				r.On("IsTokenExists", ctx, token).Return(true, nil)
+			setupMocks: func(r *mocks.MockSubscriptionRepository, tokenSvc *mocks.MockTokenService) {
+				tokenSvc.On("CheckTokenExists", ctx, token).Return(nil)
 				r.On("DeleteSubscription", ctx, token).
 					Return(errors.New("db error"))
 			},
@@ -291,7 +292,7 @@ func TestSubscriptionService_Unsubscribe(t *testing.T) {
 			emailNotifier := &MockEmailNotifier{}
 			tokenSvc := &mocks.MockTokenService{}
 
-			tt.setupMocks(repo)
+			tt.setupMocks(repo, tokenSvc)
 
 			s := NewSubscriptionService(
 				repo, cityRepo, weatherProv, tokenSvc, emailNotifier,
@@ -300,6 +301,7 @@ func TestSubscriptionService_Unsubscribe(t *testing.T) {
 			err := s.Unsubscribe(ctx, token)
 			assert.Equal(t, tt.expectErr, err)
 			repo.AssertExpectations(t)
+			tokenSvc.AssertExpectations(t)
 		})
 	}
 }

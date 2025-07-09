@@ -191,7 +191,7 @@ func SetupTestServices(t *testing.T) *TestServices {
 	cityRepo := postgres.NewCityRepository(db)
 
 	weatherService := service.NewWeatherService(weatherAdapter)
-	tokenService := service.NewTokenService()
+	tokenService := service.NewTokenService(subscriptionRepo)
 	emailService := service.NewEmailService(emailAdapter)
 
 	subscriptionService := service.NewSubscriptionService(
