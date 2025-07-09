@@ -11,6 +11,7 @@ import (
 
 type TokenService interface {
 	GenerateToken() (string, error)
+	CheckTokenExists(ctx context.Context, token string) error
 }
 type SubscriptionServiceImpl struct {
 	repo          ports.SubscriptionRepository
@@ -37,47 +38,76 @@ func NewSubscriptionService(
 }
 
 func (s *SubscriptionServiceImpl) Subscribe(ctx context.Context, opts ports.SubscribeOptions) (string, error) {
-	cityEntity, err := s.cityRepo.GetByName(ctx, opts.City)
+	cityEntity, err := s.ensureCityExists(ctx, opts.City)
 	if err != nil {
-		if !errors.Is(err, domain.ErrCityNotFound) {
-			msg := fmt.Sprintf("unable to get city %s: %v", opts.City, err)
-			log.Print(msg)
-			return "", errors.New(msg)
-		}
-
-		if err := s.weatherClient.CheckCityExists(ctx, opts.City); err != nil {
-			if errors.Is(err, domain.ErrCityNotFound) {
-				log.Printf("City %s not found in weather service", opts.City)
-				return "", domain.ErrCityNotFound
-			}
-			msg := fmt.Sprintf("unable to check city existence for %s: %v", opts.City, err)
-			log.Print(msg)
-			return "", errors.New(msg)
-		}
-
-		cityEntity, err = s.cityRepo.Create(ctx, domain.City{Name: opts.City})
-		if err != nil {
-			msg := fmt.Sprintf("unable to create city %s: %v", opts.City, err)
-			log.Print(msg)
-			return "", errors.New(msg)
-		}
+		return "", err
 	}
 
+	if err := s.checkSubscriptionExists(ctx, opts, cityEntity.ID); err != nil {
+		return "", err
+	}
+
+	token, err := s.createSubscription(ctx, opts, cityEntity)
+	if err != nil {
+		return "", err
+	}
+
+	log.Printf("Successfully created subscription")
+	return token, nil
+}
+
+func (s *SubscriptionServiceImpl) ensureCityExists(ctx context.Context, cityName string) (domain.City, error) {
+	city, err := s.cityRepo.GetByName(ctx, cityName)
+
+	if err == nil {
+		return city, nil
+	}
+
+	if !errors.Is(err, domain.ErrCityNotFound) {
+		msg := fmt.Sprintf("unable to get city %s: %v", cityName, err)
+		log.Print(msg)
+		return domain.City{}, errors.New(msg)
+	}
+
+	if err := s.weatherClient.CheckCityExists(ctx, cityName); err != nil {
+		if errors.Is(err, domain.ErrCityNotFound) {
+			log.Printf("City %s not found in weather service", cityName)
+			return domain.City{}, domain.ErrCityNotFound
+		}
+		msg := fmt.Sprintf("unable to check city existence for %s: %v", cityName, err)
+		log.Print(msg)
+		return domain.City{}, errors.New(msg)
+	}
+
+	city, err = s.cityRepo.Create(ctx, domain.City{Name: cityName})
+	if err != nil {
+		msg := fmt.Sprintf("unable to create city %s: %v", cityName, err)
+		log.Print(msg)
+		return domain.City{}, errors.New(msg)
+	}
+
+	return city, nil
+}
+
+func (s *SubscriptionServiceImpl) checkSubscriptionExists(ctx context.Context, opts ports.SubscribeOptions, cityID int64) error {
 	exists, err := s.repo.IsSubscriptionExists(ctx, ports.IsSubscriptionExistsOptions{
 		Email:     opts.Email,
-		CityID:    cityEntity.ID,
+		CityID:    cityID,
 		Frequency: opts.Frequency,
 	})
 	if err != nil {
 		msg := fmt.Sprintf("unable to check subscription existence: %v", err)
 		log.Print(msg)
-		return "", errors.New(msg)
+		return errors.New(msg)
 	}
 	if exists {
 		log.Printf("Email %s already subscribed to city %s with frequency %s", opts.Email, opts.City, opts.Frequency)
-		return "", domain.ErrEmailAlreadySubscribed
+		return domain.ErrEmailAlreadySubscribed
 	}
+	return nil
+}
 
+func (s *SubscriptionServiceImpl) createSubscription(ctx context.Context, opts ports.SubscribeOptions, cityEntity domain.City) (string, error) {
 	token, err := s.tokenSvc.GenerateToken()
 	if err != nil {
 		msg := fmt.Sprintf("unable to generate token: %v", err)
@@ -106,27 +136,14 @@ func (s *SubscriptionServiceImpl) Subscribe(ctx context.Context, opts ports.Subs
 		return "", errors.New(msg)
 	}
 
-	log.Printf("Successfully created subscription")
 	return token, nil
 }
 
 func (s *SubscriptionServiceImpl) Confirm(ctx context.Context, token string) error {
 	log.Printf("Attempting to confirm subscription")
 
-	if token == "" {
-		log.Printf("Invalid token provided: empty token")
-		return domain.ErrInvalidToken
-	}
-
-	exists, err := s.repo.IsTokenExists(ctx, token)
-	if err != nil {
-		msg := fmt.Sprintf("unable to check token existence: %v", err)
-		log.Print(msg)
-		return errors.New(msg)
-	}
-	if !exists {
-		log.Printf("Token not found: %s", token)
-		return domain.ErrTokenNotFound
+	if err := s.tokenSvc.CheckTokenExists(ctx, token); err != nil {
+		return err
 	}
 
 	sub, err := s.repo.GetSubscriptionByToken(ctx, token)
@@ -149,20 +166,8 @@ func (s *SubscriptionServiceImpl) Confirm(ctx context.Context, token string) err
 func (s *SubscriptionServiceImpl) Unsubscribe(ctx context.Context, token string) error {
 	log.Printf("Attempting to unsubscribe")
 
-	if token == "" {
-		log.Printf("Invalid token provided: empty token")
-		return domain.ErrInvalidToken
-	}
-
-	exists, err := s.repo.IsTokenExists(ctx, token)
-	if err != nil {
-		msg := fmt.Sprintf("unable to check token existence: %v", err)
-		log.Print(msg)
-		return errors.New(msg)
-	}
-	if !exists {
-		log.Printf("Token not found: %s", token)
-		return domain.ErrTokenNotFound
+	if err := s.tokenSvc.CheckTokenExists(ctx, token); err != nil {
+		return err
 	}
 
 	if err := s.repo.DeleteSubscription(ctx, token); err != nil {

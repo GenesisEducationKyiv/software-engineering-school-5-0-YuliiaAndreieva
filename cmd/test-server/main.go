@@ -164,7 +164,7 @@ func main() {
 
 	cachedProvider := weather.NewCachedWeatherProvider(weatherCache, chainProvider)
 	weatherService := service.NewWeatherService(cachedProvider)
-	tokenService := service.NewTokenService()
+	tokenService := service.NewTokenService(subscriptionRepo)
 	emailService := service.NewEmailService(emailAdapter)
 
 	subscriptionService := service.NewSubscriptionService(
