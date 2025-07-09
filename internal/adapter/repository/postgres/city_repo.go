@@ -39,7 +39,7 @@ func (r *CityRepo) GetByName(ctx context.Context, name string) (domain.City, err
 	query := `SELECT id, name FROM cities WHERE name = $1`
 	err := r.db.QueryRowContext(ctx, query, name).Scan(&city.ID, &city.Name)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			log.Printf("City not found: %s", name)
 			return domain.City{}, domain.ErrCityNotFound
 		}
