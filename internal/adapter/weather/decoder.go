@@ -2,8 +2,8 @@ package weather
 
 import (
 	"bytes"
+	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"weather-api/internal/util/jsonutil"
 )
@@ -14,9 +14,7 @@ func DecodeResponse[T any](resp *http.Response) (*T, []byte, error) {
 
 	result, err := jsonutil.Decode[T](teeReader)
 	if err != nil {
-		msg := "unable to decode response: " + err.Error()
-		log.Print(msg)
-		return nil, nil, NewProviderError("OpenWeatherMap", 500, msg)
+		return nil, nil, fmt.Errorf("decoding error: %w", err)
 	}
 
 	return &result, logBuffer.Bytes(), nil
