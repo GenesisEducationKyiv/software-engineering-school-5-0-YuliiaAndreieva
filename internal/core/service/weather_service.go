@@ -3,14 +3,14 @@ package service
 import (
 	"context"
 	"weather-api/internal/core/domain"
-	"weather-api/internal/core/ports"
+	"weather-api/internal/core/ports/out"
 )
 
 type WeatherService struct {
-	provider ports.WeatherProvider
+	provider out.WeatherProvider
 }
 
-func NewWeatherService(provider ports.WeatherProvider) *WeatherService {
+func NewWeatherService(provider out.WeatherProvider) *WeatherService {
 	return &WeatherService{
 		provider: provider,
 	}

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 	"weather-api/internal/core/domain"
-	"weather-api/internal/core/ports"
+	"weather-api/internal/core/ports/out"
 	"weather-api/internal/util/emailutil"
 )
 
@@ -15,10 +15,10 @@ type EmailService interface {
 }
 
 type EmailServiceImpl struct {
-	emailSvc ports.EmailSender
+	emailSvc out.EmailSender
 }
 
-func NewEmailService(emailSvc ports.EmailSender) *EmailServiceImpl {
+func NewEmailService(emailSvc out.EmailSender) *EmailServiceImpl {
 	return &EmailServiceImpl{
 		emailSvc: emailSvc,
 	}
@@ -34,7 +34,7 @@ func (s *EmailServiceImpl) SendUpdates(updates []domain.WeatherUpdate) error {
 			Token:       update.Subscription.Token,
 		})
 
-		if err := s.emailSvc.SendEmail(ports.SendEmailOptions{
+		if err := s.emailSvc.SendEmail(out.SendEmailOptions{
 			To:      update.Subscription.Email,
 			Subject: subject,
 			Body:    htmlBody,
@@ -51,7 +51,7 @@ func (s *EmailServiceImpl) SendUpdates(updates []domain.WeatherUpdate) error {
 func (s *EmailServiceImpl) SendConfirmationEmail(subscription *domain.Subscription) error {
 	subject, htmlBody := emailutil.BuildConfirmationEmail(subscription.City.Name, subscription.Token)
 
-	if err := s.emailSvc.SendEmail(ports.SendEmailOptions{
+	if err := s.emailSvc.SendEmail(out.SendEmailOptions{
 		To:      subscription.Email,
 		Subject: subject,
 		Body:    htmlBody,

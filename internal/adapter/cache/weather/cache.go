@@ -6,16 +6,16 @@ import (
 	"errors"
 	"weather-api/internal/adapter/cache/core"
 	"weather-api/internal/core/domain"
-	"weather-api/internal/core/ports"
+	"weather-api/internal/core/ports/out"
 
 	"github.com/redis/go-redis/v9"
 )
 
 type Cache struct {
-	cache ports.Cache
+	cache out.Cache
 }
 
-func NewCache(cache ports.Cache) *Cache {
+func NewCache(cache out.Cache) *Cache {
 	return &Cache{cache: cache}
 }
 

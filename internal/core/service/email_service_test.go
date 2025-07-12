@@ -6,13 +6,13 @@ package service_test
 import (
 	"errors"
 	"testing"
+	"weather-api/internal/core/ports/out"
 	"weather-api/internal/util/emailutil"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
 	"weather-api/internal/core/domain"
-	"weather-api/internal/core/ports"
 	"weather-api/internal/core/service"
 	"weather-api/internal/mocks"
 )
@@ -60,12 +60,12 @@ func TestEmailService_SendUpdates(t *testing.T) {
 					Token:       "token2",
 				})
 
-				es.On("SendEmail", ports.SendEmailOptions{
+				es.On("SendEmail", out.SendEmailOptions{
 					To:      "user1@example.com",
 					Subject: subKyiv,
 					Body:    bodyKyiv,
 				}).Return(nil).Once()
-				es.On("SendEmail", ports.SendEmailOptions{
+				es.On("SendEmail", out.SendEmailOptions{
 					To:      "user2@example.com",
 					Subject: subLviv,
 					Body:    bodyLviv,
@@ -116,7 +116,7 @@ func TestEmailService_SendConfirmationEmail(t *testing.T) {
 			},
 			setupMocks: func(es *mocks.MockEmailService) {
 				subject, body := emailutil.BuildConfirmationEmail("Kyiv", "token123")
-				es.On("SendEmail", ports.SendEmailOptions{
+				es.On("SendEmail", out.SendEmailOptions{
 					To:      "user@example.com",
 					Subject: subject,
 					Body:    body,
@@ -133,7 +133,7 @@ func TestEmailService_SendConfirmationEmail(t *testing.T) {
 			},
 			setupMocks: func(es *mocks.MockEmailService) {
 				subject, body := emailutil.BuildConfirmationEmail("Kyiv", "token123")
-				es.On("SendEmail", ports.SendEmailOptions{
+				es.On("SendEmail", out.SendEmailOptions{
 					To:      "user@example.com",
 					Subject: subject,
 					Body:    body,

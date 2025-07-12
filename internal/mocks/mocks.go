@@ -2,11 +2,11 @@ package mocks
 
 import (
 	"context"
+	"weather-api/internal/core/ports/out"
 
 	"github.com/stretchr/testify/mock"
 
 	"weather-api/internal/core/domain"
-	"weather-api/internal/core/ports"
 )
 
 type MockSubscriptionRepository struct {
@@ -43,7 +43,7 @@ func (m *MockSubscriptionRepository) DeleteSubscription(ctx context.Context, tok
 	return args.Error(0)
 }
 
-func (m *MockSubscriptionRepository) IsSubscriptionExists(ctx context.Context, opts ports.IsSubscriptionExistsOptions) (bool, error) {
+func (m *MockSubscriptionRepository) IsSubscriptionExists(ctx context.Context, opts out.IsSubscriptionExistsOptions) (bool, error) {
 	args := m.Called(ctx, opts)
 	return args.Bool(0), args.Error(1)
 }
@@ -81,7 +81,7 @@ type MockEmailService struct {
 	mock.Mock
 }
 
-func (m *MockEmailService) SendEmail(opts ports.SendEmailOptions) error {
+func (m *MockEmailService) SendEmail(opts out.SendEmailOptions) error {
 	args := m.Called(opts)
 	return args.Error(0)
 }

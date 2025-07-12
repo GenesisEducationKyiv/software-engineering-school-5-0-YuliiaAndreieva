@@ -8,14 +8,14 @@ import (
 	"fmt"
 	"log"
 	"weather-api/internal/core/domain"
-	"weather-api/internal/core/ports"
+	"weather-api/internal/core/ports/out"
 )
 
 type TokenServiceImpl struct {
-	repo ports.SubscriptionRepository
+	repo out.SubscriptionRepository
 }
 
-func NewTokenService(repo ports.SubscriptionRepository) *TokenServiceImpl {
+func NewTokenService(repo out.SubscriptionRepository) *TokenServiceImpl {
 	return &TokenServiceImpl{
 		repo: repo,
 	}

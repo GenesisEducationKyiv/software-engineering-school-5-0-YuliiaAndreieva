@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"log"
 	"weather-api/internal/core/domain"
-	"weather-api/internal/core/ports"
+	"weather-api/internal/core/ports/out"
 )
 
 type SubscriptionRepository struct {
@@ -160,7 +160,7 @@ func (r *SubscriptionRepository) IsTokenExists(ctx context.Context, token string
 	return exists, nil
 }
 
-func (r *SubscriptionRepository) IsSubscriptionExists(ctx context.Context, opts ports.IsSubscriptionExistsOptions) (bool, error) {
+func (r *SubscriptionRepository) IsSubscriptionExists(ctx context.Context, opts out.IsSubscriptionExistsOptions) (bool, error) {
 	var exists bool
 	query := `
         SELECT EXISTS(

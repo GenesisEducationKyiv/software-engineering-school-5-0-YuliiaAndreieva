@@ -5,11 +5,11 @@ import (
 	"errors"
 	"log"
 	"weather-api/internal/core/domain"
-	"weather-api/internal/core/ports"
+	"weather-api/internal/core/ports/out"
 )
 
 type ProviderHandler struct {
-	provider ports.WeatherProvider
+	provider out.WeatherProvider
 	next     *ProviderHandler
 }
 
@@ -55,7 +55,7 @@ func (c *ChainWeatherProvider) Name() string {
 	return "ChainWeatherProvider"
 }
 
-func NewChainWeatherProvider(providers ...ports.WeatherProvider) *ChainWeatherProvider {
+func NewChainWeatherProvider(providers ...out.WeatherProvider) *ChainWeatherProvider {
 	if len(providers) == 0 {
 		return &ChainWeatherProvider{}
 	}

@@ -5,17 +5,17 @@ import (
 	"fmt"
 	"log"
 	"weather-api/internal/core/domain"
-	"weather-api/internal/core/ports"
+	"weather-api/internal/core/ports/out"
 )
 
 type WeatherUpdateServiceImpl struct {
-	subscriptionService ports.SubscriptionService
-	weatherService      ports.WeatherService
+	subscriptionService out.SubscriptionService
+	weatherService      out.WeatherService
 }
 
 func NewWeatherUpdateService(
-	subscriptionService ports.SubscriptionService,
-	weatherService ports.WeatherService,
+	subscriptionService out.SubscriptionService,
+	weatherService out.WeatherService,
 ) *WeatherUpdateServiceImpl {
 	return &WeatherUpdateServiceImpl{
 		subscriptionService: subscriptionService,

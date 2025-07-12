@@ -4,7 +4,7 @@ import (
 	"context"
 	"log"
 	"weather-api/internal/core/domain"
-	"weather-api/internal/core/ports"
+	"weather-api/internal/core/ports/out"
 )
 
 type Cache interface {
@@ -14,10 +14,10 @@ type Cache interface {
 }
 type CachedWeatherProvider struct {
 	cache    Cache
-	upstream ports.WeatherProvider
+	upstream out.WeatherProvider
 }
 
-func NewCachedWeatherProvider(cache Cache, upstream ports.WeatherProvider) *CachedWeatherProvider {
+func NewCachedWeatherProvider(cache Cache, upstream out.WeatherProvider) *CachedWeatherProvider {
 	return &CachedWeatherProvider{cache: cache, upstream: upstream}
 }
 

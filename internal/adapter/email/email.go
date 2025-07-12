@@ -6,7 +6,7 @@ import (
 	"log"
 	"net/smtp"
 	"strconv"
-	"weather-api/internal/core/ports"
+	"weather-api/internal/core/ports/out"
 
 	"github.com/jordan-wright/email"
 )
@@ -34,7 +34,7 @@ func NewSender(opts SenderOptions) *Sender {
 	}
 }
 
-func (e *Sender) SendEmail(opts ports.SendEmailOptions) error {
+func (e *Sender) SendEmail(opts out.SendEmailOptions) error {
 	log.Printf("Attempting to send email to: %s, subject: %s, from: %s", opts.To, opts.Subject, e.user)
 
 	msg := email.NewEmail()

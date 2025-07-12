@@ -4,17 +4,17 @@ import (
 	"context"
 	"errors"
 	"time"
-	"weather-api/internal/core/ports"
+	"weather-api/internal/core/ports/out"
 
 	"github.com/redis/go-redis/v9"
 )
 
 type CacheWithMetrics struct {
-	cache   ports.Cache
+	cache   out.Cache
 	metrics *CacheMetrics
 }
 
-func NewCacheWithMetrics(cache ports.Cache, metrics *CacheMetrics) *CacheWithMetrics {
+func NewCacheWithMetrics(cache out.Cache, metrics *CacheMetrics) *CacheWithMetrics {
 	return &CacheWithMetrics{
 		cache:   cache,
 		metrics: metrics,
