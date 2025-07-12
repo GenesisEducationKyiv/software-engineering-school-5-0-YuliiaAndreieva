@@ -3,6 +3,7 @@ package http
 import (
 	"errors"
 	"net/http"
+	"weather-api/internal/core/ports/in"
 
 	"github.com/gin-gonic/gin"
 
@@ -10,15 +11,14 @@ import (
 	"weather-api/internal/adapter/handler/http/request"
 	"weather-api/internal/adapter/handler/http/response"
 	"weather-api/internal/core/domain"
-	"weather-api/internal/core/ports"
 )
 
 type WeatherHandler struct {
-	weatherService ports.WeatherService
+	weatherUseCase in.WeatherUseCase
 }
 
-func NewWeatherHandler(weatherService ports.WeatherService) *WeatherHandler {
-	return &WeatherHandler{weatherService: weatherService}
+func NewWeatherHandler(weatherUseCase in.WeatherUseCase) *WeatherHandler {
+	return &WeatherHandler{weatherUseCase: weatherUseCase}
 }
 
 func (h *WeatherHandler) GetWeather(c *gin.Context) {
@@ -30,7 +30,7 @@ func (h *WeatherHandler) GetWeather(c *gin.Context) {
 		return
 	}
 
-	weather, err := h.weatherService.GetWeather(c, city)
+	weather, err := h.weatherUseCase.GetWeather(c, city)
 	if err != nil {
 		if errors.Is(err, domain.ErrCityNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"error": httperrors.ErrCityNotFound.Error()})

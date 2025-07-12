@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"log"
 	"weather-api/internal/core/domain"
-	"weather-api/internal/core/ports"
+	"weather-api/internal/core/ports/out"
 )
 
 type TokenService interface {
@@ -14,17 +14,17 @@ type TokenService interface {
 	CheckTokenExists(ctx context.Context, token string) error
 }
 type SubscriptionServiceImpl struct {
-	repo          ports.SubscriptionRepository
-	weatherClient ports.WeatherProvider
+	repo          out.SubscriptionRepository
+	weatherClient out.WeatherProvider
 	tokenSvc      TokenService
-	cityRepo      ports.CityRepository
+	cityRepo      out.CityRepository
 	emailService  EmailService
 }
 
 func NewSubscriptionService(
-	repo ports.SubscriptionRepository,
-	cityRepo ports.CityRepository,
-	weatherClient ports.WeatherProvider,
+	repo out.SubscriptionRepository,
+	cityRepo out.CityRepository,
+	weatherClient out.WeatherProvider,
 	tokenSvc TokenService,
 	emailService EmailService,
 ) *SubscriptionServiceImpl {
@@ -37,7 +37,7 @@ func NewSubscriptionService(
 	}
 }
 
-func (s *SubscriptionServiceImpl) Subscribe(ctx context.Context, opts ports.SubscribeOptions) (string, error) {
+func (s *SubscriptionServiceImpl) Subscribe(ctx context.Context, opts out.SubscribeOptions) (string, error) {
 	cityEntity, err := s.ensureCityExists(ctx, opts.City)
 	if err != nil {
 		return "", err
@@ -89,8 +89,8 @@ func (s *SubscriptionServiceImpl) ensureCityExists(ctx context.Context, cityName
 	return city, nil
 }
 
-func (s *SubscriptionServiceImpl) checkSubscriptionExists(ctx context.Context, opts ports.SubscribeOptions, cityID int64) error {
-	exists, err := s.repo.IsSubscriptionExists(ctx, ports.IsSubscriptionExistsOptions{
+func (s *SubscriptionServiceImpl) checkSubscriptionExists(ctx context.Context, opts out.SubscribeOptions, cityID int64) error {
+	exists, err := s.repo.IsSubscriptionExists(ctx, out.IsSubscriptionExistsOptions{
 		Email:     opts.Email,
 		CityID:    cityID,
 		Frequency: opts.Frequency,
@@ -107,7 +107,7 @@ func (s *SubscriptionServiceImpl) checkSubscriptionExists(ctx context.Context, o
 	return nil
 }
 
-func (s *SubscriptionServiceImpl) createSubscription(ctx context.Context, opts ports.SubscribeOptions, cityEntity domain.City) (string, error) {
+func (s *SubscriptionServiceImpl) createSubscription(ctx context.Context, opts out.SubscribeOptions, cityEntity domain.City) (string, error) {
 	token, err := s.tokenSvc.GenerateToken()
 	if err != nil {
 		msg := fmt.Sprintf("unable to generate token: %v", err)
@@ -189,4 +189,29 @@ func (s *SubscriptionServiceImpl) GetSubscriptionsByFrequency(ctx context.Contex
 	}
 	log.Printf("Successfully retrieved %d subscriptions for frequency %s", len(subscriptions), frequency)
 	return subscriptions, nil
+}
+
+func (s *SubscriptionServiceImpl) CreateSubscription(ctx context.Context, email string, cityID int64, frequency domain.Frequency) (string, error) {
+	token, err := s.tokenSvc.GenerateToken()
+	if err != nil {
+		msg := fmt.Sprintf("unable to generate token: %v", err)
+		log.Print(msg)
+		return "", errors.New(msg)
+	}
+
+	subscription := domain.Subscription{
+		Email:       email,
+		CityID:      cityID,
+		Frequency:   frequency,
+		Token:       token,
+		IsConfirmed: false,
+	}
+
+	if err := s.repo.CreateSubscription(ctx, subscription); err != nil {
+		msg := fmt.Sprintf("unable to create subscription in repository: %v", err)
+		log.Print(msg)
+		return "", errors.New(msg)
+	}
+
+	return token, nil
 }

@@ -6,11 +6,12 @@ import (
 )
 
 var (
-	ErrCityNotFound           = errors.New("city not found")
-	ErrEmailAlreadySubscribed = errors.New("email already subscribed")
-	ErrInvalidToken           = errors.New("invalid token")
-	ErrTokenNotFound          = errors.New("token not found")
-	ErrSubscriptionNotFound   = errors.New("subscription not found")
+	ErrCityNotFound                 = errors.New("city not found")
+	ErrEmailAlreadySubscribed       = errors.New("email already subscribed")
+	ErrInvalidToken                 = errors.New("invalid token")
+	ErrTokenNotFound                = errors.New("token not found")
+	ErrSubscriptionNotFound         = errors.New("subscription not found")
+	ErrSubscriptionAlreadyConfirmed = errors.New("subscription already confirmed")
 )
 
 type ValidationError struct {

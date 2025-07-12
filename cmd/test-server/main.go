@@ -20,6 +20,7 @@ import (
 	"weather-api/internal/adapter/weather/weatherapi"
 	"weather-api/internal/core/domain"
 	"weather-api/internal/core/service"
+	"weather-api/internal/core/usecase"
 	"weather-api/internal/util/configutil"
 	"weather-api/internal/util/logger"
 
@@ -166,19 +167,18 @@ func main() {
 	weatherService := service.NewWeatherService(cachedProvider)
 	tokenService := service.NewTokenService(subscriptionRepo)
 	emailService := service.NewEmailService(emailAdapter)
+	cityService := service.NewCityService(cityRepo, cachedProvider)
 
-	subscriptionService := service.NewSubscriptionService(
-		subscriptionRepo,
-		cityRepo,
-		chainProvider,
-		tokenService,
-		emailService,
-	)
+	weatherUseCase := usecase.NewWeatherUseCase(cachedProvider)
+	subscriptionService := service.NewSubscriptionService(subscriptionRepo, cityRepo, chainProvider, tokenService, emailService)
+	subscribeUseCase := usecase.NewSubscribeUseCase(subscriptionRepo, subscriptionService, cityService, tokenService, emailService)
+	confirmUseCase := usecase.NewConfirmSubscriptionUseCase(subscriptionRepo, tokenService, emailService)
+	unsubscribeUseCase := usecase.NewUnsubscribeUseCase(subscriptionRepo, tokenService)
 
 	weatherUpdateService := service.NewWeatherUpdateService(subscriptionService, weatherService)
 
-	weatherHandler := httphandler.NewWeatherHandler(weatherService)
-	subscriptionHandler := httphandler.NewSubscriptionHandler(subscriptionService)
+	weatherHandler := httphandler.NewWeatherHandler(weatherUseCase)
+	subscriptionHandler := httphandler.NewSubscriptionHandler(subscribeUseCase, confirmUseCase, unsubscribeUseCase)
 
 	r := gin.Default()
 
