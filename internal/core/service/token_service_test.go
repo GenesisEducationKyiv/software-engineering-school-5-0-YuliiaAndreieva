@@ -4,10 +4,14 @@
 package service
 
 import (
+	"context"
 	"encoding/base64"
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"weather-api/internal/core/domain"
+	"weather-api/internal/mocks"
 )
 
 func TestTokenService_GenerateToken(t *testing.T) {
@@ -19,7 +23,8 @@ func TestTokenService_GenerateToken(t *testing.T) {
 		{
 			name: "success",
 			setup: func() TokenService {
-				return NewTokenService()
+				repo := &mocks.MockSubscriptionRepository{}
+				return NewTokenService(repo)
 			},
 			verify: func(t *testing.T, token string, err error) {
 				assert.NoError(t, err, "GenerateToken should not return an error")
@@ -42,6 +47,64 @@ func TestTokenService_GenerateToken(t *testing.T) {
 			token, err := svc.GenerateToken()
 
 			tt.verify(t, token, err)
+		})
+	}
+}
+
+func TestTokenService_CheckTokenExists(t *testing.T) {
+	ctx := context.Background()
+	const token = "test-token"
+
+	tests := []struct {
+		name       string
+		token      string
+		setupMocks func(repo *mocks.MockSubscriptionRepository)
+		expectErr  error
+	}{
+		{
+			name:  "token exists",
+			token: token,
+			setupMocks: func(repo *mocks.MockSubscriptionRepository) {
+				repo.On("IsTokenExists", ctx, token).Return(true, nil)
+			},
+			expectErr: nil,
+		},
+		{
+			name:  "token not found",
+			token: token,
+			setupMocks: func(repo *mocks.MockSubscriptionRepository) {
+				repo.On("IsTokenExists", ctx, token).Return(false, nil)
+			},
+			expectErr: domain.ErrTokenNotFound,
+		},
+		{
+			name:  "empty token",
+			token: "",
+			setupMocks: func(repo *mocks.MockSubscriptionRepository) {
+				// No mock needed for empty token
+			},
+			expectErr: domain.ErrInvalidToken,
+		},
+		{
+			name:  "repository error",
+			token: token,
+			setupMocks: func(repo *mocks.MockSubscriptionRepository) {
+				repo.On("IsTokenExists", ctx, token).Return(false, errors.New("db error"))
+			},
+			expectErr: errors.New("unable to check token existence: db error"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			repo := &mocks.MockSubscriptionRepository{}
+			tt.setupMocks(repo)
+
+			svc := NewTokenService(repo)
+
+			err := svc.CheckTokenExists(ctx, tt.token)
+			assert.Equal(t, tt.expectErr, err)
+			repo.AssertExpectations(t)
 		})
 	}
 }

@@ -3,16 +3,21 @@ package weather
 import (
 	"context"
 	"log"
-	weathercache "weather-api/internal/adapter/cache/weather"
 	"weather-api/internal/core/domain"
+	"weather-api/internal/core/ports/out"
 )
 
+type Cache interface {
+	Get(ctx context.Context, city string) (*domain.Weather, error)
+	Set(ctx context.Context, city string, weather domain.Weather) error
+	Close() error
+}
 type CachedWeatherProvider struct {
-	cache    weathercache.Cache
-	upstream Provider
+	cache    Cache
+	upstream out.WeatherProvider
 }
 
-func NewCachedWeatherProvider(cache weathercache.Cache, upstream Provider) *CachedWeatherProvider {
+func NewCachedWeatherProvider(cache Cache, upstream out.WeatherProvider) *CachedWeatherProvider {
 	return &CachedWeatherProvider{cache: cache, upstream: upstream}
 }
 

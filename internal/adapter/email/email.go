@@ -6,13 +6,10 @@ import (
 	"log"
 	"net/smtp"
 	"strconv"
+	"weather-api/internal/core/ports/out"
 
 	"github.com/jordan-wright/email"
 )
-
-type Sender interface {
-	SendEmail(opts SendEmailOptions) error
-}
 
 type SenderOptions struct {
 	Host string
@@ -21,21 +18,15 @@ type SenderOptions struct {
 	Pass string
 }
 
-type SendEmailOptions struct {
-	To      string
-	Subject string
-	Body    string
-}
-
-type emailSender struct {
+type Sender struct {
 	host string
 	port int
 	user string
 	pass string
 }
 
-func NewSender(opts SenderOptions) Sender {
-	return &emailSender{
+func NewSender(opts SenderOptions) *Sender {
+	return &Sender{
 		host: opts.Host,
 		port: opts.Port,
 		user: opts.User,
@@ -43,7 +34,7 @@ func NewSender(opts SenderOptions) Sender {
 	}
 }
 
-func (e *emailSender) SendEmail(opts SendEmailOptions) error {
+func (e *Sender) SendEmail(opts out.SendEmailOptions) error {
 	log.Printf("Attempting to send email to: %s, subject: %s, from: %s", opts.To, opts.Subject, e.user)
 
 	msg := email.NewEmail()

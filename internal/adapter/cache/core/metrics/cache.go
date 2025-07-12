@@ -4,22 +4,17 @@ import (
 	"context"
 	"errors"
 	"time"
+	"weather-api/internal/core/ports/out"
 
 	"github.com/redis/go-redis/v9"
 )
 
-type Cache interface {
-	Get(ctx context.Context, key string) ([]byte, error)
-	Set(ctx context.Context, key string, value []byte) error
-	Close() error
-}
-
 type CacheWithMetrics struct {
-	cache   Cache
+	cache   out.Cache
 	metrics *CacheMetrics
 }
 
-func NewCacheWithMetrics(cache Cache, metrics *CacheMetrics) Cache {
+func NewCacheWithMetrics(cache out.Cache, metrics *CacheMetrics) *CacheWithMetrics {
 	return &CacheWithMetrics{
 		cache:   cache,
 		metrics: metrics,

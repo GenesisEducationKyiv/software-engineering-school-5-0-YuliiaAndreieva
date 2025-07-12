@@ -7,18 +7,18 @@ import (
 	"fmt"
 	"log"
 	"weather-api/internal/core/domain"
-	"weather-api/internal/core/repository"
+	"weather-api/internal/core/ports/out"
 )
 
-type subscriptionRepository struct {
+type SubscriptionRepository struct {
 	db *sql.DB
 }
 
-func NewSubscriptionRepo(db *sql.DB) repository.SubscriptionRepository {
-	return &subscriptionRepository{db: db}
+func NewSubscriptionRepo(db *sql.DB) *SubscriptionRepository {
+	return &SubscriptionRepository{db: db}
 }
 
-func (r *subscriptionRepository) CreateSubscription(ctx context.Context, sub domain.Subscription) error {
+func (r *SubscriptionRepository) CreateSubscription(ctx context.Context, sub domain.Subscription) error {
 	log.Printf("Creating subscription for city")
 	query := `INSERT INTO subscriptions (email, city_id, frequency, token, is_confirmed) VALUES ($1, $2, $3, $4, $5)`
 	_, err := r.db.ExecContext(ctx, query, sub.Email, sub.CityID, sub.Frequency, sub.Token, sub.IsConfirmed)
@@ -31,7 +31,7 @@ func (r *subscriptionRepository) CreateSubscription(ctx context.Context, sub dom
 	return nil
 }
 
-func (r *subscriptionRepository) GetSubscriptionByToken(ctx context.Context, token string) (domain.Subscription, error) {
+func (r *SubscriptionRepository) GetSubscriptionByToken(ctx context.Context, token string) (domain.Subscription, error) {
 	log.Printf("Looking up subscription")
 	var sub domain.Subscription
 	query := `SELECT token FROM subscriptions WHERE token = $1`
@@ -49,7 +49,7 @@ func (r *subscriptionRepository) GetSubscriptionByToken(ctx context.Context, tok
 	return sub, nil
 }
 
-func (r *subscriptionRepository) UpdateSubscription(ctx context.Context, sub domain.Subscription) error {
+func (r *SubscriptionRepository) UpdateSubscription(ctx context.Context, sub domain.Subscription) error {
 	log.Printf("Updating subscription")
 	query := `UPDATE subscriptions SET is_confirmed = $1 WHERE token = $2`
 	result, err := r.db.ExecContext(ctx, query, sub.IsConfirmed, sub.Token)
@@ -75,7 +75,7 @@ func (r *subscriptionRepository) UpdateSubscription(ctx context.Context, sub dom
 	return nil
 }
 
-func (r *subscriptionRepository) DeleteSubscription(ctx context.Context, token string) error {
+func (r *SubscriptionRepository) DeleteSubscription(ctx context.Context, token string) error {
 	log.Printf("Deleting subscription")
 	query := `DELETE FROM subscriptions WHERE token = $1`
 	result, err := r.db.ExecContext(ctx, query, token)
@@ -101,7 +101,7 @@ func (r *subscriptionRepository) DeleteSubscription(ctx context.Context, token s
 	return nil
 }
 
-func (r *subscriptionRepository) GetSubscriptionsByFrequency(ctx context.Context, frequency string) ([]domain.Subscription, error) {
+func (r *SubscriptionRepository) GetSubscriptionsByFrequency(ctx context.Context, frequency string) ([]domain.Subscription, error) {
 	query := `
         SELECT s.id, s.email, s.city_id, c.name as city_name,
                s.frequency, s.token, s.is_confirmed
@@ -146,7 +146,7 @@ func (r *subscriptionRepository) GetSubscriptionsByFrequency(ctx context.Context
 	return subscriptions, nil
 }
 
-func (r *subscriptionRepository) IsTokenExists(ctx context.Context, token string) (bool, error) {
+func (r *SubscriptionRepository) IsTokenExists(ctx context.Context, token string) (bool, error) {
 	log.Printf("Checking if token exists: %s", token)
 	query := `SELECT EXISTS(SELECT 1 FROM subscriptions WHERE token = $1)`
 	var exists bool
@@ -160,7 +160,7 @@ func (r *subscriptionRepository) IsTokenExists(ctx context.Context, token string
 	return exists, nil
 }
 
-func (r *subscriptionRepository) IsSubscriptionExists(ctx context.Context, opts repository.IsSubscriptionExistsOptions) (bool, error) {
+func (r *SubscriptionRepository) IsSubscriptionExists(ctx context.Context, opts out.IsSubscriptionExistsOptions) (bool, error) {
 	var exists bool
 	query := `
         SELECT EXISTS(

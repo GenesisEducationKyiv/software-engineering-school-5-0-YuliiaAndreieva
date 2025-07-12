@@ -14,7 +14,10 @@ import (
 	"weather-api/internal/adapter/email"
 	"weather-api/internal/adapter/repository/postgres"
 	"weather-api/internal/adapter/weather/weatherapi"
+	"weather-api/internal/core/ports/in"
+	"weather-api/internal/core/ports/out"
 	"weather-api/internal/core/service"
+	"weather-api/internal/core/usecase"
 
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/stretchr/testify/require"
@@ -156,10 +159,13 @@ func CreateTestDatabase(t *testing.T) (*sql.DB, func()) {
 
 type TestServices struct {
 	DB                   *sql.DB
-	SubscriptionService  service.SubscriptionService
-	WeatherService       service.WeatherService
+	SubscriptionService  out.SubscriptionService
+	WeatherService       out.WeatherService
 	WeatherUpdateService service.WeatherUpdateService
 	EmailService         service.EmailService
+	SubscribeUseCase     in.SubscribeUseCase
+	ConfirmUseCase       in.ConfirmSubscriptionUseCase
+	UnsubscribeUseCase   in.UnsubscribeUseCase
 	Cleanup              func()
 }
 
@@ -190,16 +196,14 @@ func SetupTestServices(t *testing.T) *TestServices {
 	cityRepo := postgres.NewCityRepository(db)
 
 	weatherService := service.NewWeatherService(weatherAdapter)
-	tokenService := service.NewTokenService()
+	tokenService := service.NewTokenService(subscriptionRepo)
 	emailService := service.NewEmailService(emailAdapter)
 
-	subscriptionService := service.NewSubscriptionService(
-		subscriptionRepo,
-		cityRepo,
-		weatherAdapter,
-		tokenService,
-		emailService,
-	)
+	cityService := service.NewCityService(cityRepo, weatherAdapter)
+	subscriptionService := service.NewSubscriptionService(subscriptionRepo, cityRepo, weatherAdapter, tokenService, emailService)
+	subscribeUseCase := usecase.NewSubscribeUseCase(subscriptionRepo, subscriptionService, cityService, emailService)
+	confirmUseCase := usecase.NewConfirmSubscriptionUseCase(subscriptionRepo, tokenService, emailService)
+	unsubscribeUseCase := usecase.NewUnsubscribeUseCase(subscriptionRepo, tokenService)
 
 	weatherUpdateService := service.NewWeatherUpdateService(subscriptionService, weatherService)
 
@@ -209,6 +213,9 @@ func SetupTestServices(t *testing.T) *TestServices {
 		WeatherService:       weatherService,
 		WeatherUpdateService: weatherUpdateService,
 		EmailService:         emailService,
+		SubscribeUseCase:     subscribeUseCase,
+		ConfirmUseCase:       confirmUseCase,
+		UnsubscribeUseCase:   unsubscribeUseCase,
 		Cleanup:              cleanup,
 	}
 }
