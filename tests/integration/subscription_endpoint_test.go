@@ -37,7 +37,11 @@ func setupSubscriptionTestServer(t *testing.T) *subscriptionTestServer {
 
 	services := SetupTestServices(t)
 
-	subscriptionHandler := httphandler.NewSubscriptionHandler(services.SubscriptionService)
+	subscriptionHandler := httphandler.NewSubscriptionHandler(
+		services.SubscribeUseCase,
+		services.ConfirmUseCase,
+		services.UnsubscribeUseCase,
+	)
 
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
