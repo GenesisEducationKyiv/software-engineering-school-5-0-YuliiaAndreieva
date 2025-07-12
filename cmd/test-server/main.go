@@ -171,7 +171,7 @@ func main() {
 
 	weatherUseCase := usecase.NewWeatherUseCase(cachedProvider)
 	subscriptionService := service.NewSubscriptionService(subscriptionRepo, cityRepo, chainProvider, tokenService, emailService)
-	subscribeUseCase := usecase.NewSubscribeUseCase(subscriptionRepo, subscriptionService, cityService, tokenService, emailService)
+	subscribeUseCase := usecase.NewSubscribeUseCase(subscriptionRepo, subscriptionService, cityService, emailService)
 	confirmUseCase := usecase.NewConfirmSubscriptionUseCase(subscriptionRepo, tokenService, emailService)
 	unsubscribeUseCase := usecase.NewUnsubscribeUseCase(subscriptionRepo, tokenService)
 

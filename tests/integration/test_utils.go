@@ -201,7 +201,7 @@ func SetupTestServices(t *testing.T) *TestServices {
 
 	cityService := service.NewCityService(cityRepo, weatherAdapter)
 	subscriptionService := service.NewSubscriptionService(subscriptionRepo, cityRepo, weatherAdapter, tokenService, emailService)
-	subscribeUseCase := usecase.NewSubscribeUseCase(subscriptionRepo, subscriptionService, cityService, tokenService, emailService)
+	subscribeUseCase := usecase.NewSubscribeUseCase(subscriptionRepo, subscriptionService, cityService, emailService)
 	confirmUseCase := usecase.NewConfirmSubscriptionUseCase(subscriptionRepo, tokenService, emailService)
 	unsubscribeUseCase := usecase.NewUnsubscribeUseCase(subscriptionRepo, tokenService)
 

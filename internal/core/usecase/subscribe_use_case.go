@@ -18,7 +18,6 @@ type SubscribeUseCase struct {
 	subscriptionRepo out.SubscriptionRepository
 	subscriptionSvc  out.SubscriptionService
 	cityService      CityService
-	tokenService     service.TokenService
 	emailService     service.EmailService
 }
 
@@ -26,14 +25,12 @@ func NewSubscribeUseCase(
 	subscriptionRepo out.SubscriptionRepository,
 	subscriptionSvc out.SubscriptionService,
 	cityService CityService,
-	tokenService service.TokenService,
 	emailService service.EmailService,
 ) *SubscribeUseCase {
 	return &SubscribeUseCase{
 		subscriptionRepo: subscriptionRepo,
 		subscriptionSvc:  subscriptionSvc,
 		cityService:      cityService,
-		tokenService:     tokenService,
 		emailService:     emailService,
 	}
 }

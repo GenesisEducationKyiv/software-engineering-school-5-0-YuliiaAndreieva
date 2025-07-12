@@ -28,9 +28,8 @@ func (uc *UnsubscribeUseCase) Unsubscribe(ctx context.Context, token string) err
 	log.Printf("Starting unsubscribe process for token: %s", token)
 
 	if err := uc.tokenService.CheckTokenExists(ctx, token); err != nil {
-		msg := fmt.Sprintf("unable to validate token %s: %v", token, err)
-		log.Print(msg)
-		return errors.New(msg)
+		log.Printf("Unable to validate token %s: %v", token, err)
+		return err
 	}
 
 	if err := uc.subscriptionRepo.DeleteSubscription(ctx, token); err != nil {

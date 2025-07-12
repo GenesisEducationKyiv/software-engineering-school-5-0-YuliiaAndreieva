@@ -119,7 +119,7 @@ func TestEmailIntegration_WithMailHog(t *testing.T) {
 				email := "confirmation@example.com"
 				city := "Rivne"
 
-				token, err := ts.SubscriptionService.Subscribe(context.Background(), out.SubscribeOptions{
+				token, err := ts.SubscribeUseCase.Subscribe(context.Background(), out.SubscribeOptions{
 					Email:     email,
 					City:      city,
 					Frequency: domain.FrequencyDaily,
@@ -144,13 +144,13 @@ func TestEmailIntegration_WithMailHog(t *testing.T) {
 				email := "update@example.com"
 				city := "Ternopil"
 
-				token, err := ts.SubscriptionService.Subscribe(context.Background(), out.SubscribeOptions{
+				token, err := ts.SubscribeUseCase.Subscribe(context.Background(), out.SubscribeOptions{
 					Email:     email,
 					City:      city,
 					Frequency: domain.FrequencyDaily,
 				})
 				require.NoError(t, err)
-				err = ts.SubscriptionService.Confirm(context.Background(), token)
+				err = ts.ConfirmUseCase.ConfirmSubscription(context.Background(), token)
 				require.NoError(t, err)
 
 				clearMailHogMessages(t)
@@ -182,7 +182,7 @@ func TestEmailIntegration_WithMailHog(t *testing.T) {
 				clearMailHogMessages(t)
 
 				for _, email := range emails {
-					token, err := ts.SubscriptionService.Subscribe(context.Background(), out.SubscribeOptions{
+					token, err := ts.SubscribeUseCase.Subscribe(context.Background(), out.SubscribeOptions{
 						Email:     email,
 						City:      city,
 						Frequency: domain.FrequencyDaily,
@@ -207,7 +207,7 @@ func TestEmailIntegration_WithMailHog(t *testing.T) {
 
 				clearMailHogMessages(t)
 
-				_, err := ts.SubscriptionService.Subscribe(context.Background(), out.SubscribeOptions{
+				_, err := ts.SubscribeUseCase.Subscribe(context.Background(), out.SubscribeOptions{
 					Email:     email,
 					City:      city,
 					Frequency: domain.FrequencyDaily,

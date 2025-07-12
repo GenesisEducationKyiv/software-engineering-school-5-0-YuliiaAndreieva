@@ -61,3 +61,14 @@ func (s *SubscriptionServiceImpl) CreateSubscription(ctx context.Context, email 
 
 	return token, nil
 }
+
+func (s *SubscriptionServiceImpl) GetSubscriptionsByFrequency(ctx context.Context, frequency domain.Frequency) ([]domain.Subscription, error) {
+	subscriptions, err := s.repo.GetSubscriptionsByFrequency(ctx, string(frequency))
+	if err != nil {
+		msg := fmt.Sprintf("unable to get subscriptions by frequency %s: %v", frequency, err)
+		log.Print(msg)
+		return nil, errors.New(msg)
+	}
+	log.Printf("Successfully retrieved %d subscriptions for frequency %s", len(subscriptions), frequency)
+	return subscriptions, nil
+}
