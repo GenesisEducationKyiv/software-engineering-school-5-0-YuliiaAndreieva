@@ -1,0 +1,30 @@
+### Email Service Test Requests
+
+### Health Check
+GET http://localhost:8081/health
+
+### Send Confirmation Email
+POST http://localhost:8081/send/confirmation
+Content-Type: application/json
+
+{
+  "to": "user@example.com",
+  "subject": "Email Confirmation",
+  "name": "John Doe",
+  "confirmationLink": "https://example.com/confirm?token=abc123"
+}
+
+### Send Weather Update Email
+POST http://localhost:8081/send/weather-update
+Content-Type: application/json
+
+{
+  "to": "user@example.com",
+  "subject": "Weather Update",
+  "name": "Jane Smith",
+  "location": "Kyiv",
+  "temperature": 25,
+  "description": "Sunny",
+  "humidity": 60,
+  "windSpeed": 10
+} 

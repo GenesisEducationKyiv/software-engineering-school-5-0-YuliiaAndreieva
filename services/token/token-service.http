@@ -1,0 +1,28 @@
+### Health check
+GET http://localhost:8083/health
+
+### Generate JWT token for subscription
+POST http://localhost:8083/generate
+Content-Type: application/json
+
+{
+  "subject": "user123",
+  "expires_in": "24h"
+}
+
+### Generate JWT token with custom expiration
+POST http://localhost:8083/generate
+Content-Type: application/json
+
+{
+  "subject": "subscription456",
+  "expires_in": "7d"
+}
+
+### Validate JWT token
+POST http://localhost:8083/validate
+Content-Type: application/json
+
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InVzZXJAZXhhbXBsZS5jb20iLCJleHAiOjE3NTM3Mjg0NzIsImlhdCI6MTc1MzY0MjA3MiwianRpIjoidEdfOFZCWjNrVWdQWEZqOHdsNkc5Zz09Iiwicm9sZSI6InVzZXIiLCJzdWIiOiJ1c2VyMTIzIn0.1oR6h31_sL04QHI7NUv-sTfa6W7rm4UCrbOtjwTs7Hg"
+} 

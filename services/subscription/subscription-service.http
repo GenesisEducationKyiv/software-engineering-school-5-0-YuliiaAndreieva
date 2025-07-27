@@ -1,0 +1,18 @@
+### Health check
+GET http://localhost:8082/health
+
+### Subscribe to weather updates
+POST http://localhost:8082/subscribe
+Content-Type: application/json
+
+{
+  "email": "test@example.com",
+  "city": "Kyiv",
+  "frequency": "daily"
+}
+
+### Confirm subscription (replace TOKEN with actual token)
+GET http://localhost:8082/confirm/TOKEN
+
+### Unsubscribe (replace TOKEN with actual token)
+GET http://localhost:8082/unsubscribe/TOKEN 

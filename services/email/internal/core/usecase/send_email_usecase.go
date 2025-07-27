@@ -1,0 +1,80 @@
+package usecase
+
+import (
+	"context"
+
+	"email-service/internal/core/domain"
+	"email-service/internal/core/ports/in"
+	"email-service/internal/core/ports/out"
+)
+
+type SendEmailUseCase struct {
+	emailSender     out.EmailSender
+	templateBuilder out.EmailTemplateBuilder
+	logger          out.Logger
+	baseURL         string
+}
+
+func NewSendEmailUseCase(
+	emailSender out.EmailSender,
+	templateBuilder out.EmailTemplateBuilder,
+	logger out.Logger,
+	baseURL string,
+) in.SendEmailUseCase {
+	return &SendEmailUseCase{
+		emailSender:     emailSender,
+		templateBuilder: templateBuilder,
+		logger:          logger,
+		baseURL:         baseURL,
+	}
+}
+
+func (uc *SendEmailUseCase) SendConfirmationEmail(ctx context.Context, req domain.ConfirmationEmailRequest) (*domain.EmailDeliveryResult, error) {
+	uc.logger.Infof("Starting confirmation email send to %s", req.To)
+
+	template, err := uc.templateBuilder.BuildConfirmationEmail(ctx, req.Name, req.ConfirmationLink)
+	if err != nil {
+		uc.logger.Errorf("Failed to build confirmation email template: %v", err)
+		return nil, err
+	}
+
+	emailReq := domain.EmailRequest{
+		To:      req.To,
+		Subject: req.Subject,
+		Body:    template,
+	}
+
+	result, err := uc.emailSender.SendEmail(ctx, emailReq)
+	if err != nil {
+		uc.logger.Errorf("Failed to send confirmation email: %v", err)
+		return result, err
+	}
+
+	uc.logger.Infof("Confirmation email sent successfully to %s", req.To)
+	return result, nil
+}
+
+func (uc *SendEmailUseCase) SendWeatherUpdateEmail(ctx context.Context, req domain.WeatherUpdateEmailRequest) (*domain.EmailDeliveryResult, error) {
+	uc.logger.Infof("Starting weather update email send to %s", req.To)
+
+	template, err := uc.templateBuilder.BuildWeatherUpdateEmail(ctx, req.Name, req.Location, req.Description, req.Humidity, req.WindSpeed, req.Temperature)
+	if err != nil {
+		uc.logger.Errorf("Failed to build weather update email template: %v", err)
+		return nil, err
+	}
+
+	emailReq := domain.EmailRequest{
+		To:      req.To,
+		Subject: req.Subject,
+		Body:    template,
+	}
+
+	result, err := uc.emailSender.SendEmail(ctx, emailReq)
+	if err != nil {
+		uc.logger.Errorf("Failed to send weather update email: %v", err)
+		return result, err
+	}
+
+	uc.logger.Infof("Weather update email sent successfully to %s", req.To)
+	return result, nil
+}
