@@ -28,7 +28,16 @@ func NewUnsubscribeUseCase(
 func (uc *UnsubscribeUseCase) Unsubscribe(ctx context.Context, token string) (*domain.UnsubscribeResponse, error) {
 	uc.logger.Infof("Starting unsubscribe process for token: %s", token)
 
-	if !uc.tokenService.ValidateToken(token) {
+	valid, err := uc.tokenService.ValidateToken(ctx, token)
+	if err != nil {
+		uc.logger.Errorf("Failed to validate token: %v", err)
+		return &domain.UnsubscribeResponse{
+			Success: false,
+			Message: "Token validation failed",
+		}, nil
+	}
+
+	if !valid {
 		uc.logger.Errorf("Invalid token: %s", token)
 		return &domain.UnsubscribeResponse{
 			Success: false,
@@ -36,7 +45,7 @@ func (uc *UnsubscribeUseCase) Unsubscribe(ctx context.Context, token string) (*d
 		}, nil
 	}
 
-	_, err := uc.subscriptionRepo.GetSubscriptionByToken(ctx, token)
+	_, err = uc.subscriptionRepo.GetSubscriptionByToken(ctx, token)
 	if err != nil {
 		uc.logger.Errorf("Failed to get subscription by token: %v", err)
 		return &domain.UnsubscribeResponse{
@@ -55,4 +64,4 @@ func (uc *UnsubscribeUseCase) Unsubscribe(ctx context.Context, token string) (*d
 		Success: true,
 		Message: "Successfully unsubscribed",
 	}, nil
-} 
+}

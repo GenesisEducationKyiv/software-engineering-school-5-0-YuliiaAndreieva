@@ -1,92 +1,119 @@
 services:
-  app:
+  email-service:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: services/email/Dockerfile
+    container_name: email-service
     ports:
-      - "8080:8080"
-    depends_on:
-      - postgres
+      - "8081:8081"
+    env_file:
+      - services/email/.env
     environment:
-      - DB_CONN_STR=postgres://user:password@postgres:5432/weatherapi?sslmode=disable
-      - WEATHER_API_KEY=${WEATHER_API_KEY}
-      - WEATHER_API_BASE_URL=${WEATHER_API_BASE_URL}
-      - OPENWEATHERMAP_API_KEY=${OPENWEATHERMAP_API_KEY}
-      - OPENWEATHERMAP_BASE_URL=${OPENWEATHERMAP_BASE_URL}
-      - BASE_URL=${BASE_URL}
-      - PORT=${PORT}
-      - SMTP_HOST=${SMTP_HOST}
-      - SMTP_PORT=${SMTP_PORT}
       - SMTP_USER=${SMTP_USER}
       - SMTP_PASS=${SMTP_PASS}
-      - HTTP_READ_TIMEOUT=${HTTP_READ_TIMEOUT}
-      - HTTP_WRITE_TIMEOUT=${HTTP_WRITE_TIMEOUT}
-      - REDIS_ADDRESS=${REDIS_ADDRESS}
-      - REDIS_TTL=${REDIS_TTL}
-      - REDIS_DIAL_TIMEOUT=${REDIS_DIAL_TIMEOUT}
-      - REDIS_READ_TIMEOUT=${REDIS_READ_TIMEOUT}
-      - REDIS_WRITE_TIMEOUT=${REDIS_WRITE_TIMEOUT}
-      - REDIS_POOL_SIZE=${REDIS_POOL_SIZE}
-      - REDIS_MIN_IDLE_CONNS=${REDIS_MIN_IDLE_CONNS}
-      - HTTP_CLIENT_TIMEOUT=${HTTP_CLIENT_TIMEOUT}
-    volumes:
-      - .:/app
+    networks:
+      - weather-network
+
+  subscription-service:
+    build:
+      context: .
+      dockerfile: services/subscription/Dockerfile
+    container_name: subscription-service
+    ports:
+      - "8082:8082"
+    env_file:
+      - services/subscription/.env
+    environment:
+      - DATABASE_DSN=host=postgres user=postgres password=postgres dbname=subscriptions port=5432 sslmode=disable
+    depends_on:
+      postgres:
+        condition: service_healthy
+      email-service:
+        condition: service_started
+      token-service:
+        condition: service_started
+    networks:
+      - weather-network
+
+  token-service:
+    build:
+      context: .
+      dockerfile: services/token/Dockerfile
+    container_name: token-service
+    ports:
+      - "8083:8083"
+    env_file:
+      - services/token/.env
+    networks:
+      - weather-network
+
+  weather-service:
+    build:
+      context: .
+      dockerfile: services/weather/Dockerfile
+    container_name: weather-service
+    ports:
+      - "8084:8084"
+    env_file:
+      - services/weather/.env
+    environment:
+      - WEATHER_API_KEY=${WEATHER_API_KEY}
+      - REDIS_ADDRESS=redis:6379
+    depends_on:
+      - redis
+    networks:
+      - weather-network
+
+  weather-broadcast-service:
+    build:
+      context: .
+      dockerfile: services/weather-broadcast/Dockerfile
+    container_name: weather-broadcast-service
+    ports:
+      - "8085:8085"
+    env_file:
+      - services/weather-broadcast/.env
+    environment:
+      - SUBSCRIPTION_SERVICE_URL=http://subscription-service:8082
+      - WEATHER_SERVICE_URL=http://weather-service:8084
+      - EMAIL_SERVICE_URL=http://email-service:8081
+    depends_on:
+      - email-service
+      - subscription-service
+      - weather-service
+    networks:
+      - weather-network
 
   postgres:
-    image: postgres:15
+    image: postgres:15-alpine
+    container_name: postgres
     environment:
-      - POSTGRES_USER=user
-      - POSTGRES_PASSWORD=password
-      - POSTGRES_DB=weatherapi
+      - POSTGRES_DB=subscriptions
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
     ports:
       - "5432:5432"
-    restart: unless-stopped
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - weather-network
 
   redis:
     image: redis:7-alpine
-    container_name: weather-api-redis
+    container_name: redis
     ports:
       - "6379:6379"
-    volumes:
-      - redis_data:/data
-    command: redis-server --appendonly yes
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-
-  prometheus:
-    image: prom/prometheus
-    container_name: prometheus
-    ports:
-      - "9090:9090"
-    volumes:
-      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
-    depends_on:
-      - app
-
-  grafana:
-      image: grafana/grafana
-      container_name: grafana
-      ports:
-        - "3000:3000"
-      environment:
-        - GF_DATABASE_TYPE=sqlite3
-        - GF_DATABASE_PATH=/var/lib/grafana/grafana.db
-        - GF_DATABASE_CONCURRENCY=1
-        - GF_DATABASE_MAX_OPEN_CONNS=0
-        - GF_DATABASE_MAX_IDLE_CONNS=2
-        - GF_DATABASE_CONN_MAX_LIFETIME=14400
-      depends_on:
-        - prometheus
-      volumes:
-        - grafana_data:/var/lib/grafana
-        - ./monitoring/grafana/datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml
-        - ./monitoring/grafana/dashboards.yml:/etc/grafana/provisioning/dashboards/dashboards.yml
-        - ./monitoring/dashboards:/etc/grafana/provisioning/dashboards
+    networks:
+      - weather-network
 
 volumes:
-  redis_data:
-  grafana_data:
+  postgres_data:
+
+networks:
+  weather-network:
+    driver: bridge

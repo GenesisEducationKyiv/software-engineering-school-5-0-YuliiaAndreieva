@@ -2,20 +2,21 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
+	"subscription-service/internal/adapter/database"
 	httphandler "subscription-service/internal/adapter/http"
 	"subscription-service/internal/adapter/logger"
-	"subscription-service/internal/adapter/database"
 	"subscription-service/internal/config"
 	"subscription-service/internal/core/usecase"
 
 	"github.com/gin-gonic/gin"
-	"gorm.io/driver/sqlite"
+	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
@@ -24,19 +25,44 @@ func main() {
 
 	loggerInstance := logger.NewLogrusLogger()
 
-	db, err := gorm.Open(sqlite.Open("subscriptions.db"), &gorm.Config{})
-	if err != nil {
-		panic("failed to connect database")
+	var db *gorm.DB
+	var err error
+
+	// Retry connection to database
+	for i := 0; i < 30; i++ {
+		db, err = gorm.Open(postgres.Open(cfg.Database.DSN), &gorm.Config{})
+		if err == nil {
+			break
+		}
+		loggerInstance.Warnf("Failed to connect to database, retrying in 2 seconds... (attempt %d/30)", i+1)
+		time.Sleep(2 * time.Second)
 	}
+
+	if err != nil {
+		panic(fmt.Sprintf("Failed to connect to database after 30 attempts: %v", err))
+	}
+
 	db.AutoMigrate(&database.Subscription{})
 
 	repo := database.NewSubscriptionRepo(db)
 
-	subscribeUseCase := usecase.NewSubscribeUseCase(repo, nil, nil, loggerInstance)
-	confirmUseCase := usecase.NewConfirmSubscriptionUseCase(repo, nil, loggerInstance)
-	unsubscribeUseCase := usecase.NewUnsubscribeUseCase(repo, nil, loggerInstance)
+	// Create HTTP clients
+	httpClient := &http.Client{Timeout: 10 * time.Second}
+	emailClient := httphandler.NewEmailClient(cfg.Email.ServiceURL, httpClient, loggerInstance)
+	tokenClient := httphandler.NewTokenClient("http://token-service:8083", httpClient, loggerInstance)
 
-	subscriptionHandler := httphandler.NewSubscriptionHandler(subscribeUseCase, confirmUseCase, unsubscribeUseCase, loggerInstance)
+	subscribeUseCase := usecase.NewSubscribeUseCase(repo, tokenClient, emailClient, loggerInstance)
+	confirmUseCase := usecase.NewConfirmSubscriptionUseCase(repo, tokenClient, loggerInstance)
+	unsubscribeUseCase := usecase.NewUnsubscribeUseCase(repo, tokenClient, loggerInstance)
+	listByFrequencyUseCase := usecase.NewListByFrequencyUseCase(repo, loggerInstance)
+
+	subscriptionHandler := httphandler.NewSubscriptionHandler(
+		subscribeUseCase,
+		confirmUseCase,
+		unsubscribeUseCase,
+		listByFrequencyUseCase,
+		loggerInstance,
+	)
 
 	r := gin.Default()
 
@@ -47,6 +73,7 @@ func main() {
 	r.POST("/subscribe", subscriptionHandler.Subscribe)
 	r.GET("/confirm/:token", subscriptionHandler.Confirm)
 	r.GET("/unsubscribe/:token", subscriptionHandler.Unsubscribe)
+	r.POST("/subscriptions/list", subscriptionHandler.ListByFrequency)
 
 	srv := &http.Server{
 		Addr:    ":" + cfg.Server.Port,
@@ -68,4 +95,4 @@ func main() {
 	if err := srv.Shutdown(ctx); err != nil {
 		panic("Server forced to shutdown: " + err.Error())
 	}
-} 
+}

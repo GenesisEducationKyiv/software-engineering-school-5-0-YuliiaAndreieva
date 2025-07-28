@@ -11,23 +11,26 @@ import (
 )
 
 type SubscriptionHandler struct {
-	subscribeUseCase   in.SubscribeUseCase
-	confirmUseCase     in.ConfirmSubscriptionUseCase
-	unsubscribeUseCase in.UnsubscribeUseCase
-	logger             out.Logger
+	subscribeUseCase       in.SubscribeUseCase
+	confirmUseCase         in.ConfirmSubscriptionUseCase
+	unsubscribeUseCase     in.UnsubscribeUseCase
+	listByFrequencyUseCase in.ListByFrequencyUseCase
+	logger                 out.Logger
 }
 
 func NewSubscriptionHandler(
 	subscribeUseCase in.SubscribeUseCase,
 	confirmUseCase in.ConfirmSubscriptionUseCase,
 	unsubscribeUseCase in.UnsubscribeUseCase,
+	listByFrequencyUseCase in.ListByFrequencyUseCase,
 	logger out.Logger,
 ) *SubscriptionHandler {
 	return &SubscriptionHandler{
-		subscribeUseCase:   subscribeUseCase,
-		confirmUseCase:     confirmUseCase,
-		unsubscribeUseCase: unsubscribeUseCase,
-		logger:             logger,
+		subscribeUseCase:       subscribeUseCase,
+		confirmUseCase:         confirmUseCase,
+		unsubscribeUseCase:     unsubscribeUseCase,
+		listByFrequencyUseCase: listByFrequencyUseCase,
+		logger:                 logger,
 	}
 }
 
@@ -119,4 +122,29 @@ func (h *SubscriptionHandler) Unsubscribe(c *gin.Context) {
 		h.logger.Warnf("Unsubscribe failed for token: %s - %s", token, result.Message)
 		c.JSON(http.StatusBadRequest, result)
 	}
-} 
+}
+
+func (h *SubscriptionHandler) ListByFrequency(c *gin.Context) {
+	var req domain.ListSubscriptionsQuery
+	if err := c.ShouldBindJSON(&req); err != nil {
+		h.logger.Errorf("Failed to bind JSON for list subscriptions: %v", err)
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"message": "Invalid request: " + err.Error(),
+		})
+		return
+	}
+
+	result, err := h.listByFrequencyUseCase.ListByFrequency(c.Request.Context(), req)
+	if err != nil {
+		h.logger.Errorf("Failed to list subscriptions: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"message": "Failed to list subscriptions: " + err.Error(),
+		})
+		return
+	}
+
+	h.logger.Infof("Listed %d subscriptions for frequency: %s", len(result.Subscriptions), req.Frequency)
+	c.JSON(http.StatusOK, result)
+}

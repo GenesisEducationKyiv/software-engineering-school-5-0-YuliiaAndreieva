@@ -2,8 +2,6 @@ package usecase
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/hex"
 	"subscription-service/internal/core/domain"
 	"subscription-service/internal/core/ports/in"
 	"subscription-service/internal/core/ports/out"
@@ -47,7 +45,12 @@ func (uc *SubscribeUseCase) Subscribe(ctx context.Context, req domain.Subscripti
 		}, nil
 	}
 
-	token := uc.generateToken()
+	token, err := uc.tokenService.GenerateToken(ctx, req.Email, "24h")
+	if err != nil {
+		uc.logger.Errorf("Failed to generate token: %v", err)
+		return nil, err
+	}
+
 	subscription := domain.Subscription{
 		Email:       req.Email,
 		City:        req.City,
@@ -61,7 +64,7 @@ func (uc *SubscribeUseCase) Subscribe(ctx context.Context, req domain.Subscripti
 		return nil, err
 	}
 
-	if err := uc.emailService.SendConfirmationEmail(req.Email, req.City, token); err != nil {
+	if err := uc.emailService.SendConfirmationEmail(ctx, req.Email, req.City, token); err != nil {
 		uc.logger.Errorf("Failed to send confirmation email: %v", err)
 		return &domain.SubscriptionResponse{
 			Success: true,
@@ -77,9 +80,3 @@ func (uc *SubscribeUseCase) Subscribe(ctx context.Context, req domain.Subscripti
 		Token:   token,
 	}, nil
 }
-
-func (uc *SubscribeUseCase) generateToken() string {
-	bytes := make([]byte, 16)
-	rand.Read(bytes)
-	return hex.EncodeToString(bytes)
-} 

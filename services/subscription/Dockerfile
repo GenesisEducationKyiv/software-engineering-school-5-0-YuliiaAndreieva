@@ -2,11 +2,11 @@ FROM golang:1.24-alpine AS builder
 
 WORKDIR /app
 
-COPY go.mod ./
-RUN go mod download
+COPY services/subscription/go.mod services/subscription/go.sum ./
+COPY services/subscription/ ./
 
-COPY . .
 RUN go mod tidy
+RUN go mod download
 RUN go build -o main ./cmd/subscription-service/main.go
 
 FROM alpine:3.19
@@ -17,6 +17,4 @@ WORKDIR /app
 
 COPY --from=builder /app/main .
 
-EXPOSE 8082
-
-CMD ["./main"] 
+CMD ["./main"]

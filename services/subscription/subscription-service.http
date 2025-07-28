@@ -6,7 +6,7 @@ POST http://localhost:8082/subscribe
 Content-Type: application/json
 
 {
-  "email": "test@example.com",
+  "email": "blackonblackua@gmail.com",
   "city": "Kyiv",
   "frequency": "daily"
 }

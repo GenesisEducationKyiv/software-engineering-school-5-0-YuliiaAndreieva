@@ -1,5 +1,13 @@
 package domain
 
+type Frequency string
+
+const (
+	Daily   Frequency = "daily"
+	Weekly  Frequency = "weekly"
+	Monthly Frequency = "monthly"
+)
+
 type SubscriptionRequest struct {
 	Email     string `json:"email" validate:"required,email"`
 	City      string `json:"city" validate:"required"`
@@ -40,4 +48,15 @@ type Subscription struct {
 	Frequency   string `json:"frequency"`
 	Token       string `json:"token"`
 	IsConfirmed bool   `json:"is_confirmed"`
-} 
+}
+
+type ListSubscriptionsQuery struct {
+	Frequency Frequency `json:"frequency"`
+	LastID    int       `json:"last_id"`
+	PageSize  int       `json:"page_size"`
+}
+
+type SubscriptionList struct {
+	Subscriptions []Subscription `json:"subscriptions"`
+	LastIndex     int            `json:"last_index"`
+}

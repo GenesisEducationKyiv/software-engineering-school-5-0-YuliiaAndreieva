@@ -15,4 +15,8 @@ type ConfirmSubscriptionUseCase interface {
 
 type UnsubscribeUseCase interface {
 	Unsubscribe(ctx context.Context, token string) (*domain.UnsubscribeResponse, error)
-} 
+}
+
+type ListByFrequencyUseCase interface {
+	ListByFrequency(ctx context.Context, query domain.ListSubscriptionsQuery) (*domain.SubscriptionList, error)
+}

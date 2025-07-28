@@ -28,7 +28,16 @@ func NewConfirmSubscriptionUseCase(
 func (uc *ConfirmSubscriptionUseCase) ConfirmSubscription(ctx context.Context, token string) (*domain.ConfirmResponse, error) {
 	uc.logger.Infof("Starting subscription confirmation for token: %s", token)
 
-	if !uc.tokenService.ValidateToken(token) {
+	valid, err := uc.tokenService.ValidateToken(ctx, token)
+	if err != nil {
+		uc.logger.Errorf("Failed to validate token: %v", err)
+		return &domain.ConfirmResponse{
+			Success: false,
+			Message: "Token validation failed",
+		}, nil
+	}
+
+	if !valid {
 		uc.logger.Errorf("Invalid token: %s", token)
 		return &domain.ConfirmResponse{
 			Success: false,
@@ -64,4 +73,4 @@ func (uc *ConfirmSubscriptionUseCase) ConfirmSubscription(ctx context.Context, t
 		Success: true,
 		Message: "Subscription confirmed successfully",
 	}, nil
-} 
+}

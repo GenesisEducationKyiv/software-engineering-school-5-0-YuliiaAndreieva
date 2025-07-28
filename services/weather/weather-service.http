@@ -1,0 +1,18 @@
+### Health check
+GET http://localhost:8084/health
+
+### Get weather for Kyiv
+POST http://localhost:8084/weather
+Content-Type: application/json
+
+{
+  "city": "Kyiv"
+}
+
+### Get weather for London
+POST http://localhost:8084/weather
+Content-Type: application/json
+
+{
+  "city": "London"
+}

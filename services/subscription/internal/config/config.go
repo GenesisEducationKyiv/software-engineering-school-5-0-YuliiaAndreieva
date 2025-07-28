@@ -5,8 +5,9 @@ import (
 )
 
 type Config struct {
-	Server ServerConfig
-	Email  EmailConfig
+	Server   ServerConfig
+	Email    EmailConfig
+	Database DatabaseConfig
 }
 
 type ServerConfig struct {
@@ -17,6 +18,10 @@ type EmailConfig struct {
 	ServiceURL string
 }
 
+type DatabaseConfig struct {
+	DSN string
+}
+
 func LoadConfig() *Config {
 	return &Config{
 		Server: ServerConfig{
@@ -24,6 +29,9 @@ func LoadConfig() *Config {
 		},
 		Email: EmailConfig{
 			ServiceURL: getEnv("EMAIL_SERVICE_URL", "http://localhost:8081"),
+		},
+		Database: DatabaseConfig{
+			DSN: getEnv("DATABASE_DSN", "host=localhost user=postgres password=postgres dbname=subscriptions port=5432 sslmode=disable"),
 		},
 	}
 }
@@ -33,4 +41,4 @@ func getEnv(key, defaultValue string) string {
 		return value
 	}
 	return defaultValue
-} 
+}

@@ -60,4 +60,32 @@ func (r *SubscriptionRepo) IsSubscriptionExists(ctx context.Context, email, city
 		Where("email = ? AND city = ?", email, city).
 		Count(&count).Error
 	return count > 0, err
-} 
+}
+
+func (r *SubscriptionRepo) ListByFrequency(ctx context.Context, frequency string, lastID, pageSize int) ([]domain.Subscription, error) {
+	var subs []Subscription
+
+	query := r.db.WithContext(ctx).Where("frequency = ? AND confirmed = ?", frequency, true)
+
+	if lastID > 0 {
+		query = query.Where("id > ?", lastID)
+	}
+
+	if err := query.Limit(pageSize).Find(&subs).Error; err != nil {
+		return nil, err
+	}
+
+	result := make([]domain.Subscription, len(subs))
+	for i, sub := range subs {
+		result[i] = domain.Subscription{
+			ID:          int64(sub.ID),
+			Email:       sub.Email,
+			City:        sub.City,
+			Frequency:   string(sub.Frequency),
+			Token:       sub.Token,
+			IsConfirmed: sub.Confirmed,
+		}
+	}
+
+	return result, nil
+}

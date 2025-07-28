@@ -1,0 +1,28 @@
+package config
+
+import (
+	"time"
+
+	"github.com/kelseyhightower/envconfig"
+)
+
+type Config struct {
+	SubscriptionServiceURL string        `envconfig:"SUBSCRIPTION_SERVICE_URL" required:"true"`
+	WeatherServiceURL      string        `envconfig:"WEATHER_SERVICE_URL" required:"true"`
+	EmailServiceURL        string        `envconfig:"EMAIL_SERVICE_URL" required:"true"`
+	Port                   int           `envconfig:"PORT" default:"8085"`
+	WorkerAmount           int           `envconfig:"WORKER_AMOUNT" default:"10"`
+	PageSize               int           `envconfig:"PAGE_SIZE" default:"100"`
+	HTTPClientTimeout      time.Duration `envconfig:"HTTP_CLIENT_TIMEOUT" default:"10s"`
+	HTTPReadTimeout        time.Duration `envconfig:"HTTP_READ_TIMEOUT" default:"10s"`
+	HTTPWriteTimeout       time.Duration `envconfig:"HTTP_WRITE_TIMEOUT" default:"10s"`
+}
+
+func LoadConfig() (*Config, error) {
+	var cfg Config
+	err := envconfig.Process("", &cfg)
+	if err != nil {
+		return nil, err
+	}
+	return &cfg, nil
+}
