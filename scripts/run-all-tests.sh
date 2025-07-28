@@ -4,6 +4,9 @@ set -e
 
 echo "Running All Tests..."
 
+echo "Running Architecture tests"
+./scripts/run-architecture-tests.sh
+
 echo "Running Unit Tests..."
 ./scripts/run-unit-tests.sh
 

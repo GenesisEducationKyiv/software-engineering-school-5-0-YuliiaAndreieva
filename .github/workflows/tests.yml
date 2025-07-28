@@ -7,6 +7,22 @@ on:
     branches: [ "*" ]
 
 jobs:
+  architecture-tests:
+    name: Architecture Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Go Environment
+      uses: ./.github/actions/setup
+    
+    - name: Install arch-go
+      run: go install github.com/arch-go/arch-go@latest
+    
+    - name: Run Architecture Tests
+      run: arch-go
+
   unit-tests:
     name: Unit Tests
     runs-on: ubuntu-latest

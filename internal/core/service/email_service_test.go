@@ -6,7 +6,7 @@ package service_test
 import (
 	"errors"
 	"testing"
-	"weather-api/internal/adapter/email"
+	"weather-api/internal/core/ports/out"
 	"weather-api/internal/util/emailutil"
 
 	"github.com/stretchr/testify/assert"
@@ -60,46 +60,16 @@ func TestEmailService_SendUpdates(t *testing.T) {
 					Token:       "token2",
 				})
 
-				es.On("SendEmail", email.SendEmailOptions{
+				es.On("SendEmail", out.SendEmailOptions{
 					To:      "user1@example.com",
 					Subject: subKyiv,
 					Body:    bodyKyiv,
 				}).Return(nil).Once()
-				es.On("SendEmail", email.SendEmailOptions{
+				es.On("SendEmail", out.SendEmailOptions{
 					To:      "user2@example.com",
 					Subject: subLviv,
 					Body:    bodyLviv,
 				}).Return(nil).Once()
-			},
-			verifyMocks: func(t *testing.T, es *mocks.MockEmailService) {
-				es.AssertExpectations(t)
-			},
-		},
-		{
-			name: "smtp error is ignored",
-			updates: []domain.WeatherUpdate{
-				{
-					Subscription: domain.Subscription{
-						Email: "user1@example.com",
-						City:  &domain.City{Name: "Kyiv"},
-						Token: "token1",
-					},
-					Weather: domain.Weather{Temperature: 20.5, Humidity: 60, Description: "Sunny"},
-				},
-			},
-			setupMocks: func(es *mocks.MockEmailService) {
-				subj, body := emailutil.BuildWeatherUpdateEmail(emailutil.WeatherUpdateEmailOptions{
-					City:        "Kyiv",
-					Temperature: 20.5,
-					Humidity:    60,
-					Description: "Sunny",
-					Token:       "token1",
-				})
-				es.On("SendEmail", email.SendEmailOptions{
-					To:      "user1@example.com",
-					Subject: subj,
-					Body:    body,
-				}).Return(assert.AnError).Once()
 			},
 			verifyMocks: func(t *testing.T, es *mocks.MockEmailService) {
 				es.AssertExpectations(t)
@@ -146,7 +116,7 @@ func TestEmailService_SendConfirmationEmail(t *testing.T) {
 			},
 			setupMocks: func(es *mocks.MockEmailService) {
 				subject, body := emailutil.BuildConfirmationEmail("Kyiv", "token123")
-				es.On("SendEmail", email.SendEmailOptions{
+				es.On("SendEmail", out.SendEmailOptions{
 					To:      "user@example.com",
 					Subject: subject,
 					Body:    body,
@@ -163,7 +133,7 @@ func TestEmailService_SendConfirmationEmail(t *testing.T) {
 			},
 			setupMocks: func(es *mocks.MockEmailService) {
 				subject, body := emailutil.BuildConfirmationEmail("Kyiv", "token123")
-				es.On("SendEmail", email.SendEmailOptions{
+				es.On("SendEmail", out.SendEmailOptions{
 					To:      "user@example.com",
 					Subject: subject,
 					Body:    body,

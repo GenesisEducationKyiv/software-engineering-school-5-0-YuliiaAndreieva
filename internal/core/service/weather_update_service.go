@@ -5,21 +5,18 @@ import (
 	"fmt"
 	"log"
 	"weather-api/internal/core/domain"
+	"weather-api/internal/core/ports/out"
 )
 
-type WeatherUpdateService interface {
-	PrepareUpdates(ctx context.Context, frequency domain.Frequency) ([]domain.WeatherUpdate, error)
-}
-
 type WeatherUpdateServiceImpl struct {
-	subscriptionService SubscriptionService
-	weatherService      WeatherService
+	subscriptionService out.SubscriptionService
+	weatherService      out.WeatherService
 }
 
 func NewWeatherUpdateService(
-	subscriptionService SubscriptionService,
-	weatherService WeatherService,
-) WeatherUpdateService {
+	subscriptionService out.SubscriptionService,
+	weatherService out.WeatherService,
+) *WeatherUpdateServiceImpl {
 	return &WeatherUpdateServiceImpl{
 		subscriptionService: subscriptionService,
 		weatherService:      weatherService,

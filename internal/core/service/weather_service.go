@@ -2,24 +2,20 @@ package service
 
 import (
 	"context"
-	"weather-api/internal/adapter/weather"
 	"weather-api/internal/core/domain"
+	"weather-api/internal/core/ports/out"
 )
 
-type WeatherService interface {
-	GetWeather(ctx context.Context, city string) (domain.Weather, error)
+type WeatherService struct {
+	provider out.WeatherProvider
 }
 
-type weatherService struct {
-	provider weather.Provider
-}
-
-func NewWeatherService(provider weather.Provider) WeatherService {
-	return &weatherService{
+func NewWeatherService(provider out.WeatherProvider) *WeatherService {
+	return &WeatherService{
 		provider: provider,
 	}
 }
 
-func (s *weatherService) GetWeather(ctx context.Context, city string) (domain.Weather, error) {
+func (s *WeatherService) GetWeather(ctx context.Context, city string) (domain.Weather, error) {
 	return s.provider.GetWeather(ctx, city)
 }

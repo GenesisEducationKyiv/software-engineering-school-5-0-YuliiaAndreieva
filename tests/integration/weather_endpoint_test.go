@@ -7,15 +7,14 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/gin-gonic/gin"
+	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"testing"
+	httphandler "weather-api/internal/adapter/handler/http"
 	"weather-api/internal/core/domain"
-	httphandler "weather-api/internal/handler/http"
-
-	"github.com/gin-gonic/gin"
-	"github.com/stretchr/testify/assert"
 )
 
 type weatherTestServer struct {

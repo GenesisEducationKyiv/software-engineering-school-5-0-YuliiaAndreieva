@@ -37,13 +37,13 @@ func newMiniRedisCache(t *testing.T) (*redis.Cache, func()) {
 	return cache, func() { cache.Close(); s.Close() }
 }
 
-func newWeatherCache(t *testing.T) (weathercache.Cache, func()) {
+func newWeatherCache(t *testing.T) (*weathercache.Cache, func()) {
 	raw, cleanup := newMiniRedisCache(t)
 	cache := weathercache.NewCache(raw)
 	return cache, cleanup
 }
 
-func newWeatherCacheWithMiniRedis(t *testing.T) (weathercache.Cache, *redis.Cache, *miniredis.Miniredis, func()) {
+func newWeatherCacheWithMiniRedis(t *testing.T) (*weathercache.Cache, *redis.Cache, *miniredis.Miniredis, func()) {
 	s, err := miniredis.Run()
 	require.NoError(t, err)
 	opts := defaultRedisOptions()

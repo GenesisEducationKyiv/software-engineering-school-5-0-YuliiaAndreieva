@@ -4,21 +4,32 @@ import (
 	"errors"
 	"log"
 	"net/http"
-	"weather-api/internal/core/domain"
-	"weather-api/internal/core/repository"
-	"weather-api/internal/core/service"
-	httperrors "weather-api/internal/handler/http/errors"
-	"weather-api/internal/handler/http/request"
+	"weather-api/internal/core/ports/in"
+	"weather-api/internal/core/ports/out"
 
 	"github.com/gin-gonic/gin"
+
+	httperrors "weather-api/internal/adapter/handler/http/errors"
+	"weather-api/internal/adapter/handler/http/request"
+	"weather-api/internal/core/domain"
 )
 
 type SubscriptionHandler struct {
-	subscriptionService service.SubscriptionService
+	subscribeUseCase   in.SubscribeUseCase
+	confirmUseCase     in.ConfirmSubscriptionUseCase
+	unsubscribeUseCase in.UnsubscribeUseCase
 }
 
-func NewSubscriptionHandler(subscriptionService service.SubscriptionService) *SubscriptionHandler {
-	return &SubscriptionHandler{subscriptionService: subscriptionService}
+func NewSubscriptionHandler(
+	subscribeUseCase in.SubscribeUseCase,
+	confirmUseCase in.ConfirmSubscriptionUseCase,
+	unsubscribeUseCase in.UnsubscribeUseCase,
+) *SubscriptionHandler {
+	return &SubscriptionHandler{
+		subscribeUseCase:   subscribeUseCase,
+		confirmUseCase:     confirmUseCase,
+		unsubscribeUseCase: unsubscribeUseCase,
+	}
 }
 
 func (h *SubscriptionHandler) Subscribe(c *gin.Context) {
@@ -38,7 +49,7 @@ func (h *SubscriptionHandler) Subscribe(c *gin.Context) {
 
 	log.Printf("Received subscription request for city: %s, frequency: %s", req.City, req.Frequency)
 
-	_, err := h.subscriptionService.Subscribe(c, repository.SubscribeOptions{
+	_, err := h.subscribeUseCase.Subscribe(c, out.SubscribeOptions{
 		Email:     req.Email,
 		City:      req.City,
 		Frequency: req.Frequency,
@@ -70,7 +81,7 @@ func (h *SubscriptionHandler) Confirm(c *gin.Context) {
 
 	log.Printf("Received confirmation request")
 
-	if err := h.subscriptionService.Confirm(c, token); err != nil {
+	if err := h.confirmUseCase.ConfirmSubscription(c, token); err != nil {
 		log.Printf("Unable to confirm subscription: %v", err)
 		switch {
 		case errors.Is(err, domain.ErrInvalidToken):
@@ -97,7 +108,7 @@ func (h *SubscriptionHandler) Unsubscribe(c *gin.Context) {
 
 	log.Printf("Received unsubscribe request")
 
-	if err := h.subscriptionService.Unsubscribe(c, token); err != nil {
+	if err := h.unsubscribeUseCase.Unsubscribe(c, token); err != nil {
 		log.Printf("Unable to unsubscribe: %v", err)
 		switch {
 		case errors.Is(err, domain.ErrInvalidToken):

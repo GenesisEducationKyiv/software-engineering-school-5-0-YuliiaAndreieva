@@ -1,18 +1,16 @@
 package openweathermap
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
-	"io"
-	"log"
 	"net/http"
 	"net/url"
 	"weather-api/internal/adapter/weather"
 	"weather-api/internal/core/domain"
-	"weather-api/internal/util/jsonutil"
 )
+
+const weatherEndpoint = "/weather"
 
 type Client struct {
 	apiKey     string
@@ -42,81 +40,57 @@ func (c *Client) Name() string {
 }
 
 func (c *Client) GetWeather(ctx context.Context, city string) (domain.Weather, error) {
-	endpoint := fmt.Sprintf("%s/weather?q=%s&appid=%s&units=metric", c.baseURL, url.QueryEscape(city), c.apiKey)
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
+	req, err := c.createRequest(ctx, city)
 	if err != nil {
-		msg := fmt.Sprintf("unable to create HTTP request for city %s: %v", city, err)
-		log.Print(msg)
-		return domain.Weather{}, errors.New(msg)
+		return domain.Weather{}, err
 	}
 
-	resp, err := c.httpClient.Do(req)
+	resp, err := weather.ExecuteRequest(c.httpClient, req)
 	if err != nil {
-		msg := fmt.Sprintf("unable to make HTTP request for city %s: %v", city, err)
-		log.Print(msg)
-		return domain.Weather{}, errors.New(msg)
+		return domain.Weather{}, err
 	}
-	defer func() {
-		if closeErr := resp.Body.Close(); closeErr != nil {
-			log.Printf("Error closing response body: %v", closeErr)
-		}
-	}()
+	defer weather.CloseResponse(resp)
 
-	var logBuffer bytes.Buffer
-	teeReader := io.TeeReader(resp.Body, &logBuffer)
-
-	weatherResp, err := jsonutil.Decode[Response](teeReader)
+	weatherResp, responseBytes, err := weather.DecodeResponse[Response](resp)
 	if err != nil {
-		msg := fmt.Sprintf("unable to decode openweathermap response: %v", err)
-		log.Print(msg)
-		return domain.Weather{}, weather.NewProviderError(c.Name(), 500, msg)
+		return domain.Weather{}, err
 	}
 
-	c.logger.Log(c.Name(), logBuffer.Bytes())
+	c.logger.Log(c.Name(), responseBytes)
 
 	if code, ok := weatherResp.Cod.(float64); ok && code != 200 {
-		log.Printf("OpenWeatherMap error (code: %.0f): %s", code, weatherResp.Message)
 		return domain.Weather{}, c.mapError(int(code), weatherResp.Message)
 	}
 
-	return domain.Weather{
-		Temperature: weatherResp.Main.Temp,
-		Humidity:    weatherResp.Main.Humidity,
-		Description: weatherResp.Weather[0].Description,
-	}, nil
+	return convertToDomain(weatherResp), nil
 }
 
 func (c *Client) CheckCityExists(ctx context.Context, city string) error {
-	endpoint := fmt.Sprintf("%s/weather?q=%s&appid=%s&units=metric", c.baseURL, url.QueryEscape(city), c.apiKey)
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
+	req, err := c.createRequest(ctx, city)
 	if err != nil {
-		msg := fmt.Sprintf("creating request: %v", err)
-		log.Print(msg)
-		return errors.New(msg)
+		return err
 	}
 
-	resp, err := c.httpClient.Do(req)
+	resp, err := weather.ExecuteRequest(c.httpClient, req)
 	if err != nil {
-		msg := fmt.Sprintf("sending request: %v", err)
-		log.Print(msg)
-		return errors.New(msg)
+		return err
 	}
-	defer func() {
-		if closeErr := resp.Body.Close(); closeErr != nil {
-			log.Printf("Error closing response body: %v", closeErr)
-		}
-	}()
-
-	bodyBytes, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return weather.NewProviderError(c.Name(), 500, "unable to read response body")
-	}
-
-	c.logger.Log(c.Name(), bodyBytes)
+	defer weather.CloseResponse(resp)
 
 	if resp.StatusCode == http.StatusNotFound {
-		return weather.NewProviderError(c.Name(), 404, "City not found")
+		return c.mapError(404, "city not found")
 	}
 
 	return nil
+}
+
+func (c *Client) createRequest(ctx context.Context, city string) (*http.Request, error) {
+	requestURL := fmt.Sprintf("%s%s?q=%s&appid=%s&units=metric", c.baseURL, weatherEndpoint, url.QueryEscape(city), c.apiKey)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, requestURL, nil)
+	if err != nil {
+		msg := fmt.Sprintf("creating HTTP request for city %s: %v", city, err)
+		c.logger.Log(c.Name(), []byte(msg))
+		return nil, errors.New(msg)
+	}
+	return req, nil
 }
