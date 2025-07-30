@@ -3,15 +3,14 @@ FROM golang:1.24-alpine
 WORKDIR /app
 
 # Copy go.mod and go.sum files
-COPY go.work go.work
-COPY services/token/go.mod services/token/go.mod
-COPY services/token/go.sum services/token/go.sum
+COPY services/token/go.mod go.mod
+COPY services/token/go.sum go.sum
 
 # Download dependencies
-RUN go work sync
+RUN go mod download
 
 # Copy source code
-COPY services/token/ ./services/token/
+COPY services/token/ ./
 
 # Run tests
 CMD ["go", "test", "-v", "./tests/..."] 

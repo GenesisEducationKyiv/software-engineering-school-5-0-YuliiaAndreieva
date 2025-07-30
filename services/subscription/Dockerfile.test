@@ -3,15 +3,14 @@ FROM golang:1.24-alpine
 WORKDIR /app
 
 # Copy go.mod and go.sum files
-COPY go.work go.work
-COPY services/subscription/go.mod services/subscription/go.mod
-COPY services/subscription/go.sum services/subscription/go.sum
+COPY services/subscription/go.mod go.mod
+COPY services/subscription/go.sum go.sum
 
 # Download dependencies
-RUN go work sync
+RUN go mod download
 
 # Copy source code
-COPY services/subscription/ ./services/subscription/
+COPY services/subscription/ ./
 
 # Run tests
 CMD ["go", "test", "-v", "./tests/..."] 
