@@ -28,6 +28,9 @@ jobs:
       run: sleep 5
     
     - name: Move project into GOPATH
+      env:
+        GOPATH: ~/go
+        GOMOD: ~/go/src/email/go.mod
       run: |
         mkdir -p ~/go/src/email
         cp -r services/email/* ~/go/src/email/
@@ -65,6 +68,9 @@ jobs:
       run: sleep 10
     
     - name: Move project into GOPATH
+      env:
+        GOPATH: ~/go
+        GOMOD: ~/go/src/subscription/go.mod
       run: |
         mkdir -p ~/go/src/subscription
         cp -r services/subscription/* ~/go/src/subscription/
@@ -83,6 +89,9 @@ jobs:
       uses: ./.github/actions/setup
     
     - name: Move project into GOPATH
+      env:
+        GOPATH: ~/go
+        GOMOD: ~/go/src/token/go.mod
       run: |
         mkdir -p ~/go/src/token
         cp -r services/token/* ~/go/src/token/
@@ -120,6 +129,9 @@ jobs:
       run: sleep 10
     
     - name: Move project into GOPATH
+      env:
+        GOPATH: ~/go
+        GOMOD: ~/go/src/weather-broadcast/go.mod
       run: |
         mkdir -p ~/go/src/weather-broadcast
         cp -r services/weather-broadcast/* ~/go/src/weather-broadcast/
