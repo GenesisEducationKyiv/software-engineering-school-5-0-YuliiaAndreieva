@@ -22,6 +22,7 @@ jobs:
         GO111MODULE: on
         GOPROXY: direct
         GOSUMDB: off
+        GOPATH: ${{ github.workspace }}/go
       run: |
         go work sync
     
@@ -36,11 +37,10 @@ jobs:
         GO111MODULE: on
         GOPROXY: direct
         GOSUMDB: off
+        GOPATH: ${{ github.workspace }}/go
       run: |
-        cd services/email
-        go mod tidy
-        go mod download
-        go test -v ./tests/...
+        go work use ./services/email
+        go test -v email-service/tests/...
 
   subscription-service-tests:
     name: Subscription Service Tests
@@ -57,6 +57,7 @@ jobs:
         GO111MODULE: on
         GOPROXY: direct
         GOSUMDB: off
+        GOPATH: ${{ github.workspace }}/go
       run: |
         go work sync
     
@@ -80,11 +81,10 @@ jobs:
         GO111MODULE: on
         GOPROXY: direct
         GOSUMDB: off
+        GOPATH: ${{ github.workspace }}/go
       run: |
-        cd services/subscription
-        go mod tidy
-        go mod download
-        go test -v ./tests/...
+        go work use ./services/subscription
+        go test -v subscription-service/tests/...
 
   token-service-tests:
     name: Token Service Tests
@@ -101,6 +101,7 @@ jobs:
         GO111MODULE: on
         GOPROXY: direct
         GOSUMDB: off
+        GOPATH: ${{ github.workspace }}/go
       run: |
         go work sync
     
@@ -109,11 +110,10 @@ jobs:
         GO111MODULE: on
         GOPROXY: direct
         GOSUMDB: off
+        GOPATH: ${{ github.workspace }}/go
       run: |
-        cd services/token
-        go mod tidy
-        go mod download
-        go test -v ./tests/...
+        go work use ./services/token
+        go test -v token-service/tests/...
 
   weather-broadcast-service-tests:
     name: Weather Broadcast Service Tests
@@ -130,6 +130,7 @@ jobs:
         GO111MODULE: on
         GOPROXY: direct
         GOSUMDB: off
+        GOPATH: ${{ github.workspace }}/go
       run: |
         go work sync
     
@@ -138,8 +139,7 @@ jobs:
         GO111MODULE: on
         GOPROXY: direct
         GOSUMDB: off
+        GOPATH: ${{ github.workspace }}/go
       run: |
-        cd services/weather-broadcast
-        go mod tidy
-        go mod download
-        go test -v ./tests/...
+        go work use ./services/weather-broadcast
+        go test -v weather-broadcast-service/tests/...
