@@ -8,10 +8,10 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
-	httphandler "weather-broadcast-service/internal/adapter/http"
-	"weather-broadcast-service/internal/adapter/logger"
-	"weather-broadcast-service/internal/config"
-	"weather-broadcast-service/internal/core/usecase"
+	httphandler "weather-broadcast/internal/adapter/http"
+	"weather-broadcast/internal/adapter/logger"
+	"weather-broadcast/internal/config"
+	"weather-broadcast/internal/core/usecase"
 
 	"github.com/gin-gonic/gin"
 )

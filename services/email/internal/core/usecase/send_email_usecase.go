@@ -3,9 +3,9 @@ package usecase
 import (
 	"context"
 
-	"email-service/internal/core/domain"
-	"email-service/internal/core/ports/in"
-	"email-service/internal/core/ports/out"
+	"email/internal/core/domain"
+	"email/internal/core/ports/in"
+	"email/internal/core/ports/out"
 )
 
 type SendEmailUseCase struct {

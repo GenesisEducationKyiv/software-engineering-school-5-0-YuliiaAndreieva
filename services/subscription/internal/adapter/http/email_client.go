@@ -6,8 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"subscription-service/internal/core/domain"
-	
+	"subscription/internal/core/domain"
 )
 
 type EmailClient struct {

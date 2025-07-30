@@ -3,8 +3,8 @@ package unit
 import (
 	"testing"
 
-	"email-service/internal/adapter/dto"
-	"email-service/internal/adapter/http"
+	"email/internal/adapter/dto"
+	"email/internal/adapter/http"
 
 	"github.com/stretchr/testify/assert"
 )

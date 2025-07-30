@@ -7,11 +7,11 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	httphandler "subscription-service/internal/adapter/http"
-	"subscription-service/internal/core/domain"
-	"subscription-service/internal/core/ports/out"
-	"subscription-service/internal/core/usecase"
-	"subscription-service/tests"
+	httphandler "subscription/internal/adapter/http"
+	"subscription/internal/core/domain"
+	"subscription/internal/core/ports/out"
+	"subscription/internal/core/usecase"
+	"subscription/tests"
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"

@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"subscription-service/internal/core/ports/out"
+	"subscription/internal/core/ports/out"
 )
 
 type TokenClient struct {

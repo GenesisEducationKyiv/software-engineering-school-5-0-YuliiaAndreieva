@@ -1,7 +1,7 @@
 package logger
 
 import (
-	"email-service/internal/core/ports/out"
+	"email/internal/core/ports/out"
 
 	"github.com/sirupsen/logrus"
 )
@@ -34,4 +34,4 @@ func (l *LogrusLogger) Errorf(format string, args ...interface{}) {
 
 func (l *LogrusLogger) Fatalf(format string, args ...interface{}) {
 	l.logger.Fatalf(format, args...)
-} 
+}

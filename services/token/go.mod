@@ -1,4 +1,4 @@
-module token-service
+module token
 
 go 1.24
 

@@ -5,9 +5,9 @@ import (
 	"errors"
 	"testing"
 
-	"email-service/internal/adapter/logger"
-	"email-service/internal/core/domain"
-	"email-service/internal/core/usecase"
+	"email/internal/adapter/logger"
+	"email/internal/core/domain"
+	"email/internal/core/usecase"
 	"github.com/stretchr/testify/assert"
 )
 

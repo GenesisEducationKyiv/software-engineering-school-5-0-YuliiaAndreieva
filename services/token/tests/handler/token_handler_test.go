@@ -8,10 +8,10 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	httphandler "token-service/internal/adapter/http"
-	"token-service/internal/core/domain"
-	"token-service/internal/core/usecase"
-	"token-service/tests"
+	httphandler "token/internal/adapter/http"
+	"token/internal/core/domain"
+	"token/internal/core/usecase"
+	"token/tests"
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"

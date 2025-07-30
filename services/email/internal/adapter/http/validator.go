@@ -1,7 +1,7 @@
 package http
 
 import (
-	"email-service/internal/adapter/dto"
+	"email/internal/adapter/dto"
 	"strings"
 )
 

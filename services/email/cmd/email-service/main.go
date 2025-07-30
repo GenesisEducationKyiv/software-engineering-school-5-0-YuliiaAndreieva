@@ -8,11 +8,11 @@ import (
 	"syscall"
 	"time"
 
-	"email-service/internal/adapter/email"
-	"email-service/internal/adapter/logger"
-	httphandler "email-service/internal/adapter/http"
-	"email-service/internal/config"
-	"email-service/internal/core/usecase"
+	"email/internal/adapter/email"
+	httphandler "email/internal/adapter/http"
+	"email/internal/adapter/logger"
+	"email/internal/config"
+	"email/internal/core/usecase"
 
 	"github.com/gin-gonic/gin"
 )

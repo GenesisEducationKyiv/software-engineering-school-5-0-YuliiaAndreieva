@@ -1,8 +1,8 @@
 package in
 
 import (
-	"email-service/internal/adapter/dto"
-	"email-service/internal/core/domain"
+	"email/internal/adapter/dto"
+	"email/internal/core/domain"
 )
 
 type EmailMapper interface {

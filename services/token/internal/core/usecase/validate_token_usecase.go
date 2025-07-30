@@ -2,9 +2,9 @@ package usecase
 
 import (
 	"context"
-	"token-service/internal/core/domain"
-	"token-service/internal/core/ports/in"
-	"token-service/internal/core/ports/out"
+	"token/internal/core/domain"
+	"token/internal/core/ports/in"
+	"token/internal/core/ports/out"
 
 	"github.com/golang-jwt/jwt/v5"
 )
@@ -56,4 +56,4 @@ func (uc *ValidateTokenUseCase) ValidateToken(ctx context.Context, req domain.Va
 		Valid:   false,
 		Message: "Token is invalid",
 	}, nil
-} 
+}

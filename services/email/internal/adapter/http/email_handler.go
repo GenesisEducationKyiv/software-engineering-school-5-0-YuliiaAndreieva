@@ -4,11 +4,11 @@ import (
 	"net/http"
 	"strings"
 
-	"email-service/internal/adapter/dto"
-	"email-service/internal/adapter/mappings"
-	"email-service/internal/core/domain"
-	"email-service/internal/core/ports/in"
-	"email-service/internal/core/ports/out"
+	"email/internal/adapter/dto"
+	"email/internal/adapter/mappings"
+	"email/internal/core/domain"
+	"email/internal/core/ports/in"
+	"email/internal/core/ports/out"
 
 	"github.com/gin-gonic/gin"
 )

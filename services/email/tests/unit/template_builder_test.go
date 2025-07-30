@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"email-service/internal/adapter/email"
-	"email-service/internal/adapter/logger"
+	"email/internal/adapter/email"
+	"email/internal/adapter/logger"
 )
 
 func TestTemplateBuilder_BuildConfirmationEmail(t *testing.T) {

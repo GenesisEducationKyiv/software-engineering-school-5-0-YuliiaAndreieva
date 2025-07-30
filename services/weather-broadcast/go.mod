@@ -1,4 +1,4 @@
-module weather-broadcast-service
+module weather-broadcast
 
 go 1.24
 

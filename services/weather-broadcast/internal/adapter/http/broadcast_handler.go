@@ -2,9 +2,9 @@ package http
 
 import (
 	"net/http"
-	"weather-broadcast-service/internal/core/domain"
-	"weather-broadcast-service/internal/core/ports/in"
-	"weather-broadcast-service/internal/core/ports/out"
+	"weather-broadcast/internal/core/domain"
+	"weather-broadcast/internal/core/ports/in"
+	"weather-broadcast/internal/core/ports/out"
 
 	"github.com/gin-gonic/gin"
 )

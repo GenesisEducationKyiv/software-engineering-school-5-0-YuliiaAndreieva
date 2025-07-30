@@ -8,10 +8,10 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"email-service/internal/adapter/dto"
-	httphandler "email-service/internal/adapter/http"
-	"email-service/internal/adapter/logger"
-	"email-service/internal/core/domain"
+	"email/internal/adapter/dto"
+	httphandler "email/internal/adapter/http"
+	"email/internal/adapter/logger"
+	"email/internal/core/domain"
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"

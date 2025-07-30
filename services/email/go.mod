@@ -1,4 +1,4 @@
-module email-service
+module email
 
 go 1.24
 

@@ -1,4 +1,4 @@
-module subscription-service
+module subscription
 
 go 1.24
 

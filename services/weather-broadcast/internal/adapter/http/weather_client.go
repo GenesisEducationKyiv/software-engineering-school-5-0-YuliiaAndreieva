@@ -6,8 +6,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"weather-broadcast-service/internal/core/domain"
-	"weather-broadcast-service/internal/core/ports/out"
+	"weather-broadcast/internal/core/domain"
+	"weather-broadcast/internal/core/ports/out"
 )
 
 type WeatherClient struct {

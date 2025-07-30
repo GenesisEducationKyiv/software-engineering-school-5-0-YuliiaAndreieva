@@ -10,11 +10,11 @@ import (
 	"strconv"
 	"testing"
 
-	"email-service/internal/adapter/email"
-	httphandler "email-service/internal/adapter/http"
-	"email-service/internal/adapter/logger"
-	"email-service/internal/core/domain"
-	"email-service/internal/core/usecase"
+	"email/internal/adapter/email"
+	httphandler "email/internal/adapter/http"
+	"email/internal/adapter/logger"
+	"email/internal/core/domain"
+	"email/internal/core/usecase"
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"

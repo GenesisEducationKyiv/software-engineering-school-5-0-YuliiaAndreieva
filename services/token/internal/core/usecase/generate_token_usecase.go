@@ -5,9 +5,9 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"time"
-	"token-service/internal/core/domain"
-	"token-service/internal/core/ports/in"
-	"token-service/internal/core/ports/out"
+	"token/internal/core/domain"
+	"token/internal/core/ports/in"
+	"token/internal/core/ports/out"
 
 	"github.com/golang-jwt/jwt/v5"
 )
@@ -66,4 +66,4 @@ func (uc *GenerateTokenUseCase) generateJTI() string {
 	bytes := make([]byte, 16)
 	rand.Read(bytes)
 	return base64.URLEncoding.EncodeToString(bytes)
-} 
+}

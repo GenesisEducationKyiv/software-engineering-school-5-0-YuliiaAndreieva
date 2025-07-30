@@ -9,9 +9,9 @@ import (
 	"testing"
 	"time"
 
-	httphandler "weather-broadcast-service/internal/adapter/http"
-	"weather-broadcast-service/internal/core/domain"
-	"weather-broadcast-service/tests"
+	httphandler "weather-broadcast/internal/adapter/http"
+	"weather-broadcast/internal/core/domain"
+	"weather-broadcast/tests"
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"

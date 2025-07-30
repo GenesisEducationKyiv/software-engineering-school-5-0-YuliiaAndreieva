@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"weather-broadcast-service/internal/core/domain"
+	"weather-broadcast/internal/core/domain"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"

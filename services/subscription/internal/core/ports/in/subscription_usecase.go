@@ -2,7 +2,7 @@ package in
 
 import (
 	"context"
-	"subscription-service/internal/core/domain"
+	"subscription/internal/core/domain"
 )
 
 type SubscribeUseCase interface {

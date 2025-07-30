@@ -2,7 +2,7 @@ package tests
 
 import (
 	"context"
-	"weather-broadcast-service/internal/core/domain"
+	"weather-broadcast/internal/core/domain"
 
 	"github.com/stretchr/testify/mock"
 )

@@ -2,7 +2,7 @@ package in
 
 import (
 	"context"
-	"weather-broadcast-service/internal/core/domain"
+	"weather-broadcast/internal/core/domain"
 )
 
 type BroadcastUseCase interface {

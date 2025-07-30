@@ -2,7 +2,7 @@ package in
 
 import (
 	"context"
-	"token-service/internal/core/domain"
+	"token/internal/core/domain"
 )
 
 type GenerateTokenUseCase interface {
@@ -11,4 +11,4 @@ type GenerateTokenUseCase interface {
 
 type ValidateTokenUseCase interface {
 	ValidateToken(ctx context.Context, req domain.ValidateTokenRequest) (*domain.ValidateTokenResponse, error)
-} 
+}

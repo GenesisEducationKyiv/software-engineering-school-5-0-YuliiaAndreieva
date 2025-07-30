@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"testing"
 
-	"subscription-service/internal/adapter/database"
+	"subscription/internal/adapter/database"
 	httpha
 	httphandler "subscription-service/internal/adapter/http"
 	"subscription-service/internal/core/domain"

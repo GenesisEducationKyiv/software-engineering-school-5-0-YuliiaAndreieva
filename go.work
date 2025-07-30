@@ -5,4 +5,5 @@ use (
 	./services/subscription
 	./services/token
 	./services/weather-broadcast
+	./services/weather
 )

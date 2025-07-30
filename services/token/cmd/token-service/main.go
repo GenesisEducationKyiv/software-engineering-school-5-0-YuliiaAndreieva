@@ -8,10 +8,10 @@ import (
 	"syscall"
 	"time"
 
-	httphandler "token-service/internal/adapter/http"
-	"token-service/internal/adapter/logger"
-	"token-service/internal/config"
-	"token-service/internal/core/usecase"
+	httphandler "token/internal/adapter/http"
+	"token/internal/adapter/logger"
+	"token/internal/config"
+	"token/internal/core/usecase"
 
 	"github.com/gin-gonic/gin"
 )
@@ -55,4 +55,4 @@ func main() {
 	if err := srv.Shutdown(ctx); err != nil {
 		panic("Server forced to shutdown: " + err.Error())
 	}
-} 
+}

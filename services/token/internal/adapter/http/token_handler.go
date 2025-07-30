@@ -3,9 +3,9 @@ package http
 import (
 	"net/http"
 
-	"token-service/internal/core/domain"
-	"token-service/internal/core/ports/in"
-	"token-service/internal/core/ports/out"
+	"token/internal/core/domain"
+	"token/internal/core/ports/in"
+	"token/internal/core/ports/out"
 
 	"github.com/gin-gonic/gin"
 )
@@ -90,4 +90,4 @@ func (h *TokenHandler) ValidateToken(c *gin.Context) {
 		h.logger.Errorf("Token validation error: %s", result.Message)
 		c.JSON(http.StatusInternalServerError, result)
 	}
-} 
+}

@@ -9,11 +9,11 @@ import (
 	"syscall"
 	"time"
 
-	"subscription-service/internal/adapter/database"
-	httphandler "subscription-service/internal/adapter/http"
-	"subscription-service/internal/adapter/logger"
-	"subscription-service/internal/config"
-	"subscription-service/internal/core/usecase"
+	"subscription/internal/adapter/database"
+	httphandler "subscription/internal/adapter/http"
+	"subscription/internal/adapter/logger"
+	"subscription/internal/config"
+	"subscription/internal/core/usecase"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/driver/postgres"

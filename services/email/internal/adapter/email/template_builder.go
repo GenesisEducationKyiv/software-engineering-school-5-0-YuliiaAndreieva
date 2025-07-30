@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"email-service/internal/core/ports/out"
+	"email/internal/core/ports/out"
 )
 
 type TemplateBuilder struct {

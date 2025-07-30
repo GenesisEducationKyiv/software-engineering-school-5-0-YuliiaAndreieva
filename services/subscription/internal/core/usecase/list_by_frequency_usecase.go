@@ -2,9 +2,9 @@ package usecase
 
 import (
 	"context"
-	"subscription-service/internal/core/domain"
-	"subscription-service/internal/core/ports/in"
-	"subscription-service/internal/core/ports/out"
+	"subscription/internal/core/domain"
+	"subscription/internal/core/ports/in"
+	"subscription/internal/core/ports/out"
 )
 
 type ListByFrequencyUseCase struct {

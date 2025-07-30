@@ -1,6 +1,6 @@
 package in
 
-import "email-service/internal/adapter/dto"
+import "email/internal/adapter/dto"
 
 type EmailValidator interface {
 	ValidateEmailFormat(email string) bool

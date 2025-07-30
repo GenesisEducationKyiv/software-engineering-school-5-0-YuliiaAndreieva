@@ -41,7 +41,9 @@ jobs:
     - name: Wait for services
       if: matrix.service == 'subscription' || matrix.service == 'weather-broadcast'
       run: sleep 10
-    
+
     - name: Run tests for ${{ matrix.service }}
       working-directory: ./services/${{ matrix.service }}
-      run: go test -v ./tests/...
+      run: |
+        go mod tidy
+        go test -v ./...

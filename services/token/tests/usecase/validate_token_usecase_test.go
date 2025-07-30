@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
-	"token-service/internal/core/domain"
-	"token-service/internal/core/usecase"
-	"token-service/tests"
+	"token/internal/core/domain"
+	"token/internal/core/usecase"
+	"token/tests"
 
 	"github.com/stretchr/testify/assert"
 )

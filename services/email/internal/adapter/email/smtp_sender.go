@@ -6,8 +6,8 @@ import (
 	"strconv"
 	"time"
 
-	"email-service/internal/core/domain"
-	"email-service/internal/core/ports/out"
+	"email/internal/core/domain"
+	"email/internal/core/ports/out"
 
 	"github.com/jordan-wright/email"
 )
@@ -33,7 +33,7 @@ func NewSMTPSender(config SMTPConfig, logger out.Logger) out.EmailSender {
 
 func (s *SMTPSender) SendEmail(ctx context.Context, req domain.EmailRequest) (*domain.EmailDeliveryResult, error) {
 	s.logger.Infof("Sending email to %s via SMTP", req.To)
-	
+
 	msg := email.NewEmail()
 	msg.From = s.config.User
 	msg.To = []string{req.To}
@@ -58,4 +58,4 @@ func (s *SMTPSender) SendEmail(ctx context.Context, req domain.EmailRequest) (*d
 		Status: domain.StatusDelivered,
 		SentAt: time.Now().Unix(),
 	}, nil
-} 
+}

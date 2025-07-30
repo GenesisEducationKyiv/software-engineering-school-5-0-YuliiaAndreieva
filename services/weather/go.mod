@@ -1,4 +1,4 @@
-module weather-service
+module weather
 
 go 1.24
 

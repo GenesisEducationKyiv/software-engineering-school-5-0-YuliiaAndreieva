@@ -4,10 +4,10 @@ import (
 	"context"
 	"testing"
 
-	"subscription-service/internal/core/domain"
-	"subscription-service/internal/core/ports/out"
-	"subscription-service/internal/core/usecase"
-	"subscription-service/tests"
+	"subscription/internal/core/domain"
+	"subscription/internal/core/ports/out"
+	"subscription/internal/core/usecase"
+	"subscription/tests"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"

@@ -2,7 +2,7 @@ package in
 
 import (
 	"context"
-	"email-service/internal/core/domain"
+	"email/internal/core/domain"
 )
 
 type SendEmailUseCase interface {
