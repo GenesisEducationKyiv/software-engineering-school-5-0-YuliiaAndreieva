@@ -1,0 +1,17 @@
+FROM golang:1.24-alpine
+
+WORKDIR /app
+
+# Copy go.mod and go.sum files
+COPY go.work go.work
+COPY services/subscription/go.mod services/subscription/go.mod
+COPY services/subscription/go.sum services/subscription/go.sum
+
+# Download dependencies
+RUN go work sync
+
+# Copy source code
+COPY services/subscription/ ./services/subscription/
+
+# Run tests
+CMD ["go", "test", "-v", "./tests/..."] 
