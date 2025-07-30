@@ -47,4 +47,5 @@ jobs:
         mkdir -p ~/go/src/${{ matrix.service }}
         cp -r services/${{ matrix.service }}/* ~/go/src/${{ matrix.service }}/
         cd ~/go/src/${{ matrix.service }}
+        go mod download
         go test -v ./tests/...
