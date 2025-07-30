@@ -6,10 +6,3 @@ use (
 	./services/token
 	./services/weather-broadcast
 )
-
-replace (
-	email-service => ./services/email
-	subscription-service => ./services/subscription
-	token-service => ./services/token
-	weather-broadcast-service => ./services/weather-broadcast
-)
