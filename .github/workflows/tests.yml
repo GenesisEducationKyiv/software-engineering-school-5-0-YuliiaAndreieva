@@ -17,15 +17,6 @@ jobs:
     - name: Setup Go Environment
       uses: ./.github/actions/setup
     
-    - name: Initialize Go Workspace
-      env:
-        GO111MODULE: on
-        GOPROXY: direct
-        GOSUMDB: off
-        GOPATH: ${{ github.workspace }}/go
-      run: |
-        go work sync
-    
     - name: Start MailHog
       run: docker run -d --name mailhog -p 1025:1025 -p 8025:8025 mailhog/mailhog:latest
     
@@ -35,12 +26,9 @@ jobs:
     - name: Run Email Service Tests
       env:
         GO111MODULE: on
-        GOPROXY: direct
-        GOSUMDB: off
-        GOPATH: ${{ github.workspace }}/go
       run: |
-        go work use ./services/email
-        go test -v email-service/tests/...
+        go work sync
+        go test -mod=mod -v email-service/tests/...
 
   subscription-service-tests:
     name: Subscription Service Tests
@@ -51,15 +39,6 @@ jobs:
     
     - name: Setup Go Environment
       uses: ./.github/actions/setup
-    
-    - name: Initialize Go Workspace
-      env:
-        GO111MODULE: on
-        GOPROXY: direct
-        GOSUMDB: off
-        GOPATH: ${{ github.workspace }}/go
-      run: |
-        go work sync
     
     - name: Start PostgreSQL
       run: |
@@ -79,12 +58,9 @@ jobs:
     - name: Run Subscription Service Tests
       env:
         GO111MODULE: on
-        GOPROXY: direct
-        GOSUMDB: off
-        GOPATH: ${{ github.workspace }}/go
       run: |
-        go work use ./services/subscription
-        go test -v subscription-service/tests/...
+        go work sync
+        go test -mod=mod -v subscription-service/tests/...
 
   token-service-tests:
     name: Token Service Tests
@@ -96,24 +72,12 @@ jobs:
     - name: Setup Go Environment
       uses: ./.github/actions/setup
     
-    - name: Initialize Go Workspace
-      env:
-        GO111MODULE: on
-        GOPROXY: direct
-        GOSUMDB: off
-        GOPATH: ${{ github.workspace }}/go
-      run: |
-        go work sync
-    
     - name: Run Token Service Tests
       env:
         GO111MODULE: on
-        GOPROXY: direct
-        GOSUMDB: off
-        GOPATH: ${{ github.workspace }}/go
       run: |
-        go work use ./services/token
-        go test -v token-service/tests/...
+        go work sync
+        go test -mod=mod -v token-service/tests/...
 
   weather-broadcast-service-tests:
     name: Weather Broadcast Service Tests
@@ -125,21 +89,9 @@ jobs:
     - name: Setup Go Environment
       uses: ./.github/actions/setup
     
-    - name: Initialize Go Workspace
-      env:
-        GO111MODULE: on
-        GOPROXY: direct
-        GOSUMDB: off
-        GOPATH: ${{ github.workspace }}/go
-      run: |
-        go work sync
-    
     - name: Run Weather Broadcast Service Tests
       env:
         GO111MODULE: on
-        GOPROXY: direct
-        GOSUMDB: off
-        GOPATH: ${{ github.workspace }}/go
       run: |
-        go work use ./services/weather-broadcast
-        go test -v weather-broadcast-service/tests/...
+        go work sync
+        go test -mod=mod -v weather-broadcast-service/tests/...
