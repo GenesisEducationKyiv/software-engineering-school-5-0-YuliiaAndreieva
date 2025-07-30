@@ -15,7 +15,7 @@ type EmailResponse struct {
 type ConfirmationEmailRequest struct {
 	To               string `json:"to" validate:"required,email"`
 	Subject          string `json:"subject" validate:"required"`
-	Name             string `json:"name" validate:"required"`
+	City             string `json:"city" validate:"required"`
 	ConfirmationLink string `json:"confirmationLink" validate:"required"`
 }
 
@@ -23,7 +23,7 @@ type WeatherUpdateEmailRequest struct {
 	To          string `json:"to" validate:"required,email"`
 	Subject     string `json:"subject" validate:"required"`
 	Name        string `json:"name" validate:"required"`
-	Location    string `json:"location" validate:"required"`
+	City        string `json:"city" validate:"required"`
 	Temperature int    `json:"temperature"`
 	Description string `json:"description" validate:"required"`
 	Humidity    int    `json:"humidity"`
@@ -54,13 +54,13 @@ type EmailDeliveryResult struct {
 }
 
 type EmailBuilderRequest struct {
-	Type      string                 `json:"type" validate:"required"`
-	Data      map[string]interface{} `json:"data" validate:"required"`
-	BaseURL   string                 `json:"base_url"`
+	Type    string                 `json:"type" validate:"required"`
+	Data    map[string]interface{} `json:"data" validate:"required"`
+	BaseURL string                 `json:"base_url"`
 }
 
 type EmailBuilderResponse struct {
 	Subject string `json:"subject"`
 	Body    string `json:"body"`
 	Error   string `json:"error,omitempty"`
-} 
+}

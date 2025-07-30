@@ -2,12 +2,14 @@ package http
 
 import (
 	"net/http"
+	"strings"
 
 	"subscription-service/internal/core/domain"
 	"subscription-service/internal/core/ports/in"
 	"subscription-service/internal/core/ports/out"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
 )
 
 type SubscriptionHandler struct {
@@ -16,6 +18,7 @@ type SubscriptionHandler struct {
 	unsubscribeUseCase     in.UnsubscribeUseCase
 	listByFrequencyUseCase in.ListByFrequencyUseCase
 	logger                 out.Logger
+	validate               *validator.Validate
 }
 
 func NewSubscriptionHandler(
@@ -31,6 +34,7 @@ func NewSubscriptionHandler(
 		unsubscribeUseCase:     unsubscribeUseCase,
 		listByFrequencyUseCase: listByFrequencyUseCase,
 		logger:                 logger,
+		validate:               validator.New(),
 	}
 }
 
@@ -41,6 +45,25 @@ func (h *SubscriptionHandler) Subscribe(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, domain.SubscriptionResponse{
 			Success: false,
 			Message: "Invalid request: " + err.Error(),
+		})
+		return
+	}
+
+	// Validate the request
+	if err := h.validate.Struct(req); err != nil {
+		h.logger.Errorf("Validation failed for subscription request: %v", err)
+		var errorMessages []string
+		for _, err := range err.(validator.ValidationErrors) {
+			switch err.Tag() {
+			case "required":
+				errorMessages = append(errorMessages, err.Field()+" is required")
+			case "email":
+				errorMessages = append(errorMessages, "Invalid email format")
+			}
+		}
+		c.JSON(http.StatusBadRequest, domain.SubscriptionResponse{
+			Success: false,
+			Message: "Validation failed: " + strings.Join(errorMessages, ", "),
 		})
 		return
 	}

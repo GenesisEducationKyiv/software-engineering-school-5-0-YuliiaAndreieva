@@ -77,10 +77,11 @@ func main() {
 
 	cachedProvider := weather.NewCachedWeatherProvider(weatherCache, chainProvider)
 
-	getWeatherUseCase := usecase.NewGetWeatherUseCase(cachedProvider)
+	getWeatherUseCase := usecase.NewGetWeatherUseCase(cachedProvider, fileLogger)
 
 	weatherHandler := httphandler.NewWeatherHandler(
 		getWeatherUseCase,
+		fileLogger,
 	)
 
 	r := gin.Default()

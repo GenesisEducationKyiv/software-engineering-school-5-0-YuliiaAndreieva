@@ -60,3 +60,10 @@ type SubscriptionList struct {
 	Subscriptions []Subscription `json:"subscriptions"`
 	LastIndex     int            `json:"last_index"`
 }
+
+type ConfirmationEmailRequest struct {
+	To               string `json:"to" validate:"required,email"`
+	Subject          string `json:"subject" validate:"required"`
+	City             string `json:"city" validate:"required"`
+	ConfirmationLink string `json:"confirmationLink" validate:"required"`
+}

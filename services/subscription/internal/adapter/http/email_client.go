@@ -6,7 +6,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"subscription-service/internal/core/ports/out"
+	"subscription-service/internal/core/domain"
+	
 )
 
 type EmailClient struct {
@@ -23,37 +24,41 @@ func NewEmailClient(baseURL string, httpClient *http.Client, logger out.Logger) 
 	}
 }
 
-func (c *EmailClient) SendConfirmationEmail(ctx context.Context, email, city, token string) error {
-	url := fmt.Sprintf("%s/send-confirmation", c.baseURL)
+func (c *EmailClient) SendConfirmationEmail(ctx context.Context, req domain.ConfirmationEmailRequest) (out.EmailDeliveryResult, error) {
+	c.logger.Debugf("Sending confirmation email to: %s for city: %s", req.To, req.City)
 
-	reqBody := map[string]interface{}{
-		"email": email,
-		"city":  city,
-		"token": token,
+	url := fmt.Sprintf("%s/send/confirmation", c.baseURL)
+
+	jsonBody, err := json.Marshal(req)
+	if err != nil {
+		c.logger.Errorf("Failed to marshal request body for confirmation email: %v", err)
+		return out.EmailDeliveryResult{}, fmt.Errorf("failed to marshal request body: %w", err)
 	}
 
-	jsonBody, err := json.Marshal(reqBody)
+	httpReq, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBuffer(jsonBody))
 	if err != nil {
-		return fmt.Errorf("failed to marshal request body: %w", err)
+		c.logger.Errorf("Failed to create request for confirmation email: %v", err)
+		return out.EmailDeliveryResult{}, fmt.Errorf("failed to create request: %w", err)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBuffer(jsonBody))
-	if err != nil {
-		return fmt.Errorf("failed to create request: %w", err)
-	}
+	httpReq.Header.Set("Content-Type", "application/json")
 
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := c.httpClient.Do(req)
+	c.logger.Debugf("Sending confirmation email request to: %s", url)
+	resp, err := c.httpClient.Do(httpReq)
 	if err != nil {
-		return fmt.Errorf("failed to send request: %w", err)
+		c.logger.Errorf("Failed to send confirmation email request: %v", err)
+		return out.EmailDeliveryResult{}, fmt.Errorf("failed to send request: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("email service returned status: %d", resp.StatusCode)
+		c.logger.Errorf("Email service returned status: %d", resp.StatusCode)
+		return out.EmailDeliveryResult{}, fmt.Errorf("email service returned status: %d", resp.StatusCode)
 	}
 
-	c.logger.Infof("Successfully sent confirmation email to %s", email)
-	return nil
+	c.logger.Infof("Successfully sent confirmation email to %s", req.To)
+	return out.EmailDeliveryResult{
+		To:     req.To,
+		Status: "delivered",
+	}, nil
 }

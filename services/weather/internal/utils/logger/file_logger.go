@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+	"weather-service/internal/core/ports/out"
 )
 
 type FileLogger struct {
@@ -14,7 +15,7 @@ type FileLogger struct {
 	mu   sync.Mutex
 }
 
-func NewFileLogger(logDir, fileName string) (*FileLogger, error) {
+func NewFileLogger(logDir, fileName string) (out.ProviderLogger, error) {
 	if err := os.MkdirAll(logDir, 0755); err != nil {
 		msg := fmt.Sprintf("unable to create log directory: %v", err)
 		log.Print(msg)

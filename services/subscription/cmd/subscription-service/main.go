@@ -28,7 +28,6 @@ func main() {
 	var db *gorm.DB
 	var err error
 
-	// Retry connection to database
 	for i := 0; i < 30; i++ {
 		db, err = gorm.Open(postgres.Open(cfg.Database.DSN), &gorm.Config{})
 		if err == nil {
@@ -44,9 +43,8 @@ func main() {
 
 	db.AutoMigrate(&database.Subscription{})
 
-	repo := database.NewSubscriptionRepo(db)
+	repo := database.NewSubscriptionRepo(db, loggerInstance)
 
-	// Create HTTP clients
 	httpClient := &http.Client{Timeout: 10 * time.Second}
 	emailClient := httphandler.NewEmailClient(cfg.Email.ServiceURL, httpClient, loggerInstance)
 	tokenClient := httphandler.NewTokenClient("http://token-service:8083", httpClient, loggerInstance)
