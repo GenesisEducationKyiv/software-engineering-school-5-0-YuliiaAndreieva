@@ -41,9 +41,10 @@ jobs:
     - name: Wait for services
       if: matrix.service == 'subscription' || matrix.service == 'weather-broadcast'
       run: sleep 10
-
-    - name: Run tests for ${{ matrix.service }}
-      working-directory: ./services/${{ matrix.service }}
+    
+    - name: Move project into GOPATH
       run: |
-        go mod tidy
-        go test -v ./...
+        mkdir -p ~/go/src/${{ matrix.service }}
+        cp -r services/${{ matrix.service }}/* ~/go/src/${{ matrix.service }}/
+        cd ~/go/src/${{ matrix.service }}
+        go test -v ./tests/...
