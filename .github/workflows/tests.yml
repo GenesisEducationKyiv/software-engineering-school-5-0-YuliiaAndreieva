@@ -7,16 +7,41 @@ on:
     branches: [ "*" ]
 
 jobs:
-  all-service-tests:
-    name: All Service Tests
+  service-tests:
+    name: Service Tests
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: [email, subscription, token, weather-broadcast]
     
     steps:
     - uses: actions/checkout@v4
     
-    - name: Setup Docker Buildx
-      uses: docker/setup-buildx-action@v3
+    - name: Setup Go Environment
+      uses: ./.github/actions/setup
     
-    - name: Run All Service Tests
+    - name: Start PostgreSQL (for services that need it)
+      if: matrix.service == 'subscription' || matrix.service == 'weather-broadcast'
       run: |
-        docker compose -f docker-compose.test.yml up --build --abort-on-container-exit
+        docker run -d --name postgres-${{ matrix.service }} \
+          -e POSTGRES_DB=${matrix.service}_test \
+          -e POSTGRES_USER=test \
+          -e POSTGRES_PASSWORD=test \
+          -p 5432:5432 \
+          postgres:15
+    
+    - name: Start MailHog (for services that need it)
+      if: matrix.service == 'email' || matrix.service == 'subscription' || matrix.service == 'weather-broadcast'
+      run: |
+        docker run -d --name mailhog-${{ matrix.service }} \
+          -p 1025:1025 \
+          -p 8025:8025 \
+          mailhog/mailhog:latest
+    
+    - name: Wait for services
+      if: matrix.service == 'subscription' || matrix.service == 'weather-broadcast'
+      run: sleep 10
+    
+    - name: Run tests for ${{ matrix.service }}
+      working-directory: ./services/${{ matrix.service }}
+      run: go test -v ./tests/...
