@@ -7,12 +7,9 @@ on:
     branches: [ "*" ]
 
 jobs:
-  service-tests:
-    name: Service Tests
+  email-service-tests:
+    name: Email Service Tests
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        service: [email, subscription, token, weather-broadcast]
     
     steps:
     - uses: actions/checkout@v4
@@ -20,32 +17,112 @@ jobs:
     - name: Setup Go Environment
       uses: ./.github/actions/setup
     
-    - name: Start PostgreSQL (for services that need it)
-      if: matrix.service == 'subscription' || matrix.service == 'weather-broadcast'
+    - name: Start MailHog
       run: |
-        docker run -d --name postgres-${{ matrix.service }} \
-          -e POSTGRES_DB=${matrix.service}_test \
+        docker run -d --name mailhog-email \
+          -p 1025:1025 \
+          -p 8025:8025 \
+          mailhog/mailhog:latest
+    
+    - name: Wait for MailHog
+      run: sleep 5
+    
+    - name: Move project into GOPATH
+      run: |
+        mkdir -p ~/go/src/email
+        cp -r services/email/* ~/go/src/email/
+        cd ~/go/src/email
+        go mod download
+        go test -v ./tests/...
+
+  subscription-service-tests:
+    name: Subscription Service Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Go Environment
+      uses: ./.github/actions/setup
+    
+    - name: Start PostgreSQL
+      run: |
+        docker run -d --name postgres-subscription \
+          -e POSTGRES_DB=subscription_test \
           -e POSTGRES_USER=test \
           -e POSTGRES_PASSWORD=test \
           -p 5432:5432 \
           postgres:15
     
-    - name: Start MailHog (for services that need it)
-      if: matrix.service == 'email' || matrix.service == 'subscription' || matrix.service == 'weather-broadcast'
+    - name: Start MailHog
       run: |
-        docker run -d --name mailhog-${{ matrix.service }} \
-          -p 1025:1025 \
-          -p 8025:8025 \
+        docker run -d --name mailhog-subscription \
+          -p 1026:1025 \
+          -p 8026:8025 \
           mailhog/mailhog:latest
     
     - name: Wait for services
-      if: matrix.service == 'subscription' || matrix.service == 'weather-broadcast'
       run: sleep 10
     
     - name: Move project into GOPATH
       run: |
-        mkdir -p ~/go/src/${{ matrix.service }}
-        cp -r services/${{ matrix.service }}/* ~/go/src/${{ matrix.service }}/
-        cd ~/go/src/${{ matrix.service }}
+        mkdir -p ~/go/src/subscription
+        cp -r services/subscription/* ~/go/src/subscription/
+        cd ~/go/src/subscription
+        go mod download
+        go test -v ./tests/...
+
+  token-service-tests:
+    name: Token Service Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Go Environment
+      uses: ./.github/actions/setup
+    
+    - name: Move project into GOPATH
+      run: |
+        mkdir -p ~/go/src/token
+        cp -r services/token/* ~/go/src/token/
+        cd ~/go/src/token
+        go mod download
+        go test -v ./tests/...
+
+  weather-broadcast-service-tests:
+    name: Weather Broadcast Service Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Go Environment
+      uses: ./.github/actions/setup
+    
+    - name: Start PostgreSQL
+      run: |
+        docker run -d --name postgres-weather-broadcast \
+          -e POSTGRES_DB=weather_broadcast_test \
+          -e POSTGRES_USER=test \
+          -e POSTGRES_PASSWORD=test \
+          -p 5432:5432 \
+          postgres:15
+    
+    - name: Start MailHog
+      run: |
+        docker run -d --name mailhog-weather-broadcast \
+          -p 1027:1025 \
+          -p 8027:8025 \
+          mailhog/mailhog:latest
+    
+    - name: Wait for services
+      run: sleep 10
+    
+    - name: Move project into GOPATH
+      run: |
+        mkdir -p ~/go/src/weather-broadcast
+        cp -r services/weather-broadcast/* ~/go/src/weather-broadcast/
+        cd ~/go/src/weather-broadcast
         go mod download
         go test -v ./tests/...
