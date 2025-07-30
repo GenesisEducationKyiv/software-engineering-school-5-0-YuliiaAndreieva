@@ -26,10 +26,9 @@ jobs:
     - name: Run Email Service Tests
       env:
         GO111MODULE: on
-        GOMOD: ${{ github.workspace }}/services/email/go.mod
       run: |
         cd services/email
-        go test -v ./tests/...
+        go test -modfile=go.mod -v ./tests/...
 
   subscription-service-tests:
     name: Subscription Service Tests
@@ -59,10 +58,9 @@ jobs:
     - name: Run Subscription Service Tests
       env:
         GO111MODULE: on
-        GOMOD: ${{ github.workspace }}/services/subscription/go.mod
       run: |
         cd services/subscription
-        go test -v ./tests/...
+        go test -modfile=go.mod -v ./tests/...
 
   token-service-tests:
     name: Token Service Tests
@@ -77,10 +75,9 @@ jobs:
     - name: Run Token Service Tests
       env:
         GO111MODULE: on
-        GOMOD: ${{ github.workspace }}/services/token/go.mod
       run: |
         cd services/token
-        go test -v ./tests/...
+        go test -modfile=go.mod -v ./tests/...
 
   weather-broadcast-service-tests:
     name: Weather Broadcast Service Tests
@@ -95,7 +92,6 @@ jobs:
     - name: Run Weather Broadcast Service Tests
       env:
         GO111MODULE: on
-        GOMOD: ${{ github.workspace }}/services/weather-broadcast/go.mod
       run: |
         cd services/weather-broadcast
-        go test -v ./tests/...
+        go test -modfile=go.mod -v ./tests/...
