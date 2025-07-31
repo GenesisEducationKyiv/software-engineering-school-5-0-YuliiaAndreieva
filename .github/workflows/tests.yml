@@ -6,6 +6,11 @@ on:
   pull_request:
     branches: [ "*" ]
 
+env:
+  GO111MODULE: on
+  GOPROXY: https://proxy.golang.org,direct
+  GOSUMDB: sum.golang.org
+
 jobs:
   email-service-tests:
     name: Email Service Tests
@@ -40,6 +45,8 @@ jobs:
     - name: Run Email Service Tests
       run: |
         cd services/email
+        go env -w GO111MODULE=on
+        go mod tidy
         go mod download
         go test -v ./tests/...
 
@@ -85,6 +92,8 @@ jobs:
     - name: Run Subscription Service Tests
       run: |
         cd services/subscription
+        go env -w GO111MODULE=on
+        go mod tidy
         go mod download
         go test -v ./tests/...
 
@@ -111,6 +120,8 @@ jobs:
     - name: Run Token Service Tests
       run: |
         cd services/token
+        go env -w GO111MODULE=on
+        go mod tidy
         go mod download
         go test -v ./tests/...
 
@@ -156,5 +167,7 @@ jobs:
     - name: Run Weather Broadcast Service Tests
       run: |
         cd services/weather-broadcast
+        go env -w GO111MODULE=on
+        go mod tidy
         go mod download
         go test -v ./tests/...
