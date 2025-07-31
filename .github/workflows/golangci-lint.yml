@@ -18,16 +18,7 @@ jobs:
         service: [email, subscription, token, weather, weather-broadcast]
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
-        with:
-          go-version: stable
-      - name: Install golangci-lint
-        run: |
-          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.55.2
-      - name: Add golangci-lint to PATH
-        run: echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
       - name: Run golangci-lint for ${{ matrix.service }}
         working-directory: ./services/${{ matrix.service }}
         run: |
-          go mod download
-          golangci-lint run --config .golangci.yml --timeout=5m
+          docker run --rm -v ${{ github.workspace }}/services/${{ matrix.service }}:/app -w /app golangci/golangci-lint:v1.55.2 golangci-lint run --timeout=5m
