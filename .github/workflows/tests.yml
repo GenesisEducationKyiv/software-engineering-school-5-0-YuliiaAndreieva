@@ -23,13 +23,7 @@ jobs:
       uses: ./.github/actions/setup
     
     - name: Initialize Go workspace
-      run: |
-        go work init
-        go work use ./services/email
-        go work use ./services/subscription
-        go work use ./services/token
-        go work use ./services/weather
-        go work use ./services/weather-broadcast
+      run: go work sync
     
     - name: Cache Go modules
       uses: actions/cache@v4
@@ -37,7 +31,7 @@ jobs:
         path: |
           ~/.cache/go-build
           ~/go/pkg/mod
-        key: ${{ runner.os }}-go-${{ hashFiles('services/subscription/go.sum') }}
+        key: ${{ runner.os }}-go-${{ hashFiles('services/email/go.sum') }}
         restore-keys: |
           ${{ runner.os }}-go-
     
@@ -72,13 +66,7 @@ jobs:
       uses: ./.github/actions/setup
     
     - name: Initialize Go workspace
-      run: |
-        go work init
-        go work use ./services/email
-        go work use ./services/subscription
-        go work use ./services/token
-        go work use ./services/weather
-        go work use ./services/weather-broadcast
+      run: go work sync
     
     - name: Cache Go modules
       uses: actions/cache@v4
@@ -86,7 +74,7 @@ jobs:
         path: |
           ~/.cache/go-build
           ~/go/pkg/mod
-        key: ${{ runner.os }}-go-${{ hashFiles('services/token/go.sum') }}
+        key: ${{ runner.os }}-go-${{ hashFiles('services/subscription/go.sum') }}
         restore-keys: |
           ${{ runner.os }}-go-
     
@@ -130,13 +118,7 @@ jobs:
       uses: ./.github/actions/setup
     
     - name: Initialize Go workspace
-      run: |
-        go work init
-        go work use ./services/email
-        go work use ./services/subscription
-        go work use ./services/token
-        go work use ./services/weather
-        go work use ./services/weather-broadcast
+      run: go work sync
     
     - name: Cache Go modules
       uses: actions/cache@v4
@@ -144,7 +126,7 @@ jobs:
         path: |
           ~/.cache/go-build
           ~/go/pkg/mod
-        key: ${{ runner.os }}-go-${{ hashFiles('services/weather-broadcast/go.sum') }}
+        key: ${{ runner.os }}-go-${{ hashFiles('services/token/go.sum') }}
         restore-keys: |
           ${{ runner.os }}-go-
     
@@ -169,13 +151,7 @@ jobs:
       uses: ./.github/actions/setup
     
     - name: Initialize Go workspace
-      run: |
-        go work init
-        go work use ./services/email
-        go work use ./services/subscription
-        go work use ./services/token
-        go work use ./services/weather
-        go work use ./services/weather-broadcast
+      run: go work sync
     
     - name: Cache Go modules
       uses: actions/cache@v4
