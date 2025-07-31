@@ -22,13 +22,22 @@ jobs:
     - name: Setup Go Environment
       uses: ./.github/actions/setup
     
+    - name: Initialize Go workspace
+      run: |
+        go work init
+        go work use ./services/email
+        go work use ./services/subscription
+        go work use ./services/token
+        go work use ./services/weather
+        go work use ./services/weather-broadcast
+    
     - name: Cache Go modules
       uses: actions/cache@v4
       with:
         path: |
           ~/.cache/go-build
           ~/go/pkg/mod
-        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        key: ${{ runner.os }}-go-${{ hashFiles('services/subscription/go.sum') }}
         restore-keys: |
           ${{ runner.os }}-go-
     
@@ -43,9 +52,11 @@ jobs:
       run: sleep 5
     
     - name: Run Email Service Tests
+      working-directory: ./services/email
       run: |
-        cd services/email
         go env -w GO111MODULE=on
+        go env -w GOPROXY=https://proxy.golang.org,direct
+        go env -w GOSUMDB=sum.golang.org
         go mod tidy
         go mod download
         go test -v ./tests/...
@@ -60,13 +71,22 @@ jobs:
     - name: Setup Go Environment
       uses: ./.github/actions/setup
     
+    - name: Initialize Go workspace
+      run: |
+        go work init
+        go work use ./services/email
+        go work use ./services/subscription
+        go work use ./services/token
+        go work use ./services/weather
+        go work use ./services/weather-broadcast
+    
     - name: Cache Go modules
       uses: actions/cache@v4
       with:
         path: |
           ~/.cache/go-build
           ~/go/pkg/mod
-        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        key: ${{ runner.os }}-go-${{ hashFiles('services/token/go.sum') }}
         restore-keys: |
           ${{ runner.os }}-go-
     
@@ -90,9 +110,11 @@ jobs:
       run: sleep 10
     
     - name: Run Subscription Service Tests
+      working-directory: ./services/subscription
       run: |
-        cd services/subscription
         go env -w GO111MODULE=on
+        go env -w GOPROXY=https://proxy.golang.org,direct
+        go env -w GOSUMDB=sum.golang.org
         go mod tidy
         go mod download
         go test -v ./tests/...
@@ -107,20 +129,31 @@ jobs:
     - name: Setup Go Environment
       uses: ./.github/actions/setup
     
+    - name: Initialize Go workspace
+      run: |
+        go work init
+        go work use ./services/email
+        go work use ./services/subscription
+        go work use ./services/token
+        go work use ./services/weather
+        go work use ./services/weather-broadcast
+    
     - name: Cache Go modules
       uses: actions/cache@v4
       with:
         path: |
           ~/.cache/go-build
           ~/go/pkg/mod
-        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        key: ${{ runner.os }}-go-${{ hashFiles('services/weather-broadcast/go.sum') }}
         restore-keys: |
           ${{ runner.os }}-go-
     
     - name: Run Token Service Tests
+      working-directory: ./services/token
       run: |
-        cd services/token
         go env -w GO111MODULE=on
+        go env -w GOPROXY=https://proxy.golang.org,direct
+        go env -w GOSUMDB=sum.golang.org
         go mod tidy
         go mod download
         go test -v ./tests/...
@@ -135,13 +168,22 @@ jobs:
     - name: Setup Go Environment
       uses: ./.github/actions/setup
     
+    - name: Initialize Go workspace
+      run: |
+        go work init
+        go work use ./services/email
+        go work use ./services/subscription
+        go work use ./services/token
+        go work use ./services/weather
+        go work use ./services/weather-broadcast
+    
     - name: Cache Go modules
       uses: actions/cache@v4
       with:
         path: |
           ~/.cache/go-build
           ~/go/pkg/mod
-        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        key: ${{ runner.os }}-go-${{ hashFiles('services/weather-broadcast/go.sum') }}
         restore-keys: |
           ${{ runner.os }}-go-
     
@@ -165,9 +207,11 @@ jobs:
       run: sleep 10
     
     - name: Run Weather Broadcast Service Tests
+      working-directory: ./services/weather-broadcast
       run: |
-        cd services/weather-broadcast
         go env -w GO111MODULE=on
+        go env -w GOPROXY=https://proxy.golang.org,direct
+        go env -w GOSUMDB=sum.golang.org
         go mod tidy
         go mod download
         go test -v ./tests/...
