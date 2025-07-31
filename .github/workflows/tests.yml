@@ -17,6 +17,16 @@ jobs:
     - name: Setup Go Environment
       uses: ./.github/actions/setup
     
+    - name: Cache Go modules
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cache/go-build
+          ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-
+    
     - name: Start MailHog
       run: |
         docker run -d --name mailhog-email \
@@ -27,14 +37,9 @@ jobs:
     - name: Wait for MailHog
       run: sleep 5
     
-    - name: Move project into GOPATH
-      env:
-        GOPATH: /home/runner/go
-        GOMOD: /home/runner/go/src/email/go.mod
+    - name: Run Email Service Tests
       run: |
-        mkdir -p /home/runner/go/src/email
-        cp -r services/email/* /home/runner/go/src/email/
-        cd /home/runner/go/src/email
+        cd services/email
         go mod download
         go test -v ./tests/...
 
@@ -47,6 +52,16 @@ jobs:
     
     - name: Setup Go Environment
       uses: ./.github/actions/setup
+    
+    - name: Cache Go modules
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cache/go-build
+          ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-
     
     - name: Start PostgreSQL
       run: |
@@ -67,14 +82,9 @@ jobs:
     - name: Wait for services
       run: sleep 10
     
-    - name: Move project into GOPATH
-      env:
-        GOPATH: /home/runner/go
-        GOMOD: /home/runner/go/src/subscription/go.mod
+    - name: Run Subscription Service Tests
       run: |
-        mkdir -p /home/runner/go/src/subscription
-        cp -r services/subscription/* /home/runner/go/src/subscription/
-        cd /home/runner/go/src/subscription
+        cd services/subscription
         go mod download
         go test -v ./tests/...
 
@@ -88,14 +98,19 @@ jobs:
     - name: Setup Go Environment
       uses: ./.github/actions/setup
     
-    - name: Move project into GOPATH
-      env:
-        GOPATH: /home/runner/go
-        GOMOD: /home/runner/go/src/token/go.mod
+    - name: Cache Go modules
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cache/go-build
+          ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-
+    
+    - name: Run Token Service Tests
       run: |
-        mkdir -p /home/runner/go/src/token
-        cp -r services/token/* /home/runner/go/src/token/
-        cd /home/runner/go/src/token
+        cd services/token
         go mod download
         go test -v ./tests/...
 
@@ -108,6 +123,16 @@ jobs:
     
     - name: Setup Go Environment
       uses: ./.github/actions/setup
+    
+    - name: Cache Go modules
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cache/go-build
+          ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-
     
     - name: Start PostgreSQL
       run: |
@@ -128,13 +153,8 @@ jobs:
     - name: Wait for services
       run: sleep 10
     
-    - name: Move project into GOPATH
-      env:
-        GOPATH: /home/runner/go
-        GOMOD: /home/runner/go/src/weather-broadcast/go.mod
+    - name: Run Weather Broadcast Service Tests
       run: |
-        mkdir -p /home/runner/go/src/weather-broadcast
-        cp -r services/weather-broadcast/* /home/runner/go/src/weather-broadcast/
-        cd /home/runner/go/src/weather-broadcast
+        cd services/weather-broadcast
         go mod download
         go test -v ./tests/...
