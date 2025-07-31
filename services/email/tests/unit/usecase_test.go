@@ -8,6 +8,7 @@ import (
 	"email/internal/adapter/logger"
 	"email/internal/core/domain"
 	"email/internal/core/usecase"
+
 	"github.com/stretchr/testify/assert"
 )
 

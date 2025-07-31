@@ -53,7 +53,11 @@ func (c *TokenClient) GenerateToken(ctx context.Context, email string, expiresIn
 		c.logger.Errorf("Failed to send token generation request: %v", err)
 		return "", fmt.Errorf("failed to send request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if closeErr := resp.Body.Close(); closeErr != nil {
+			c.logger.Warnf("Failed to close response body: %v", closeErr)
+		}
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		c.logger.Errorf("Token service returned status: %d", resp.StatusCode)
@@ -102,7 +106,11 @@ func (c *TokenClient) ValidateToken(ctx context.Context, token string) (bool, er
 		c.logger.Errorf("Failed to send token validation request: %v", err)
 		return false, fmt.Errorf("failed to send request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if closeErr := resp.Body.Close(); closeErr != nil {
+			c.logger.Warnf("Failed to close response body: %v", closeErr)
+		}
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		c.logger.Errorf("Token service returned status: %d", resp.StatusCode)

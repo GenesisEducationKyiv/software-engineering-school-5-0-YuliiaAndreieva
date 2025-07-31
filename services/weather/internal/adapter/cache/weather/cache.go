@@ -4,9 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"weather-service/internal/adapter/cache/core"
-	"weather-service/internal/core/domain"
-	"weather-service/internal/core/ports/out"
+	"weather/internal/adapter/cache/core"
+	"weather/internal/core/domain"
+	"weather/internal/core/ports/out"
 
 	"github.com/go-redis/redis/v8"
 )

@@ -1,7 +1,7 @@
 package logger
 
 import (
-	"weather-service/internal/core/ports/out"
+	"weather/internal/core/ports/out"
 
 	"github.com/sirupsen/logrus"
 )

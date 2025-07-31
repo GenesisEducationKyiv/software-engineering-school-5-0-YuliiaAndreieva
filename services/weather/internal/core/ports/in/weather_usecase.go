@@ -2,7 +2,7 @@ package in
 
 import (
 	"context"
-	"weather-service/internal/core/domain"
+	"weather/internal/core/domain"
 )
 
 type GetWeatherUseCase interface {

@@ -17,7 +17,7 @@ type validateTokenUseCaseTestSetup struct {
 	validToken string
 }
 
-func setupValidateTokenUseCaseTest(t *testing.T) *validateTokenUseCaseTestSetup {
+func setupValidateTokenUseCaseTest() *validateTokenUseCaseTestSetup {
 	mockLogger := &tests.MockLogger{}
 	secret := "test-secret-key-for-jwt-signing"
 
@@ -25,10 +25,13 @@ func setupValidateTokenUseCaseTest(t *testing.T) *validateTokenUseCaseTestSetup 
 
 	tests.SetupCommonLoggerMocks(mockLogger)
 	generateUseCase := usecase.NewGenerateTokenUseCase(mockLogger, secret).(*usecase.GenerateTokenUseCase)
-	validToken, _ := generateUseCase.GenerateToken(context.Background(), domain.GenerateTokenRequest{
+	validToken, err := generateUseCase.GenerateToken(context.Background(), domain.GenerateTokenRequest{
 		Subject:   "test@example.com",
 		ExpiresIn: "24h",
 	})
+	if err != nil {
+		panic("Failed to generate test token")
+	}
 
 	return &validateTokenUseCaseTestSetup{
 		useCase:    useCase,
@@ -46,7 +49,7 @@ func (ts *validateTokenUseCaseTestSetup) setupWarningMocks() {
 }
 
 func TestValidateTokenUseCase_Success(t *testing.T) {
-	ts := setupValidateTokenUseCaseTest(t)
+	ts := setupValidateTokenUseCaseTest()
 
 	t.Run("Valid token validation", func(t *testing.T) {
 		request := domain.ValidateTokenRequest{
@@ -65,7 +68,7 @@ func TestValidateTokenUseCase_Success(t *testing.T) {
 }
 
 func TestValidateTokenUseCase_InvalidToken(t *testing.T) {
-	ts := setupValidateTokenUseCaseTest(t)
+	ts := setupValidateTokenUseCaseTest()
 
 	t.Run("Invalid token", func(t *testing.T) {
 		request := domain.ValidateTokenRequest{
@@ -114,7 +117,7 @@ func TestValidateTokenUseCase_InvalidToken(t *testing.T) {
 }
 
 func TestValidateTokenUseCase_DifferentSecret(t *testing.T) {
-	ts := setupValidateTokenUseCaseTest(t)
+	ts := setupValidateTokenUseCaseTest()
 
 	t.Run("Token signed with different secret", func(t *testing.T) {
 		differentSecret := "different-secret-key"

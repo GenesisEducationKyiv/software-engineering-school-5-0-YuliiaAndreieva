@@ -59,7 +59,11 @@ func (c *EmailClient) SendWeather(ctx context.Context, info *domain.WeatherMailS
 		c.logger.Errorf("Failed to make weather update email request: %v", err)
 		return fmt.Errorf("failed to make request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if closeErr := resp.Body.Close(); closeErr != nil {
+			c.logger.Warnf("Failed to close response body: %v", closeErr)
+		}
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		c.logger.Errorf("Email service returned status: %d for weather update", resp.StatusCode)
@@ -102,7 +106,11 @@ func (c *EmailClient) SendError(ctx context.Context, info *domain.WeatherMailErr
 		c.logger.Errorf("Failed to make error email request: %v", err)
 		return fmt.Errorf("failed to make request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if closeErr := resp.Body.Close(); closeErr != nil {
+			c.logger.Warnf("Failed to close response body: %v", closeErr)
+		}
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		c.logger.Errorf("Email service returned status: %d for error email", resp.StatusCode)

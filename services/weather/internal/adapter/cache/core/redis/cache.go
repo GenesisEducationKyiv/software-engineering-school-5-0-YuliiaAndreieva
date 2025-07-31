@@ -4,7 +4,7 @@ import (
 	"context"
 	"strings"
 	"time"
-	"weather-service/internal/adapter/cache/core"
+	"weather/internal/adapter/cache/core"
 
 	"github.com/redis/go-redis/v9"
 )

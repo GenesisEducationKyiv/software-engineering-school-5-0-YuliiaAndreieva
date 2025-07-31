@@ -48,7 +48,7 @@ type emailHandlerTestSetup struct {
 	router  *gin.Engine
 }
 
-func setupEmailHandlerTest(t *testing.T, mockUseCase *MockSendEmailUseCase) *emailHandlerTestSetup {
+func setupEmailHandlerTest(mockUseCase *MockSendEmailUseCase) *emailHandlerTestSetup {
 	logger := logger.NewLogrusLogger()
 	handler := httphandler.NewEmailHandler(mockUseCase, logger)
 
@@ -139,7 +139,7 @@ func TestEmailHandler_SendConfirmationEmail_Success(t *testing.T) {
 				},
 			}
 
-			ts := setupEmailHandlerTest(t, mockUseCase)
+			ts := setupEmailHandlerTest(mockUseCase)
 
 			w, response := ts.makeConfirmationRequest(t, tt.request)
 
@@ -166,7 +166,7 @@ func TestEmailHandler_SendConfirmationEmail_InvalidEmail(t *testing.T) {
 		},
 	}
 
-	ts := setupEmailHandlerTest(t, mockUseCase)
+	ts := setupEmailHandlerTest(mockUseCase)
 
 	w, response := ts.makeConfirmationRequest(t, request)
 
@@ -192,7 +192,7 @@ func TestEmailHandler_SendConfirmationEmail_EmptyFields(t *testing.T) {
 		},
 	}
 
-	ts := setupEmailHandlerTest(t, mockUseCase)
+	ts := setupEmailHandlerTest(mockUseCase)
 
 	w, response := ts.makeConfirmationRequest(t, request)
 
@@ -215,7 +215,7 @@ func TestEmailHandler_SendConfirmationEmail_UsecaseError(t *testing.T) {
 		},
 	}
 
-	ts := setupEmailHandlerTest(t, mockUseCase)
+	ts := setupEmailHandlerTest(mockUseCase)
 
 	w, response := ts.makeConfirmationRequest(t, request)
 
@@ -274,7 +274,7 @@ func TestEmailHandler_SendWeatherUpdateEmail_Success(t *testing.T) {
 				},
 			}
 
-			ts := setupEmailHandlerTest(t, mockUseCase)
+			ts := setupEmailHandlerTest(mockUseCase)
 
 			w, response := ts.makeWeatherUpdateRequest(t, tt.request)
 
@@ -305,7 +305,7 @@ func TestEmailHandler_SendWeatherUpdateEmail_InvalidEmail(t *testing.T) {
 		},
 	}
 
-	ts := setupEmailHandlerTest(t, mockUseCase)
+	ts := setupEmailHandlerTest(mockUseCase)
 
 	w, response := ts.makeWeatherUpdateRequest(t, request)
 
@@ -335,7 +335,7 @@ func TestEmailHandler_SendWeatherUpdateEmail_MissingFields(t *testing.T) {
 		},
 	}
 
-	ts := setupEmailHandlerTest(t, mockUseCase)
+	ts := setupEmailHandlerTest(mockUseCase)
 
 	w, response := ts.makeWeatherUpdateRequest(t, request)
 
@@ -362,7 +362,7 @@ func TestEmailHandler_SendWeatherUpdateEmail_UsecaseError(t *testing.T) {
 		},
 	}
 
-	ts := setupEmailHandlerTest(t, mockUseCase)
+	ts := setupEmailHandlerTest(mockUseCase)
 
 	w, response := ts.makeWeatherUpdateRequest(t, request)
 
@@ -373,7 +373,7 @@ func TestEmailHandler_SendWeatherUpdateEmail_UsecaseError(t *testing.T) {
 
 func TestEmailHandler_InvalidJSON(t *testing.T) {
 	mockUseCase := &MockSendEmailUseCase{}
-	ts := setupEmailHandlerTest(t, mockUseCase)
+	ts := setupEmailHandlerTest(mockUseCase)
 
 	t.Run("Invalid JSON for confirmation email", func(t *testing.T) {
 		req := httptest.NewRequest("POST", "/send/confirmation", bytes.NewBufferString(`{"invalid": json`))
@@ -398,7 +398,7 @@ func TestEmailHandler_InvalidJSON(t *testing.T) {
 
 func TestEmailHandler_ContentTypeValidation(t *testing.T) {
 	mockUseCase := &MockSendEmailUseCase{}
-	ts := setupEmailHandlerTest(t, mockUseCase)
+	ts := setupEmailHandlerTest(mockUseCase)
 
 	t.Run("Missing Content-Type header", func(t *testing.T) {
 		request := dto.ConfirmationEmailRequest{

@@ -9,8 +9,8 @@ import (
 )
 
 const (
-	PAGE_SIZE     = 100
-	WORKER_AMOUNT = 10
+	PageSize     = 100
+	WorkerAmount = 10
 )
 
 type BroadcastUseCase struct {
@@ -36,7 +36,7 @@ func NewBroadcastUseCase(
 
 func (s *BroadcastUseCase) Broadcast(ctx context.Context, frequency domain.Frequency) error {
 	cityWeatherMap := make(map[string]*domain.Weather)
-	sem := make(chan struct{}, WORKER_AMOUNT)
+	sem := make(chan struct{}, WorkerAmount)
 	wg := &sync.WaitGroup{}
 
 	lastID := 0
@@ -44,7 +44,7 @@ func (s *BroadcastUseCase) Broadcast(ctx context.Context, frequency domain.Frequ
 		query := domain.ListSubscriptionsQuery{
 			Frequency: frequency,
 			LastID:    lastID,
-			PageSize:  PAGE_SIZE,
+			PageSize:  PageSize,
 		}
 
 		res, err := s.subscriptionClient.ListByFrequency(ctx, query)

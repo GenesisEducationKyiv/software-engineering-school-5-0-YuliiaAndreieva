@@ -9,9 +9,9 @@ import (
 	"testing"
 	"time"
 
-	httphandler "weather-service/internal/adapter/http"
-	"weather-service/internal/core/domain"
-	"weather-service/internal/utils/logger"
+	httphandler "weather/internal/adapter/http"
+	"weather/internal/core/domain"
+	"weather/internal/utils/logger"
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
@@ -38,7 +38,7 @@ type handlerTestSetup struct {
 	router  *gin.Engine
 }
 
-func setupHandlerTest(t *testing.T, mockUseCase *MockGetWeatherUseCase) *handlerTestSetup {
+func setupHandlerTest(mockUseCase *MockGetWeatherUseCase) *handlerTestSetup {
 	logger := logger.NewLogrusLogger()
 	handler := httphandler.NewWeatherHandler(mockUseCase, logger)
 
@@ -89,7 +89,7 @@ func TestWeatherHandler_GetWeather_Success(t *testing.T) {
 		},
 	}
 
-	ts := setupHandlerTest(t, mockUseCase)
+	ts := setupHandlerTest(mockUseCase)
 
 	request := domain.WeatherRequest{
 		City: "Kyiv",
@@ -126,7 +126,7 @@ func TestWeatherHandler_GetWeather_AnotherValidRequest(t *testing.T) {
 		},
 	}
 
-	ts := setupHandlerTest(t, mockUseCase)
+	ts := setupHandlerTest(mockUseCase)
 
 	request := domain.WeatherRequest{
 		City: "Lviv",
@@ -145,7 +145,7 @@ func TestWeatherHandler_GetWeather_AnotherValidRequest(t *testing.T) {
 
 func TestWeatherHandler_GetWeather_InvalidJSON(t *testing.T) {
 	mockUseCase := &MockGetWeatherUseCase{}
-	ts := setupHandlerTest(t, mockUseCase)
+	ts := setupHandlerTest(mockUseCase)
 
 	req := httptest.NewRequest("POST", "/weather", bytes.NewBufferString(`{"invalid": json`))
 	req.Header.Set("Content-Type", "application/json")
@@ -165,7 +165,7 @@ func TestWeatherHandler_GetWeather_InvalidJSON(t *testing.T) {
 
 func TestWeatherHandler_GetWeather_EmptyCity(t *testing.T) {
 	mockUseCase := &MockGetWeatherUseCase{}
-	ts := setupHandlerTest(t, mockUseCase)
+	ts := setupHandlerTest(mockUseCase)
 
 	request := domain.WeatherRequest{
 		City: "",
@@ -180,7 +180,7 @@ func TestWeatherHandler_GetWeather_EmptyCity(t *testing.T) {
 
 func TestWeatherHandler_GetWeather_WhitespaceCity(t *testing.T) {
 	mockUseCase := &MockGetWeatherUseCase{}
-	ts := setupHandlerTest(t, mockUseCase)
+	ts := setupHandlerTest(mockUseCase)
 
 	request := domain.WeatherRequest{
 		City: "   ",
@@ -200,7 +200,7 @@ func TestWeatherHandler_GetWeather_UsecaseError(t *testing.T) {
 		},
 	}
 
-	ts := setupHandlerTest(t, mockUseCase)
+	ts := setupHandlerTest(mockUseCase)
 
 	request := domain.WeatherRequest{
 		City: "Kyiv",
@@ -224,7 +224,7 @@ func TestWeatherHandler_GetWeather_ProviderFailure(t *testing.T) {
 		},
 	}
 
-	ts := setupHandlerTest(t, mockUseCase)
+	ts := setupHandlerTest(mockUseCase)
 
 	request := domain.WeatherRequest{
 		City: "Kyiv",
@@ -240,7 +240,7 @@ func TestWeatherHandler_GetWeather_ProviderFailure(t *testing.T) {
 
 func TestWeatherHandler_GetWeather_MissingContentType(t *testing.T) {
 	mockUseCase := &MockGetWeatherUseCase{}
-	ts := setupHandlerTest(t, mockUseCase)
+	ts := setupHandlerTest(mockUseCase)
 
 	request := domain.WeatherRequest{
 		City: "Kyiv",

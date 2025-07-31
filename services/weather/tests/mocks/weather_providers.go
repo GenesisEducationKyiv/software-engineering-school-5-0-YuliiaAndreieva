@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"weather-service/internal/core/domain"
+	"weather/internal/core/domain"
 )
 
 type MockWeatherProvider struct {

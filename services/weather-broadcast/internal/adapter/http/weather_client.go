@@ -53,7 +53,11 @@ func (c *WeatherClient) GetWeatherByCity(ctx context.Context, city string) (*dom
 		c.logger.Errorf("Failed to make weather request for city %s: %v", city, err)
 		return nil, fmt.Errorf("failed to make request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if closeErr := resp.Body.Close(); closeErr != nil {
+			c.logger.Warnf("Failed to close response body: %v", closeErr)
+		}
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		c.logger.Errorf("Weather service returned status: %d for city %s", resp.StatusCode, city)

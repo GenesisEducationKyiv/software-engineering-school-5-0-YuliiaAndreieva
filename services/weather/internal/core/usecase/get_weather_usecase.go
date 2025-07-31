@@ -2,9 +2,9 @@ package usecase
 
 import (
 	"context"
-	"weather-service/internal/core/domain"
-	"weather-service/internal/core/ports/in"
-	"weather-service/internal/core/ports/out"
+	"weather/internal/core/domain"
+	"weather/internal/core/ports/in"
+	"weather/internal/core/ports/out"
 )
 
 type GetWeatherUseCase struct {

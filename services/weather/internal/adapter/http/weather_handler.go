@@ -4,10 +4,11 @@ import (
 	"net/http"
 	"strings"
 
+	"weather/internal/core/domain"
+	"weather/internal/core/ports/in"
+	"weather/internal/core/ports/out"
+
 	"github.com/gin-gonic/gin"
-	"weather-service/internal/core/domain"
-	"weather-service/internal/core/ports/in"
-	"weather-service/internal/core/ports/out"
 )
 
 type WeatherHandler struct {
@@ -32,7 +33,7 @@ func (h *WeatherHandler) GetWeather(c *gin.Context) {
 		return
 	}
 
-	if err := h.validateRequest(c, req); err != nil {
+	if err := h.validateRequest(req); err != nil {
 		h.handleValidationError(c, err)
 		return
 	}
@@ -56,7 +57,7 @@ func (h *WeatherHandler) bindRequest(c *gin.Context) (domain.WeatherRequest, err
 	return req, nil
 }
 
-func (h *WeatherHandler) validateRequest(c *gin.Context, req domain.WeatherRequest) error {
+func (h *WeatherHandler) validateRequest(req domain.WeatherRequest) error {
 	if strings.TrimSpace(req.City) == "" {
 		return &ValidationError{Message: "City is required"}
 	}

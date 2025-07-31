@@ -1,7 +1,7 @@
 package openweathermap
 
 import (
-	"weather-service/internal/core/domain"
+	"weather/internal/core/domain"
 )
 
 func convertToDomain(weatherResp *Response) domain.Weather {

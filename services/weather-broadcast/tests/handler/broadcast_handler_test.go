@@ -35,7 +35,7 @@ type broadcastHandlerTestSetup struct {
 	mockLogger           *tests.MockLogger
 }
 
-func setupBroadcastHandlerTest(t *testing.T) *broadcastHandlerTestSetup {
+func setupBroadcastHandlerTest() *broadcastHandlerTestSetup {
 	mockBroadcastUseCase := &MockBroadcastUseCase{}
 	mockLogger := &tests.MockLogger{}
 
@@ -83,7 +83,7 @@ func (ts *broadcastHandlerTestSetup) makeBroadcastRequest(t *testing.T, request 
 }
 
 func TestBroadcastHandler_Success(t *testing.T) {
-	ts := setupBroadcastHandlerTest(t)
+	ts := setupBroadcastHandlerTest()
 
 	t.Run("Valid broadcast request", func(t *testing.T) {
 		request := domain.BroadcastRequest{
@@ -119,7 +119,7 @@ func TestBroadcastHandler_Success(t *testing.T) {
 }
 
 func TestBroadcastHandler_InvalidJSON(t *testing.T) {
-	ts := setupBroadcastHandlerTest(t)
+	ts := setupBroadcastHandlerTest()
 
 	t.Run("Invalid JSON for broadcast", func(t *testing.T) {
 		ts.setupErrorMocks()
@@ -141,7 +141,7 @@ func TestBroadcastHandler_InvalidJSON(t *testing.T) {
 }
 
 func TestBroadcastHandler_MissingFrequency(t *testing.T) {
-	ts := setupBroadcastHandlerTest(t)
+	ts := setupBroadcastHandlerTest()
 
 	t.Run("Missing frequency field", func(t *testing.T) {
 		ts.setupErrorMocks()
@@ -163,7 +163,7 @@ func TestBroadcastHandler_MissingFrequency(t *testing.T) {
 }
 
 func TestBroadcastHandler_BroadcastError(t *testing.T) {
-	ts := setupBroadcastHandlerTest(t)
+	ts := setupBroadcastHandlerTest()
 
 	t.Run("Broadcast usecase error", func(t *testing.T) {
 		request := domain.BroadcastRequest{

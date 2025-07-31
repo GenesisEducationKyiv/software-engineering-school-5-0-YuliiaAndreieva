@@ -64,6 +64,9 @@ func (uc *GenerateTokenUseCase) GenerateToken(ctx context.Context, req domain.Ge
 
 func (uc *GenerateTokenUseCase) generateJTI() string {
 	bytes := make([]byte, 16)
-	rand.Read(bytes)
+	if _, err := rand.Read(bytes); err != nil {
+		uc.logger.Errorf("Failed to generate random bytes: %v", err)
+		return ""
+	}
 	return base64.URLEncoding.EncodeToString(bytes)
 }

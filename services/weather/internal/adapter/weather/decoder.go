@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"weather-service/internal/adapter/weather/jsonutil"
+	"weather/internal/adapter/weather/jsonutil"
 )
 
 func DecodeResponse[T any](resp *http.Response) (*T, []byte, error) {

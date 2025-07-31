@@ -3,8 +3,8 @@ package weather
 import (
 	"context"
 	"log"
-	"weather-service/internal/core/domain"
-	"weather-service/internal/core/ports/out"
+	"weather/internal/core/domain"
+	"weather/internal/core/ports/out"
 )
 
 type Cache interface {

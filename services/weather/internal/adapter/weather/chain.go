@@ -3,7 +3,7 @@ package weather
 import (
 	"context"
 	"errors"
-	"weather-service/internal/core/domain"
+	"weather/internal/core/domain"
 )
 
 type ProviderHandler struct {

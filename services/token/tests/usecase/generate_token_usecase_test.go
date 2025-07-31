@@ -16,7 +16,7 @@ type generateTokenUseCaseTestSetup struct {
 	mockLogger *tests.MockLogger
 }
 
-func setupGenerateTokenUseCaseTest(t *testing.T) *generateTokenUseCaseTestSetup {
+func setupGenerateTokenUseCaseTest() *generateTokenUseCaseTestSetup {
 	mockLogger := &tests.MockLogger{}
 	secret := "test-secret-key-for-jwt-signing"
 
@@ -32,16 +32,12 @@ func (ts *generateTokenUseCaseTestSetup) setupSuccessMocks() {
 	tests.SetupSuccessLoggerMocks(ts.mockLogger)
 }
 
-func (ts *generateTokenUseCaseTestSetup) setupErrorMocks() {
-	tests.SetupErrorLoggerMocks(ts.mockLogger)
-}
-
 func (ts *generateTokenUseCaseTestSetup) setupWarningMocks() {
 	tests.SetupWarningLoggerMocks(ts.mockLogger)
 }
 
 func TestGenerateTokenUseCase_Success(t *testing.T) {
-	ts := setupGenerateTokenUseCaseTest(t)
+	ts := setupGenerateTokenUseCaseTest()
 
 	t.Run("Valid token generation request", func(t *testing.T) {
 		request := domain.GenerateTokenRequest{
@@ -92,7 +88,7 @@ func TestGenerateTokenUseCase_Success(t *testing.T) {
 }
 
 func TestGenerateTokenUseCase_InvalidExpiration(t *testing.T) {
-	ts := setupGenerateTokenUseCaseTest(t)
+	ts := setupGenerateTokenUseCaseTest()
 
 	t.Run("Invalid expiration format", func(t *testing.T) {
 		request := domain.GenerateTokenRequest{
@@ -112,7 +108,7 @@ func TestGenerateTokenUseCase_InvalidExpiration(t *testing.T) {
 }
 
 func TestGenerateTokenUseCase_EmptySubject(t *testing.T) {
-	ts := setupGenerateTokenUseCaseTest(t)
+	ts := setupGenerateTokenUseCaseTest()
 
 	t.Run("Empty subject", func(t *testing.T) {
 		request := domain.GenerateTokenRequest{

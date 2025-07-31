@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"subscription/internal/core/domain"
+	"subscription/internal/core/ports/out"
 )
 
 type EmailClient struct {
@@ -48,7 +49,11 @@ func (c *EmailClient) SendConfirmationEmail(ctx context.Context, req domain.Conf
 		c.logger.Errorf("Failed to send confirmation email request: %v", err)
 		return out.EmailDeliveryResult{}, fmt.Errorf("failed to send request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if closeErr := resp.Body.Close(); closeErr != nil {
+			c.logger.Warnf("Failed to close response body: %v", closeErr)
+		}
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		c.logger.Errorf("Email service returned status: %d", resp.StatusCode)

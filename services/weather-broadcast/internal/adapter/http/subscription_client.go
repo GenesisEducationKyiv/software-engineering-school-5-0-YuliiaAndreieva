@@ -49,7 +49,11 @@ func (c *SubscriptionClient) ListByFrequency(ctx context.Context, query domain.L
 		c.logger.Errorf("Failed to make subscription request: %v", err)
 		return nil, fmt.Errorf("failed to make request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if closeErr := resp.Body.Close(); closeErr != nil {
+			c.logger.Warnf("Failed to close response body: %v", closeErr)
+		}
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		c.logger.Errorf("Subscription service returned status: %d", resp.StatusCode)

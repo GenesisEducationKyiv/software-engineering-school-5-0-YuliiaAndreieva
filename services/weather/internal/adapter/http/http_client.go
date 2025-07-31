@@ -3,7 +3,7 @@ package http
 import (
 	"net/http"
 	"time"
-	"weather-service/internal/core/ports/out"
+	"weather/internal/core/ports/out"
 )
 
 type Client struct {

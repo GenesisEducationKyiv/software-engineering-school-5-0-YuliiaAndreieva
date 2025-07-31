@@ -23,7 +23,10 @@ import (
 )
 
 func init() {
-	godotenv.Load("test.env")
+	err := godotenv.Load("test.env")
+	if err != nil {
+		return
+	}
 }
 
 func getEnvWithDefault(key, defaultValue string) string {
@@ -47,7 +50,7 @@ type emailIntegrationTestSetup struct {
 	router  *gin.Engine
 }
 
-func setupEmailIntegrationTest(t *testing.T) *emailIntegrationTestSetup {
+func setupEmailIntegrationTest() *emailIntegrationTestSetup {
 	logger := logger.NewLogrusLogger()
 
 	smtpConfig := email.SMTPConfig{
@@ -109,7 +112,7 @@ func (eits *emailIntegrationTestSetup) makeWeatherUpdateRequest(t *testing.T, re
 }
 
 func TestEmailServiceIntegration_SendConfirmationEmail(t *testing.T) {
-	ts := setupEmailIntegrationTest(t)
+	ts := setupEmailIntegrationTest()
 
 	t.Run("Valid confirmation email request", func(t *testing.T) {
 		request := domain.ConfirmationEmailRequest{
@@ -158,7 +161,7 @@ func TestEmailServiceIntegration_SendConfirmationEmail(t *testing.T) {
 }
 
 func TestEmailServiceIntegration_SendWeatherUpdateEmail(t *testing.T) {
-	ts := setupEmailIntegrationTest(t)
+	ts := setupEmailIntegrationTest()
 
 	t.Run("Valid weather update email request", func(t *testing.T) {
 		request := domain.WeatherUpdateEmailRequest{

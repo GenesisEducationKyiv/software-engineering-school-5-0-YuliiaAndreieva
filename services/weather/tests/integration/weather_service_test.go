@@ -9,11 +9,11 @@ import (
 	"testing"
 	"time"
 
-	httphandler "weather-service/internal/adapter/http"
-	"weather-service/internal/core/domain"
-	"weather-service/internal/core/usecase"
-	"weather-service/internal/utils/logger"
-	"weather-service/tests/mocks"
+	httphandler "weather/internal/adapter/http"
+	"weather/internal/core/domain"
+	"weather/internal/core/usecase"
+	"weather/internal/utils/logger"
+	"weather/tests/mocks"
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
@@ -25,7 +25,7 @@ type testSetup struct {
 	router  *gin.Engine
 }
 
-func setupTestHandler(t *testing.T, mockProvider *mocks.MockChainWeatherProvider) *testSetup {
+func setupTestHandler(mockProvider *mocks.MockChainWeatherProvider) *testSetup {
 	logrusLogger := logger.NewLogrusLogger()
 	useCase := usecase.NewGetWeatherUseCase(mockProvider, logrusLogger)
 	handler := httphandler.NewWeatherHandler(useCase, logrusLogger)
@@ -72,7 +72,7 @@ func TestWeatherServiceIntegration_GetWeather_Success(t *testing.T) {
 			return expectedWeather, nil
 		})
 
-	ts := setupTestHandler(t, mockProvider)
+	ts := setupTestHandler(mockProvider)
 
 	request := domain.WeatherRequest{
 		City: "Kyiv",
@@ -104,7 +104,7 @@ func TestWeatherServiceIntegration_GetWeather_AnotherValidRequest(t *testing.T) 
 			return expectedWeather, nil
 		})
 
-	ts := setupTestHandler(t, mockProvider)
+	ts := setupTestHandler(mockProvider)
 
 	request := domain.WeatherRequest{
 		City: "Lviv",
@@ -123,7 +123,7 @@ func TestWeatherServiceIntegration_GetWeather_AnotherValidRequest(t *testing.T) 
 
 func TestWeatherServiceIntegration_GetWeather_EmptyCity(t *testing.T) {
 	mockProvider := mocks.NewMockChainWeatherProvider()
-	ts := setupTestHandler(t, mockProvider)
+	ts := setupTestHandler(mockProvider)
 
 	request := domain.WeatherRequest{
 		City: "",
@@ -138,7 +138,7 @@ func TestWeatherServiceIntegration_GetWeather_EmptyCity(t *testing.T) {
 
 func TestWeatherServiceIntegration_GetWeather_WhitespaceCity(t *testing.T) {
 	mockProvider := mocks.NewMockChainWeatherProvider()
-	ts := setupTestHandler(t, mockProvider)
+	ts := setupTestHandler(mockProvider)
 
 	request := domain.WeatherRequest{
 		City: "   ",
@@ -157,7 +157,7 @@ func TestWeatherServiceIntegration_GetWeather_ProviderFailure(t *testing.T) {
 			return domain.Weather{}, assert.AnError
 		})
 
-	ts := setupTestHandler(t, mockProvider)
+	ts := setupTestHandler(mockProvider)
 
 	request := domain.WeatherRequest{
 		City: "NonExistentCity123",
@@ -172,7 +172,7 @@ func TestWeatherServiceIntegration_GetWeather_ProviderFailure(t *testing.T) {
 
 func TestWeatherServiceIntegration_InvalidJSON(t *testing.T) {
 	mockProvider := mocks.NewMockChainWeatherProvider()
-	ts := setupTestHandler(t, mockProvider)
+	ts := setupTestHandler(mockProvider)
 
 	req := httptest.NewRequest("POST", "/weather", bytes.NewBufferString(`{"invalid": json`))
 	req.Header.Set("Content-Type", "application/json")
@@ -271,7 +271,7 @@ func TestWeatherServiceIntegration_ErrorHandling_ProviderFailure(t *testing.T) {
 			return domain.Weather{}, assert.AnError
 		})
 
-	ts := setupTestHandler(t, mockProvider)
+	ts := setupTestHandler(mockProvider)
 
 	request := domain.WeatherRequest{
 		City: "NonExistentCity123",
@@ -286,7 +286,7 @@ func TestWeatherServiceIntegration_ErrorHandling_ProviderFailure(t *testing.T) {
 
 func TestWeatherServiceIntegration_ErrorHandling_EmptyCity(t *testing.T) {
 	mockProvider := mocks.NewMockChainWeatherProvider()
-	ts := setupTestHandler(t, mockProvider)
+	ts := setupTestHandler(mockProvider)
 
 	request := domain.WeatherRequest{
 		City: "",

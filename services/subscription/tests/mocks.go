@@ -19,6 +19,9 @@ func (m *MockSubscriptionRepository) CreateSubscription(ctx context.Context, sub
 
 func (m *MockSubscriptionRepository) GetSubscriptionByToken(ctx context.Context, token string) (*domain.Subscription, error) {
 	args := m.Called(ctx, token)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
 	return args.Get(0).(*domain.Subscription), args.Error(1)
 }
 
@@ -39,6 +42,9 @@ func (m *MockSubscriptionRepository) IsSubscriptionExists(ctx context.Context, e
 
 func (m *MockSubscriptionRepository) ListByFrequency(ctx context.Context, frequency string, lastID, pageSize int) ([]domain.Subscription, error) {
 	args := m.Called(ctx, frequency, lastID, pageSize)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
 	return args.Get(0).([]domain.Subscription), args.Error(1)
 }
 

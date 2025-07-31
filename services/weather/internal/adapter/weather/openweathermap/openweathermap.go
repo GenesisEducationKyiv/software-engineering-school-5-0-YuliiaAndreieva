@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"weather-service/internal/adapter/weather"
-	"weather-service/internal/core/domain"
+	"weather/internal/adapter/weather"
+	"weather/internal/core/domain"
 )
 
 const weatherEndpoint = "/weather"

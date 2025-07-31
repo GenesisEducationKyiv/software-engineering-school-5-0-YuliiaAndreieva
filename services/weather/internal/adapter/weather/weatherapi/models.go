@@ -20,7 +20,3 @@ type currentEnvelope struct {
 type searchItem struct {
 	Name string `json:"name"`
 }
-
-type searchEnvelope struct {
-	Data []searchItem `json:"data"`
-}

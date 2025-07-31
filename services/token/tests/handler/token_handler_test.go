@@ -25,7 +25,7 @@ type tokenHandlerTestSetup struct {
 	validToken string
 }
 
-func setupTokenHandlerTest(t *testing.T) *tokenHandlerTestSetup {
+func setupTokenHandlerTest() *tokenHandlerTestSetup {
 	mockLogger := &tests.MockLogger{}
 	secret := "test-secret-key-for-jwt-signing"
 
@@ -40,10 +40,13 @@ func setupTokenHandlerTest(t *testing.T) *tokenHandlerTestSetup {
 	router.POST("/validate", handler.ValidateToken)
 
 	tests.SetupCommonLoggerMocks(mockLogger)
-	validToken, _ := generateUseCase.GenerateToken(context.Background(), domain.GenerateTokenRequest{
+	validToken, err := generateUseCase.GenerateToken(context.Background(), domain.GenerateTokenRequest{
 		Subject:   "test@example.com",
 		ExpiresIn: "24h",
 	})
+	if err != nil {
+		panic("Failed to generate test token")
+	}
 
 	return &tokenHandlerTestSetup{
 		handler:    handler,
@@ -96,7 +99,7 @@ func (ts *tokenHandlerTestSetup) makeValidateTokenRequest(t *testing.T, request 
 }
 
 func TestTokenHandler_GenerateToken_Success(t *testing.T) {
-	ts := setupTokenHandlerTest(t)
+	ts := setupTokenHandlerTest()
 
 	t.Run("Valid token generation request", func(t *testing.T) {
 		request := domain.GenerateTokenRequest{
@@ -132,7 +135,7 @@ func TestTokenHandler_GenerateToken_Success(t *testing.T) {
 }
 
 func TestTokenHandler_GenerateToken_InvalidJSON(t *testing.T) {
-	ts := setupTokenHandlerTest(t)
+	ts := setupTokenHandlerTest()
 
 	t.Run("Invalid JSON for token generation", func(t *testing.T) {
 		ts.setupErrorMocks()
@@ -154,7 +157,7 @@ func TestTokenHandler_GenerateToken_InvalidJSON(t *testing.T) {
 }
 
 func TestTokenHandler_ValidateToken_Success(t *testing.T) {
-	ts := setupTokenHandlerTest(t)
+	ts := setupTokenHandlerTest()
 
 	t.Run("Valid token validation", func(t *testing.T) {
 		request := domain.ValidateTokenRequest{
@@ -173,7 +176,7 @@ func TestTokenHandler_ValidateToken_Success(t *testing.T) {
 }
 
 func TestTokenHandler_ValidateToken_InvalidToken(t *testing.T) {
-	ts := setupTokenHandlerTest(t)
+	ts := setupTokenHandlerTest()
 
 	t.Run("Invalid token", func(t *testing.T) {
 		request := domain.ValidateTokenRequest{
@@ -207,7 +210,7 @@ func TestTokenHandler_ValidateToken_InvalidToken(t *testing.T) {
 }
 
 func TestTokenHandler_ValidateToken_InvalidJSON(t *testing.T) {
-	ts := setupTokenHandlerTest(t)
+	ts := setupTokenHandlerTest()
 
 	t.Run("Invalid JSON for token validation", func(t *testing.T) {
 		ts.setupErrorMocks()

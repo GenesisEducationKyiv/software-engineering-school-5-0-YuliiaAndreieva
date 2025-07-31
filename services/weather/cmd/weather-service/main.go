@@ -10,18 +10,18 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
-	"weather-service/internal/adapter/cache/core/metrics"
-	"weather-service/internal/adapter/cache/core/redis"
-	"weather-service/internal/adapter/weather/openweathermap"
-	"weather-service/internal/utils/logger"
+	"weather/internal/adapter/cache/core/metrics"
+	"weather/internal/adapter/cache/core/redis"
+	"weather/internal/adapter/weather/openweathermap"
+	"weather/internal/utils/logger"
 
-	weathercache "weather-service/internal/adapter/cache/weather"
-	httphandler "weather-service/internal/adapter/http"
+	weathercache "weather/internal/adapter/cache/weather"
+	httphandler "weather/internal/adapter/http"
 
-	"weather-service/internal/adapter/weather"
-	"weather-service/internal/adapter/weather/weatherapi"
-	"weather-service/internal/config"
-	"weather-service/internal/core/usecase"
+	"weather/internal/adapter/weather"
+	"weather/internal/adapter/weather/weatherapi"
+	"weather/internal/config"
+	"weather/internal/core/usecase"
 
 	"github.com/gin-gonic/gin"
 )

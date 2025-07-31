@@ -5,10 +5,10 @@ import (
 	"testing"
 	"time"
 
-	"weather-service/internal/core/domain"
-	"weather-service/internal/core/usecase"
-	"weather-service/internal/utils/logger"
-	"weather-service/tests/mocks"
+	"weather/internal/core/domain"
+	"weather/internal/core/usecase"
+	"weather/internal/utils/logger"
+	"weather/tests/mocks"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -18,7 +18,7 @@ type usecaseTestSetup struct {
 	useCase *usecase.GetWeatherUseCase
 }
 
-func setupUseCaseTest(t *testing.T, mockProvider *mocks.MockChainWeatherProvider) *usecaseTestSetup {
+func setupUseCaseTest(mockProvider *mocks.MockChainWeatherProvider) *usecaseTestSetup {
 	logger := logger.NewLogrusLogger()
 	useCase := usecase.NewGetWeatherUseCase(mockProvider, logger)
 
@@ -27,7 +27,7 @@ func setupUseCaseTest(t *testing.T, mockProvider *mocks.MockChainWeatherProvider
 	}
 }
 
-func (uts *usecaseTestSetup) makeRequest(t *testing.T, city string) (*domain.WeatherResponse, error) {
+func (uts *usecaseTestSetup) makeRequest(city string) (*domain.WeatherResponse, error) {
 	request := domain.WeatherRequest{
 		City: city,
 	}
@@ -50,9 +50,9 @@ func TestGetWeatherUseCase_GetWeather_Success(t *testing.T) {
 			return expectedWeather, nil
 		})
 
-	ts := setupUseCaseTest(t, mockProvider)
+	ts := setupUseCaseTest(mockProvider)
 
-	result, err := ts.makeRequest(t, "Kyiv")
+	result, err := ts.makeRequest("Kyiv")
 
 	require.NoError(t, err)
 	assert.NotNil(t, result)
@@ -83,9 +83,9 @@ func TestGetWeatherUseCase_GetWeather_MultipleCities(t *testing.T) {
 					return expectedWeather, nil
 				})
 
-			ts := setupUseCaseTest(t, mockProvider)
+			ts := setupUseCaseTest(mockProvider)
 
-			result, err := ts.makeRequest(t, city)
+			result, err := ts.makeRequest(city)
 
 			require.NoError(t, err)
 			assert.NotNil(t, result)
@@ -105,9 +105,9 @@ func TestGetWeatherUseCase_GetWeather_ProviderError(t *testing.T) {
 			return domain.Weather{}, assert.AnError
 		})
 
-	ts := setupUseCaseTest(t, mockProvider)
+	ts := setupUseCaseTest(mockProvider)
 
-	result, err := ts.makeRequest(t, "Kyiv")
+	result, err := ts.makeRequest("Kyiv")
 
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
@@ -134,7 +134,7 @@ func TestGetWeatherUseCase_GetWeather_ContextCancellation(t *testing.T) {
 			}
 		})
 
-	ts := setupUseCaseTest(t, mockProvider)
+	ts := setupUseCaseTest(mockProvider)
 
 	request := domain.WeatherRequest{
 		City: "Kyiv",

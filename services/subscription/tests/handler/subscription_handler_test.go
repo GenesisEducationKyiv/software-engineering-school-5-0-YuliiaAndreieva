@@ -28,7 +28,7 @@ type subscriptionHandlerTestSetup struct {
 	mockLogger       *tests.MockLogger
 }
 
-func setupSubscriptionHandlerTest(t *testing.T) *subscriptionHandlerTestSetup {
+func setupSubscriptionHandlerTest() *subscriptionHandlerTestSetup {
 	mockRepo := &tests.MockSubscriptionRepository{}
 	mockTokenService := &tests.MockTokenService{}
 	mockEmailService := &tests.MockEmailService{}
@@ -110,7 +110,7 @@ func (ts *subscriptionHandlerTestSetup) makeSubscribeRequest(t *testing.T, reque
 }
 
 func TestSubscriptionHandler_Subscribe_Success(t *testing.T) {
-	ts := setupSubscriptionHandlerTest(t)
+	ts := setupSubscriptionHandlerTest()
 
 	t.Run("Valid subscription request", func(t *testing.T) {
 		request := domain.SubscriptionRequest{
@@ -152,7 +152,7 @@ func TestSubscriptionHandler_Subscribe_Success(t *testing.T) {
 }
 
 func TestSubscriptionHandler_Subscribe_InvalidEmail(t *testing.T) {
-	ts := setupSubscriptionHandlerTest(t)
+	ts := setupSubscriptionHandlerTest()
 
 	request := domain.SubscriptionRequest{
 		Email:     "invalid-email",
@@ -170,7 +170,7 @@ func TestSubscriptionHandler_Subscribe_InvalidEmail(t *testing.T) {
 }
 
 func TestSubscriptionHandler_Subscribe_EmptyFields(t *testing.T) {
-	ts := setupSubscriptionHandlerTest(t)
+	ts := setupSubscriptionHandlerTest()
 
 	request := domain.SubscriptionRequest{
 		Email:     "",
@@ -188,7 +188,7 @@ func TestSubscriptionHandler_Subscribe_EmptyFields(t *testing.T) {
 }
 
 func TestSubscriptionHandler_Subscribe_UsecaseError(t *testing.T) {
-	ts := setupSubscriptionHandlerTest(t)
+	ts := setupSubscriptionHandlerTest()
 
 	request := domain.SubscriptionRequest{
 		Email:     "test@example.com",
@@ -206,7 +206,7 @@ func TestSubscriptionHandler_Subscribe_UsecaseError(t *testing.T) {
 }
 
 func TestSubscriptionHandler_Subscribe_DuplicateSubscription(t *testing.T) {
-	ts := setupSubscriptionHandlerTest(t)
+	ts := setupSubscriptionHandlerTest()
 
 	request := domain.SubscriptionRequest{
 		Email:     "duplicate@example.com",
@@ -224,7 +224,7 @@ func TestSubscriptionHandler_Subscribe_DuplicateSubscription(t *testing.T) {
 }
 
 func TestSubscriptionHandler_InvalidJSON(t *testing.T) {
-	ts := setupSubscriptionHandlerTest(t)
+	ts := setupSubscriptionHandlerTest()
 
 	t.Run("Invalid JSON for subscription", func(t *testing.T) {
 		ts.setupJSONErrorMocks()

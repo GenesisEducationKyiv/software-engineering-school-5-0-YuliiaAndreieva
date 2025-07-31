@@ -21,7 +21,7 @@ type subscribeUseCaseTestSetup struct {
 	mockLogger       *tests.MockLogger
 }
 
-func setupSubscribeUseCaseTest(t *testing.T) *subscribeUseCaseTestSetup {
+func setupSubscribeUseCaseTest() *subscribeUseCaseTestSetup {
 	mockRepo := &tests.MockSubscriptionRepository{}
 	mockTokenService := &tests.MockTokenService{}
 	mockEmailService := &tests.MockEmailService{}
@@ -79,7 +79,7 @@ func (ts *subscribeUseCaseTestSetup) setupEmailErrorMocks(request domain.Subscri
 }
 
 func TestSubscribeUseCase_Success(t *testing.T) {
-	ts := setupSubscribeUseCaseTest(t)
+	ts := setupSubscribeUseCaseTest()
 
 	t.Run("Valid subscription request", func(t *testing.T) {
 		request := domain.SubscriptionRequest{
@@ -121,7 +121,7 @@ func TestSubscribeUseCase_Success(t *testing.T) {
 }
 
 func TestSubscribeUseCase_DuplicateSubscription(t *testing.T) {
-	ts := setupSubscribeUseCaseTest(t)
+	ts := setupSubscribeUseCaseTest()
 
 	request := domain.SubscriptionRequest{
 		Email:     "duplicate@example.com",
@@ -139,7 +139,7 @@ func TestSubscribeUseCase_DuplicateSubscription(t *testing.T) {
 }
 
 func TestSubscribeUseCase_RepositoryError(t *testing.T) {
-	ts := setupSubscribeUseCaseTest(t)
+	ts := setupSubscribeUseCaseTest()
 
 	request := domain.SubscriptionRequest{
 		Email:     "test@example.com",
@@ -156,7 +156,7 @@ func TestSubscribeUseCase_RepositoryError(t *testing.T) {
 }
 
 func TestSubscribeUseCase_TokenGenerationError(t *testing.T) {
-	ts := setupSubscribeUseCaseTest(t)
+	ts := setupSubscribeUseCaseTest()
 
 	request := domain.SubscriptionRequest{
 		Email:     "test@example.com",
@@ -173,7 +173,7 @@ func TestSubscribeUseCase_TokenGenerationError(t *testing.T) {
 }
 
 func TestSubscribeUseCase_CreateSubscriptionError(t *testing.T) {
-	ts := setupSubscribeUseCaseTest(t)
+	ts := setupSubscribeUseCaseTest()
 
 	request := domain.SubscriptionRequest{
 		Email:     "test@example.com",
@@ -190,7 +190,7 @@ func TestSubscribeUseCase_CreateSubscriptionError(t *testing.T) {
 }
 
 func TestSubscribeUseCase_EmailServiceError(t *testing.T) {
-	ts := setupSubscribeUseCaseTest(t)
+	ts := setupSubscribeUseCaseTest()
 
 	request := domain.SubscriptionRequest{
 		Email:     "test@example.com",

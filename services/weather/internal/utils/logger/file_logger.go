@@ -7,7 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
-	"weather-service/internal/core/ports/out"
+	"weather/internal/core/ports/out"
 )
 
 type FileLogger struct {

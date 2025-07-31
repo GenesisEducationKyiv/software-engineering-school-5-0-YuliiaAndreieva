@@ -3,7 +3,7 @@ package weather
 import (
 	"context"
 	"net/http"
-	"weather-service/internal/core/domain"
+	"weather/internal/core/domain"
 )
 
 type ProviderLogger interface {

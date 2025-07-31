@@ -3,9 +3,10 @@ package metrics
 import (
 	"context"
 	"errors"
-	"github.com/go-redis/redis/v8"
 	"time"
-	"weather-service/internal/core/ports/out"
+	"weather/internal/core/ports/out"
+
+	"github.com/go-redis/redis/v8"
 )
 
 type CacheWithMetrics struct {

@@ -6,19 +6,18 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
-	"strconv"
+	"subscription/internal/core/usecase"
 	"testing"
 
+	"github.com/joho/godotenv"
+
 	"subscription/internal/adapter/database"
-	httpha
-	httphandler "subscription-service/internal/adapter/http"
-	"subscription-service/internal/core/domain"
-	"subscription-service/internal/core/ports/out"
-	"subscription-service/internal/adapter/database"
-	"subscription-service/tests"
+	httphandler "subscription/internal/adapter/http"
+	"subscription/internal/core/domain"
+	"subscription/internal/core/ports/out"
+	"subscription/tests"
 
 	"github.com/gin-gonic/gin"
-	"github.com/joho/godotenv"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -33,15 +32,6 @@ func init() {
 func getEnvWithDefault(key, defaultValue string) string {
 	if value := os.Getenv(key); value != "" {
 		return value
-	}
-	return defaultValue
-}
-
-func getEnvAsIntWithDefault(key string, defaultValue int) int {
-	if value := os.Getenv(key); value != "" {
-		if intValue, err := strconv.Atoi(value); err == nil {
-			return intValue
-		}
 	}
 	return defaultValue
 }
@@ -259,12 +249,12 @@ func TestSubscriptionIntegration_Confirm(t *testing.T) {
 		ts.mockTokenService.On("GenerateToken", mock.Anything, request.Email, "24h").Return("confirm-token", nil)
 		ts.mockEmailService.On("SendConfirmationEmail", mock.Anything, mock.AnythingOfType("domain.ConfirmationEmailRequest")).Return(out.EmailDeliveryResult{}, nil)
 
-		w, response := ts.makeSubscribeRequest(t, request)
+		w, _ := ts.makeSubscribeRequest(t, request)
 		assert.Equal(t, http.StatusOK, w.Code)
 
 		ts.mockTokenService.On("ValidateToken", mock.Anything, "confirm-token").Return(true, nil)
 
-		w, response = ts.makeConfirmRequest(t, "confirm-token")
+		w, response := ts.makeConfirmRequest(t, "confirm-token")
 
 		assert.Equal(t, http.StatusOK, w.Code)
 		assert.True(t, response.Success)
@@ -308,12 +298,12 @@ func TestSubscriptionIntegration_Unsubscribe(t *testing.T) {
 		ts.mockTokenService.On("GenerateToken", mock.Anything, request.Email, "24h").Return("unsubscribe-token", nil)
 		ts.mockEmailService.On("SendConfirmationEmail", mock.Anything, mock.AnythingOfType("domain.ConfirmationEmailRequest")).Return(out.EmailDeliveryResult{}, nil)
 
-		w, response := ts.makeSubscribeRequest(t, request)
+		w, _ := ts.makeSubscribeRequest(t, request)
 		assert.Equal(t, http.StatusOK, w.Code)
 
 		ts.mockTokenService.On("ValidateToken", mock.Anything, "unsubscribe-token").Return(true, nil)
 
-		w, response = ts.makeConfirmRequest(t, "unsubscribe-token")
+		w, _ = ts.makeConfirmRequest(t, "unsubscribe-token")
 		assert.Equal(t, http.StatusOK, w.Code)
 
 		w, response = ts.makeUnsubscribeRequest(t, "unsubscribe-token")

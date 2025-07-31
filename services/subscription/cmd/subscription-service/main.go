@@ -41,7 +41,10 @@ func main() {
 		panic(fmt.Sprintf("Failed to connect to database after 30 attempts: %v", err))
 	}
 
-	db.AutoMigrate(&database.Subscription{})
+	if err := db.AutoMigrate(&database.Subscription{}); err != nil {
+		loggerInstance.Errorf("Failed to auto-migrate database: %v", err)
+		panic(fmt.Sprintf("Failed to auto-migrate database: %v", err))
+	}
 
 	repo := database.NewSubscriptionRepo(db, loggerInstance)
 

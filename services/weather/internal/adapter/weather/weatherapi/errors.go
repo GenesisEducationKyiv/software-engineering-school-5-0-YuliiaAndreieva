@@ -2,7 +2,7 @@ package weatherapi
 
 import (
 	"log"
-	"weather-service/internal/adapter/weather"
+	"weather/internal/adapter/weather"
 )
 
 const (

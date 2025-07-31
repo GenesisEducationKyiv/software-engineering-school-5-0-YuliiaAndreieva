@@ -1,8 +1,9 @@
 package openweathermap
 
 import (
-	"log"
-	"weather-service/internal/adapter/weather"
+	"fmt"
+
+	"weather/internal/adapter/weather"
 )
 
 const (
@@ -31,10 +32,10 @@ var openWeatherMapErrors = map[int]OpenWeatherErrorInfo{
 
 func (c *Client) mapError(code int, message string) error {
 	if errorInfo, exists := openWeatherMapErrors[code]; exists {
-		log.Printf("OpenWeatherMap error - Code: %d, Original: %s", code, message)
+		fmt.Printf("OpenWeatherMap error - Code: %d, Original: %s", code, message)
 		return weather.NewProviderError(c.Name(), code, errorInfo.Message)
 	}
 
-	log.Printf("Unknown OpenWeatherMap error - Code: %d, Message: %s", code, message)
+	fmt.Printf("Unknown OpenWeatherMap error - Code: %d, Message: %s", code, message)
 	return weather.NewProviderError(c.Name(), code, "Weather service temporarily unavailable")
 }

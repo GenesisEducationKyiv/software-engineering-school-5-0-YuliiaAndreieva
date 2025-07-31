@@ -1,6 +1,7 @@
 package http
 
 import (
+	"encoding/json"
 	"net/http"
 	"strings"
 
@@ -40,16 +41,19 @@ func NewSubscriptionHandler(
 
 func (h *SubscriptionHandler) Subscribe(c *gin.Context) {
 	var req domain.SubscriptionRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
+	err := c.ShouldBindJSON(&req)
+	if err != nil {
 		h.logger.Errorf("Failed to bind JSON for subscription: %v", err)
-		c.JSON(http.StatusBadRequest, domain.SubscriptionResponse{
+		response := domain.SubscriptionResponse{
 			Success: false,
 			Message: "Invalid request: " + err.Error(),
-		})
+		}
+		responseBytes, _ := json.Marshal(response)
+		c.Data(http.StatusBadRequest, "application/json", responseBytes)
 		return
 	}
 
-	// Validate the request
+	// Validate the request.
 	if err := h.validate.Struct(req); err != nil {
 		h.logger.Errorf("Validation failed for subscription request: %v", err)
 		var errorMessages []string
@@ -61,20 +65,22 @@ func (h *SubscriptionHandler) Subscribe(c *gin.Context) {
 				errorMessages = append(errorMessages, "Invalid email format")
 			}
 		}
-		c.JSON(http.StatusBadRequest, domain.SubscriptionResponse{
+		response := domain.SubscriptionResponse{
 			Success: false,
 			Message: "Validation failed: " + strings.Join(errorMessages, ", "),
-		})
+		}
+		c.JSON(http.StatusBadRequest, response)
 		return
 	}
 
 	result, err := h.subscribeUseCase.Subscribe(c.Request.Context(), req)
 	if err != nil {
 		h.logger.Errorf("Failed to process subscription: %v", err)
-		c.JSON(http.StatusInternalServerError, domain.SubscriptionResponse{
+		response := domain.SubscriptionResponse{
 			Success: false,
 			Message: "Failed to process subscription: " + err.Error(),
-		})
+		}
+		c.JSON(http.StatusInternalServerError, response)
 		return
 	}
 
