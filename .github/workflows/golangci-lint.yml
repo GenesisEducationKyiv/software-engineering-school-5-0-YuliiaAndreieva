@@ -30,4 +30,4 @@ jobs:
         working-directory: ./services/${{ matrix.service }}
         run: |
           go mod download
-          golangci-lint run --timeout=5m
+          golangci-lint run --config .golangci.yml --timeout=5m
