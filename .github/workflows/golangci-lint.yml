@@ -13,12 +13,16 @@ jobs:
   golangci:
     name: lint
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: [email, subscription, token, weather, weather-broadcast]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
           go-version: stable
-      - name: golangci-lint
-        uses: golangci/golangci-lint-action@v8
-        with:
-          version: v2.1.6
+      - name: Run golangci-lint for ${{ matrix.service }}
+        working-directory: ./services/${{ matrix.service }}
+        run: |
+          go mod download
+          golangci-lint run --timeout=5m
