@@ -29,12 +29,12 @@ jobs:
     
     - name: Move project into GOPATH
       env:
-        GOPATH: ~/go
-        GOMOD: ~/go/src/email/go.mod
+        GOPATH: /home/runner/go
+        GOMOD: /home/runner/go/src/email/go.mod
       run: |
-        mkdir -p ~/go/src/email
-        cp -r services/email/* ~/go/src/email/
-        cd ~/go/src/email
+        mkdir -p /home/runner/go/src/email
+        cp -r services/email/* /home/runner/go/src/email/
+        cd /home/runner/go/src/email
         go mod download
         go test -v ./tests/...
 
@@ -69,12 +69,12 @@ jobs:
     
     - name: Move project into GOPATH
       env:
-        GOPATH: ~/go
-        GOMOD: ~/go/src/subscription/go.mod
+        GOPATH: /home/runner/go
+        GOMOD: /home/runner/go/src/subscription/go.mod
       run: |
-        mkdir -p ~/go/src/subscription
-        cp -r services/subscription/* ~/go/src/subscription/
-        cd ~/go/src/subscription
+        mkdir -p /home/runner/go/src/subscription
+        cp -r services/subscription/* /home/runner/go/src/subscription/
+        cd /home/runner/go/src/subscription
         go mod download
         go test -v ./tests/...
 
@@ -90,12 +90,12 @@ jobs:
     
     - name: Move project into GOPATH
       env:
-        GOPATH: ~/go
-        GOMOD: ~/go/src/token/go.mod
+        GOPATH: /home/runner/go
+        GOMOD: /home/runner/go/src/token/go.mod
       run: |
-        mkdir -p ~/go/src/token
-        cp -r services/token/* ~/go/src/token/
-        cd ~/go/src/token
+        mkdir -p /home/runner/go/src/token
+        cp -r services/token/* /home/runner/go/src/token/
+        cd /home/runner/go/src/token
         go mod download
         go test -v ./tests/...
 
@@ -130,11 +130,11 @@ jobs:
     
     - name: Move project into GOPATH
       env:
-        GOPATH: ~/go
-        GOMOD: ~/go/src/weather-broadcast/go.mod
+        GOPATH: /home/runner/go
+        GOMOD: /home/runner/go/src/weather-broadcast/go.mod
       run: |
-        mkdir -p ~/go/src/weather-broadcast
-        cp -r services/weather-broadcast/* ~/go/src/weather-broadcast/
-        cd ~/go/src/weather-broadcast
+        mkdir -p /home/runner/go/src/weather-broadcast
+        cp -r services/weather-broadcast/* /home/runner/go/src/weather-broadcast/
+        cd /home/runner/go/src/weather-broadcast
         go mod download
         go test -v ./tests/...
