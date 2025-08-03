@@ -1,4 +1,4 @@
-name: build
+name: Build Services
 
 on:
   push:
@@ -7,21 +7,58 @@ on:
     branches: [ "*" ]
 
 jobs:
-  build:
+  build-services:
+    name: Build Services
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service:
+          - name: subscription
+            path: services/subscription
+            dockerfile: Dockerfile
+          - name: email
+            path: services/email
+            dockerfile: Dockerfile
+          - name: token
+            path: services/token
+            dockerfile: Dockerfile
+          - name: weather
+            path: services/weather
+            dockerfile: Dockerfile
+          - name: weather-broadcast
+            path: services/weather-broadcast
+            dockerfile: Dockerfile
+          - name: gateway
+            path: services/gateway
+            dockerfile: Dockerfile
+    
     steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-go@v5
-        with:
-          go-version: '1.24.3'
-
-      - uses: actions/cache@v3
-        with:
-          path: ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('go.sum') }}
-          restore-keys: ${{ runner.os }}-go-
-
-      - run: go mod download
-
-      - run: go build -v ./...
+    - uses: actions/checkout@v4
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+    
+    - name: Cache Docker layers
+      uses: actions/cache@v4
+      with:
+        path: /tmp/.buildx-cache
+        key: ${{ runner.os }}-buildx-${{ matrix.service.name }}-${{ github.sha }}
+        restore-keys: |
+          ${{ runner.os }}-buildx-${{ matrix.service.name }}-
+          ${{ runner.os }}-buildx-
+    
+    - name: Build ${{ matrix.service.name }} service
+      uses: docker/build-push-action@v5
+      with:
+        context: ${{ matrix.service.path }}
+        file: ${{ matrix.service.path }}/${{ matrix.service.dockerfile }}
+        push: false
+        tags: ${{ matrix.service.name }}-service:latest
+        cache-from: type=local,src=/tmp/.buildx-cache
+        cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
+        outputs: type=docker,dest=/tmp/${{ matrix.service.name }}-service.tar
+    
+    - name: Move cache
+      run: |
+        rm -rf /tmp/.buildx-cache
+        mv /tmp/.buildx-cache-new /tmp/.buildx-cache
