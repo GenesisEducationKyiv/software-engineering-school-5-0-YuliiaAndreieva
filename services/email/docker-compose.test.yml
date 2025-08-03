@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  mailhog:
+    image: mailhog/mailhog:latest
+    ports:
+      - "1025:1025"  # SMTP port
+      - "8025:8025"  # Web UI port
+    environment:
+      - MH_STORAGE=memory
+      - MH_HOSTNAME=mailhog
+
+  email-tests:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    depends_on:
+      - mailhog
+    environment:
+      - SMTP_HOST=mailhog
+      - SMTP_PORT=1025
+      - MAILHOG_HOST=mailhog
+      - MAILHOG_WEB_PORT=8025
+    networks:
+      - email-test-network
+
+networks:
+  email-test-network:
+    driver: bridge 

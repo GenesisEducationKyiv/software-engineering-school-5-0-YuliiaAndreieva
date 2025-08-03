@@ -96,8 +96,11 @@ jobs:
       run: |
         cd ${{ matrix.service.path }}
         docker build -f Dockerfile.test -t ${{ matrix.service.name }}-service-tests .
-        docker run --rm --network host \
+        docker run --rm \
+          --network host \
           -e MAILHOG_HOST=localhost \
           -e MAILHOG_PORT=${{ matrix.service.mailhog-port }} \
           -e MAILHOG_WEB_PORT=${{ matrix.service.mailhog-web-port }} \
+          -e SMTP_HOST=localhost \
+          -e SMTP_PORT=${{ matrix.service.mailhog-port }} \
           ${{ matrix.service.name }}-service-tests
