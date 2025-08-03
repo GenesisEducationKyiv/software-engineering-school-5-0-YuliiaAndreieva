@@ -164,4 +164,4 @@ tmp/
 temp/
 
 # Generated mocks
-**/tests/mocks/*_mock.go
+**/tests/mocks/*.go
