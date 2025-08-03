@@ -1,4 +1,19 @@
 services:
+  gateway-service:
+    build:
+      context: .
+      dockerfile: services/gateway/Dockerfile
+    container_name: gateway-service
+    ports:
+      - "8080:8080"
+    env_file:
+        - services/gateway/.env
+    depends_on:
+      - weather-service
+      - subscription-service
+    networks:
+      - weather-network
+
   email-service:
     build:
       context: .
@@ -8,9 +23,6 @@ services:
       - "8081:8081"
     env_file:
       - services/email/.env
-    environment:
-      - SMTP_USER=${SMTP_USER}
-      - SMTP_PASS=${SMTP_PASS}
     networks:
       - weather-network
 
@@ -23,8 +35,6 @@ services:
       - "8082:8082"
     env_file:
       - services/subscription/.env
-    environment:
-      - DATABASE_DSN=host=postgres user=postgres password=postgres dbname=subscriptions port=5432 sslmode=disable
     depends_on:
       postgres:
         condition: service_healthy
@@ -56,9 +66,6 @@ services:
       - "8084:8084"
     env_file:
       - services/weather/.env
-    environment:
-      - WEATHER_API_KEY=${WEATHER_API_KEY}
-      - REDIS_ADDRESS=redis:6379
     depends_on:
       - redis
     networks:
@@ -73,10 +80,6 @@ services:
       - "8085:8085"
     env_file:
       - services/weather-broadcast/.env
-    environment:
-      - SUBSCRIPTION_SERVICE_URL=http://subscription-service:8082
-      - WEATHER_SERVICE_URL=http://weather-service:8084
-      - EMAIL_SERVICE_URL=http://email-service:8081
     depends_on:
       - email-service
       - subscription-service

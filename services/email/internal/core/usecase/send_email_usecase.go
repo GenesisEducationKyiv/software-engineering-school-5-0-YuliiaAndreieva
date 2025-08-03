@@ -57,7 +57,7 @@ func (uc *SendEmailUseCase) SendConfirmationEmail(ctx context.Context, req domai
 func (uc *SendEmailUseCase) SendWeatherUpdateEmail(ctx context.Context, req domain.WeatherUpdateEmailRequest) (*domain.EmailDeliveryResult, error) {
 	uc.logger.Infof("Starting weather update email send to %s", req.To)
 
-	template, err := uc.templateBuilder.BuildWeatherUpdateEmail(ctx, req.To, req.City, req.Description, req.Humidity, req.WindSpeed, req.Temperature)
+	template, err := uc.templateBuilder.BuildWeatherUpdateEmail(ctx, req.To, req.City, req.Description, req.Humidity, req.WindSpeed, req.Temperature, req.UnsubscribeToken)
 	if err != nil {
 		uc.logger.Errorf("Failed to build weather update email template: %v", err)
 		return nil, err

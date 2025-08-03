@@ -9,9 +9,10 @@ const (
 )
 
 type Weather struct {
-	Temperature int    `json:"temperature"`
-	Humidity    int    `json:"humidity"`
-	Description string `json:"description"`
+	Temperature float64 `json:"temperature"`
+	Humidity    int     `json:"humidity"`
+	Description string  `json:"description"`
+	WindSpeed   float64 `json:"wind_speed"`
 }
 
 type Subscription struct {
@@ -20,6 +21,7 @@ type Subscription struct {
 	City      string    `json:"city"`
 	Frequency Frequency `json:"frequency"`
 	Confirmed bool      `json:"confirmed"`
+	Token     string    `json:"token"`
 }
 
 type ListSubscriptionsQuery struct {
@@ -37,6 +39,7 @@ type WeatherMailSuccessInfo struct {
 	Email   string  `json:"email"`
 	City    string  `json:"city"`
 	Weather Weather `json:"weather"`
+	Token   string  `json:"token"`
 }
 
 type WeatherMailErrorInfo struct {
@@ -56,19 +59,21 @@ type WeatherResponse struct {
 	Weather Weather `json:"weather"`
 }
 
-type WeatherUpdateEmailRequest struct {
-	To          string `json:"to"`
-	Subject     string `json:"subject"`
-	Name        string `json:"name"`
-	Location    string `json:"location"`
-	Description string `json:"description"`
-	Temperature int    `json:"temperature"`
-	Humidity    int    `json:"humidity"`
-}
-
 type WeatherErrorEmailRequest struct {
 	To       string `json:"to"`
 	Subject  string `json:"subject"`
 	Name     string `json:"name"`
 	Location string `json:"location"`
+}
+
+type WeatherUpdateEmailRequest struct {
+	To               string `json:"to"`
+	Subject          string `json:"subject"`
+	Name             string `json:"name"`
+	City             string `json:"city"`
+	Description      string `json:"description"`
+	Temperature      int    `json:"temperature"`
+	Humidity         int    `json:"humidity"`
+	WindSpeed        int    `json:"windSpeed"`
+	UnsubscribeToken string `json:"unsubscribeToken"`
 }

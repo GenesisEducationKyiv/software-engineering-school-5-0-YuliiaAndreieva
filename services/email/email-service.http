@@ -1,30 +1,67 @@
-### Email Service Test Requests
+### Email Service Tests
 
 ### Health Check
 GET http://localhost:8081/health
+Content-Type: application/json
 
-### Send Confirmation Email
-POST http://localhost:8081/send/confirmation
+###
+
+### Send Email
+POST http://localhost:8081/send
 Content-Type: application/json
 
 {
-  "to": "user@example.com",
-  "subject": "Email Confirmation",
-  "name": "John Doe",
-  "confirmationLink": "https://example.com/confirm?token=abc123"
+  "to": "test@example.com",
+  "subject": "Test Email",
+  "body": "This is a test email from the weather service."
 }
 
-### Send Weather Update Email
-POST http://localhost:8081/send/weather-update
+###
+
+### Send Email with HTML
+POST http://localhost:8081/send
 Content-Type: application/json
 
 {
-  "to": "user@example.com",
+  "to": "test@example.com",
   "subject": "Weather Update",
-  "name": "Jane Smith",
-  "location": "Kyiv",
-  "temperature": 25,
-  "description": "Sunny",
-  "humidity": 60,
-  "windSpeed": 10
-} 
+  "body": "<h1>Weather Update</h1><p>Current temperature in Kyiv: 20°C</p>",
+  "html": true
+}
+
+###
+
+### Send Email to Multiple Recipients
+POST http://localhost:8081/send
+Content-Type: application/json
+
+{
+  "to": "user1@example.com,user2@example.com",
+  "subject": "Weather Alert",
+  "body": "Severe weather warning for your area."
+}
+
+###
+
+### Test Invalid Email
+POST http://localhost:8081/send
+Content-Type: application/json
+
+{
+  "to": "invalid-email",
+  "subject": "Test",
+  "body": "Test message"
+}
+
+###
+
+### Test Missing Required Fields
+POST http://localhost:8081/send
+Content-Type: application/json
+
+{
+  "subject": "Test",
+  "body": "Test message"
+}
+
+### 

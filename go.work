@@ -6,4 +6,5 @@ use (
 	./services/token
 	./services/weather
 	./services/weather-broadcast
+	./services/gateway
 ) 

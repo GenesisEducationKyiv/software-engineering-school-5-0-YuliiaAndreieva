@@ -64,7 +64,7 @@ type ConfirmationEmailRequest struct {
 	To               string `json:"to"`
 	Subject          string `json:"subject"`
 	City             string `json:"city"`
-	ConfirmationLink string `json:"confirmation_link"`
+	ConfirmationLink string `json:"confirmationLink"`
 }
 
 var ErrDuplicateSubscription = errors.New("subscription already exists")

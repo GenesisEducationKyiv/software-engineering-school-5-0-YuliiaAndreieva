@@ -18,6 +18,7 @@ jobs:
           - services/subscription
           - services/weather-broadcast
           - services/email
+          - services/gateway
     steps:
       - uses: actions/checkout@v4
         with:

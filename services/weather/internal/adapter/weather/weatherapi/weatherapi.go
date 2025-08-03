@@ -6,8 +6,10 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"time"
+	"weather/internal/adapter/
 	"weather/internal/adapter/weather"
-	"weather/internal/core/domain"
+	"time"
 )
 
 const (
@@ -43,6 +45,8 @@ func apiToDomain(w response) domain.Weather {
 		Temperature: w.TempC,
 		Humidity:    w.Humidity,
 		Description: w.Condition.Text,
+		WindSpeed:   w.WindKph,
+		Timestamp:   time.Now(),
 	}
 }
 

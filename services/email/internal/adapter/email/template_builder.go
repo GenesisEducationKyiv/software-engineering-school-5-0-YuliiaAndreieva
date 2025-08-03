@@ -36,12 +36,17 @@ func (tb *TemplateBuilder) BuildConfirmationEmail(ctx context.Context, email, ci
 	return template, nil
 }
 
-func (tb *TemplateBuilder) BuildWeatherUpdateEmail(ctx context.Context, email, city, description string, humidity int, windSpeed int, temperature int) (string, error) {
+func (tb *TemplateBuilder) BuildWeatherUpdateEmail(ctx context.Context, email, city, description string, humidity int, windSpeed int, temperature int, unsubscribeToken string) (string, error) {
 	tb.logger.Infof("Building weather update email template for email: %s, city: %s", email, city)
 
 	temperatureStr := strconv.Itoa(temperature)
 	humidityStr := strconv.Itoa(humidity)
 	windSpeedStr := strconv.Itoa(windSpeed)
+
+	unsubscribeLink := ""
+	if unsubscribeToken != "" {
+		unsubscribeLink = fmt.Sprintf(`<p><a href="http://localhost:8080/unsubscribe/%s">Unsubscribe from weather updates</a></p>`, unsubscribeToken)
+	}
 
 	template := fmt.Sprintf(`
 		<html>
@@ -56,9 +61,10 @@ func (tb *TemplateBuilder) BuildWeatherUpdateEmail(ctx context.Context, email, c
 				<li>Wind Speed: %s km/h</li>
 			</ul>
 			<p>Stay safe and enjoy your day!</p>
+			%s
 		</body>
 		</html>
-	`, city, city, temperatureStr, description, humidityStr, windSpeedStr)
+	`, city, city, temperatureStr, description, humidityStr, windSpeedStr, unsubscribeLink)
 
 	tb.logger.Infof("Weather update email template built successfully for email: %s, city: %s", email, city)
 	return template, nil

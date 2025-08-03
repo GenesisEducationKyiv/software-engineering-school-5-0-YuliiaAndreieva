@@ -33,6 +33,8 @@ func (uc *GetWeatherUseCase) GetWeather(ctx context.Context, req domain.WeatherR
 		}, nil
 	}
 
+	weather.City = req.City
+
 	uc.logger.Infof("Successfully retrieved weather data for city: %s", req.City)
 	uc.logger.Debugf("Weather data retrieved: temperature=%s, description=%s", weather.Temperature, weather.Description)
 

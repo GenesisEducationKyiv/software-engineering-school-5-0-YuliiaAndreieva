@@ -20,14 +20,15 @@ type ConfirmationEmailRequest struct {
 }
 
 type WeatherUpdateEmailRequest struct {
-	To          string `json:"to" validate:"required,email"`
-	Subject     string `json:"subject" validate:"required"`
-	Name        string `json:"name" validate:"required"`
-	City        string `json:"city" validate:"required"`
-	Temperature int    `json:"temperature"`
-	Description string `json:"description" validate:"required"`
-	Humidity    int    `json:"humidity"`
-	WindSpeed   int    `json:"windSpeed"`
+	To               string `json:"to" validate:"required,email"`
+	Subject          string `json:"subject" validate:"required"`
+	Name             string `json:"name" validate:"required"`
+	City             string `json:"city" validate:"required"`
+	Temperature      int    `json:"temperature"`
+	Description      string `json:"description" validate:"required"`
+	Humidity         int    `json:"humidity"`
+	WindSpeed        int    `json:"windSpeed"`
+	UnsubscribeToken string `json:"unsubscribeToken"`
 }
 
 type EmailTemplate struct {

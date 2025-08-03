@@ -84,20 +84,14 @@ func (s *BroadcastUseCase) Broadcast(ctx context.Context, frequency domain.Frequ
 						Email:   sub.Email,
 						City:    sub.City,
 						Weather: *weather,
+						Token:   sub.Token,
 					}
 
 					if err := s.weatherMailer.SendWeather(ctx, info); err != nil {
 						s.logger.Errorf("Failed to send weather email to %s: %v", sub.Email, err)
 					}
 				} else {
-					info := &domain.WeatherMailErrorInfo{
-						Email: sub.Email,
-						City:  sub.City,
-					}
-
-					if err := s.weatherMailer.SendError(ctx, info); err != nil {
-						s.logger.Errorf("Failed to send error email to %s: %v", sub.Email, err)
-					}
+					s.logger.Warnf("Skipping subscription for %s - weather data unavailable", sub.Email)
 				}
 			}(subscription, cityWeatherMap[subscription.City])
 		}
