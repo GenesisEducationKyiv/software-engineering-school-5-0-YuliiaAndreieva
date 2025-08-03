@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -53,27 +54,26 @@ type emailIntegrationTestSetup struct {
 }
 
 func setupEmailIntegrationTest() *emailIntegrationTestSetup {
-	logger := logger.NewLogrusLogger()
+	emailSender := email.NewSMTPSender(email.SMTPConfig{
+		Host: getEnvWithDefault("SMTP_HOST", "localhost"),
+		Port: getEnvAsIntWithDefault("SMTP_PORT", 1025),
+		User: getEnvWithDefault("SMTP_USERNAME", ""),
+		Pass: getEnvWithDefault("SMTP_PASSWORD", ""),
+	}, logger.NewLogrusLogger())
 
-	smtpConfig := email.SMTPConfig{
-		Host: getEnvWithDefault("TEST_SMTP_HOST", "localhost"),
-		Port: getEnvAsIntWithDefault("TEST_SMTP_PORT", 1025),
-		User: getEnvWithDefault("TEST_SMTP_USER", "test@example.com"),
-		Pass: getEnvWithDefault("TEST_SMTP_PASS", ""),
-	}
-
-	emailSender := email.NewSMTPSender(smtpConfig, logger)
-	templateBuilder := email.NewTemplateBuilder(logger)
-
-	useCase := usecase.NewSendEmailUseCase(emailSender, templateBuilder, logger, "http://localhost:8081")
-	handler := httphandler.NewEmailHandler(useCase, logger)
+	templateBuilder := email.NewTemplateBuilder(logger.NewLogrusLogger())
+	useCase := usecase.NewSendEmailUseCase(emailSender, templateBuilder, logger.NewLogrusLogger(), "http://localhost:8081")
+	handler := httphandler.NewEmailHandler(useCase, logger.NewLogrusLogger())
 
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
 	router.POST("/send/confirmation", handler.SendConfirmationEmail)
 	router.POST("/send/weather-update", handler.SendWeatherUpdateEmail)
 
-	mailHogClient := helpers.NewMailHogClient("http://localhost:8025")
+	mailHogHost := getEnvWithDefault("MAILHOG_HOST", "localhost")
+	mailHogWebPort := getEnvWithDefault("MAILHOG_WEB_PORT", "8025")
+	mailHogURL := fmt.Sprintf("http://%s:%s", mailHogHost, mailHogWebPort)
+	mailHogClient := helpers.NewMailHogClient(mailHogURL)
 
 	return &emailIntegrationTestSetup{
 		handler:       handler,

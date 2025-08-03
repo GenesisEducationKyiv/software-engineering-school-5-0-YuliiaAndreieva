@@ -28,6 +28,15 @@ linters:
       - path: subscription_handler\.go
         linters:
           - errcheck
+      - path: tests/mocks/.*\.go
+        linters:
+          - errcheck
+          - govet
+          - staticcheck
+          - gocyclo
+          - revive
+          - unparam
+          - godot
   settings:
     errcheck:
       check-type-assertions: true

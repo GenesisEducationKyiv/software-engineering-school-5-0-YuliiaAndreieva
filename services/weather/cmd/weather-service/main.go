@@ -42,6 +42,8 @@ func main() {
 		}
 	}()
 
+	appLogger := logger.NewLogger()
+
 	httpClient := &http.Client{Timeout: cfg.HTTPClientTimeout}
 
 	weatherAPIProvider := weatherapi.NewClient(weatherapi.ClientOptions{
@@ -77,11 +79,11 @@ func main() {
 
 	cachedProvider := weather.NewCachedWeatherProvider(weatherCache, chainProvider)
 
-	getWeatherUseCase := usecase.NewGetWeatherUseCase(cachedProvider, fileLogger)
+	getWeatherUseCase := usecase.NewGetWeatherUseCase(cachedProvider, appLogger)
 
 	weatherHandler := httphandler.NewWeatherHandler(
 		getWeatherUseCase,
-		fileLogger,
+		appLogger,
 	)
 
 	r := gin.Default()
