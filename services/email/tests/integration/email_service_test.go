@@ -15,6 +15,7 @@ import (
 	"email/internal/adapter/logger"
 	"email/internal/core/domain"
 	"email/internal/core/usecase"
+	"email/tests/helpers"
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
@@ -46,8 +47,9 @@ func getEnvAsIntWithDefault(key string, defaultValue int) int {
 }
 
 type emailIntegrationTestSetup struct {
-	handler *httphandler.EmailHandler
-	router  *gin.Engine
+	handler       *httphandler.EmailHandler
+	router        *gin.Engine
+	mailHogClient *helpers.MailHogClient
 }
 
 func setupEmailIntegrationTest() *emailIntegrationTestSetup {
@@ -71,9 +73,12 @@ func setupEmailIntegrationTest() *emailIntegrationTestSetup {
 	router.POST("/send/confirmation", handler.SendConfirmationEmail)
 	router.POST("/send/weather-update", handler.SendWeatherUpdateEmail)
 
+	mailHogClient := helpers.NewMailHogClient("http://localhost:8025")
+
 	return &emailIntegrationTestSetup{
-		handler: handler,
-		router:  router,
+		handler:       handler,
+		router:        router,
+		mailHogClient: mailHogClient,
 	}
 }
 
@@ -114,7 +119,9 @@ func (eits *emailIntegrationTestSetup) makeWeatherUpdateRequest(t *testing.T, re
 func TestEmailServiceIntegration_SendConfirmationEmail(t *testing.T) {
 	ts := setupEmailIntegrationTest()
 
-	t.Run("Valid confirmation email request", func(t *testing.T) {
+	t.Run("Valid confirmation email request - verify email sent", func(t *testing.T) {
+		ts.mailHogClient.ClearMailHog(t)
+
 		request := domain.ConfirmationEmailRequest{
 			To:               "test@example.com",
 			Subject:          "Confirm Subscription",
@@ -127,6 +134,9 @@ func TestEmailServiceIntegration_SendConfirmationEmail(t *testing.T) {
 		assert.Equal(t, http.StatusOK, w.Code)
 		assert.True(t, response.Success)
 		assert.NotEmpty(t, response.Message)
+
+		emailSent := ts.mailHogClient.CheckEmailSent(t, "test@example.com", "Confirm Subscription")
+		assert.True(t, emailSent, "Email should have been sent and received by MailHog")
 	})
 
 	t.Run("Invalid email format", func(t *testing.T) {
@@ -163,9 +173,11 @@ func TestEmailServiceIntegration_SendConfirmationEmail(t *testing.T) {
 func TestEmailServiceIntegration_SendWeatherUpdateEmail(t *testing.T) {
 	ts := setupEmailIntegrationTest()
 
-	t.Run("Valid weather update email request", func(t *testing.T) {
+	t.Run("Valid weather update email request - verify email sent", func(t *testing.T) {
+		ts.mailHogClient.ClearMailHog(t)
+
 		request := domain.WeatherUpdateEmailRequest{
-			To:          "test@example.com",
+			To:          "weather@example.com",
 			Subject:     "Weather Update",
 			Name:        "User",
 			City:        "Kyiv",
@@ -180,6 +192,9 @@ func TestEmailServiceIntegration_SendWeatherUpdateEmail(t *testing.T) {
 		assert.Equal(t, http.StatusOK, w.Code)
 		assert.True(t, response.Success)
 		assert.NotEmpty(t, response.Message)
+
+		emailSent := ts.mailHogClient.CheckEmailSent(t, "weather@example.com", "Weather Update")
+		assert.True(t, emailSent, "Email should have been sent and received by MailHog")
 	})
 
 	t.Run("Invalid email format", func(t *testing.T) {
@@ -259,5 +274,33 @@ func TestEmailServiceIntegration_TemplateGeneration(t *testing.T) {
 		assert.Contains(t, template, "65%")
 		assert.Contains(t, template, "12 km/h")
 		assert.Contains(t, template, "Weather Update for")
+	})
+}
+
+func TestEmailServiceIntegration_EmailContentVerification(t *testing.T) {
+	ts := setupEmailIntegrationTest()
+
+	t.Run("Verify confirmation email content", func(t *testing.T) {
+		ts.mailHogClient.ClearMailHog(t)
+
+		request := domain.ConfirmationEmailRequest{
+			To:               "verify@example.com",
+			Subject:          "Test Confirmation",
+			City:             "Lviv",
+			ConfirmationLink: "http://localhost:8082/confirm/test123",
+		}
+
+		w, response := ts.makeConfirmationRequest(t, request)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+		assert.True(t, response.Success)
+
+		foundEmail := ts.mailHogClient.GetEmailContent(t, "verify@example.com")
+		require.NotNil(t, foundEmail, "Email should be found in MailHog")
+
+		assert.Contains(t, foundEmail.Content.Body, "Lviv")
+		assert.Contains(t, foundEmail.Content.Body, "http://localhost:8082/confirm/test123")
+		assert.Contains(t, foundEmail.Content.Body, "Welcome!")
+		assert.Contains(t, foundEmail.Content.Body, "Thank you for subscribing")
 	})
 }
