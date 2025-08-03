@@ -6,24 +6,29 @@ import (
 
 	"token/internal/core/domain"
 	"token/internal/core/usecase"
-	"token/tests"
+	"token/tests/mocks"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 type validateTokenUseCaseTestSetup struct {
 	useCase    *usecase.ValidateTokenUseCase
-	mockLogger *tests.MockLogger
+	mockLogger *mocks.Logger
 	validToken string
 }
 
 func setupValidateTokenUseCaseTest() *validateTokenUseCaseTestSetup {
-	mockLogger := &tests.MockLogger{}
+	mockLogger := &mocks.Logger{}
 	secret := "test-secret-key-for-jwt-signing"
 
 	useCase := usecase.NewValidateTokenUseCase(mockLogger, secret).(*usecase.ValidateTokenUseCase)
 
-	tests.SetupCommonLoggerMocks(mockLogger)
+	// Налаштовуємо моки для логера
+	mockLogger.On("Infof", mock.Anything, mock.Anything).Return()
+	mockLogger.On("Warnf", mock.Anything, mock.Anything).Return()
+	mockLogger.On("Errorf", mock.Anything, mock.Anything).Return()
+
 	generateUseCase := usecase.NewGenerateTokenUseCase(mockLogger, secret).(*usecase.GenerateTokenUseCase)
 	validToken, err := generateUseCase.GenerateToken(context.Background(), domain.GenerateTokenRequest{
 		Subject:   "test@example.com",
@@ -41,11 +46,15 @@ func setupValidateTokenUseCaseTest() *validateTokenUseCaseTestSetup {
 }
 
 func (ts *validateTokenUseCaseTestSetup) setupSuccessMocks() {
-	tests.SetupSuccessLoggerMocks(ts.mockLogger)
+	ts.mockLogger.On("Infof", mock.Anything, mock.Anything).Return()
+	ts.mockLogger.On("Warnf", mock.Anything, mock.Anything).Return()
+	ts.mockLogger.On("Errorf", mock.Anything, mock.Anything).Return()
 }
 
 func (ts *validateTokenUseCaseTestSetup) setupWarningMocks() {
-	tests.SetupWarningLoggerMocks(ts.mockLogger)
+	ts.mockLogger.On("Infof", mock.Anything, mock.Anything).Return()
+	ts.mockLogger.On("Warnf", mock.Anything, mock.Anything).Return()
+	ts.mockLogger.On("Errorf", mock.Anything, mock.Anything).Return()
 }
 
 func TestValidateTokenUseCase_Success(t *testing.T) {

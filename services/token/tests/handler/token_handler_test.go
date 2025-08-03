@@ -11,22 +11,23 @@ import (
 	httphandler "token/internal/adapter/http"
 	"token/internal/core/domain"
 	"token/internal/core/usecase"
-	"token/tests"
+	"token/tests/mocks"
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
 type tokenHandlerTestSetup struct {
 	handler    *httphandler.TokenHandler
 	router     *gin.Engine
-	mockLogger *tests.MockLogger
+	mockLogger *mocks.Logger
 	validToken string
 }
 
 func setupTokenHandlerTest() *tokenHandlerTestSetup {
-	mockLogger := &tests.MockLogger{}
+	mockLogger := &mocks.Logger{}
 	secret := "test-secret-key-for-jwt-signing"
 
 	generateUseCase := usecase.NewGenerateTokenUseCase(mockLogger, secret)
@@ -39,7 +40,11 @@ func setupTokenHandlerTest() *tokenHandlerTestSetup {
 	router.POST("/generate", handler.GenerateToken)
 	router.POST("/validate", handler.ValidateToken)
 
-	tests.SetupCommonLoggerMocks(mockLogger)
+	// Налаштовуємо моки для логера
+	mockLogger.On("Infof", mock.Anything, mock.Anything).Return()
+	mockLogger.On("Warnf", mock.Anything, mock.Anything).Return()
+	mockLogger.On("Errorf", mock.Anything, mock.Anything).Return()
+
 	validToken, err := generateUseCase.GenerateToken(context.Background(), domain.GenerateTokenRequest{
 		Subject:   "test@example.com",
 		ExpiresIn: "24h",
@@ -57,11 +62,15 @@ func setupTokenHandlerTest() *tokenHandlerTestSetup {
 }
 
 func (ts *tokenHandlerTestSetup) setupSuccessMocks() {
-	tests.SetupSuccessLoggerMocks(ts.mockLogger)
+	ts.mockLogger.On("Infof", mock.Anything, mock.Anything).Return()
+	ts.mockLogger.On("Warnf", mock.Anything, mock.Anything).Return()
+	ts.mockLogger.On("Errorf", mock.Anything, mock.Anything).Return()
 }
 
 func (ts *tokenHandlerTestSetup) setupErrorMocks() {
-	tests.SetupErrorLoggerMocks(ts.mockLogger)
+	ts.mockLogger.On("Infof", mock.Anything, mock.Anything).Return()
+	ts.mockLogger.On("Warnf", mock.Anything, mock.Anything).Return()
+	ts.mockLogger.On("Errorf", mock.Anything, mock.Anything).Return()
 }
 
 func (ts *tokenHandlerTestSetup) makeGenerateTokenRequest(t *testing.T, request domain.GenerateTokenRequest) (*httptest.ResponseRecorder, *domain.GenerateTokenResponse) {

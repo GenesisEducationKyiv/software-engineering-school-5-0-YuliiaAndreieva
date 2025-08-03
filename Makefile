@@ -30,6 +30,8 @@ generate-mocks:
 	cd services/subscription && mockery --all --output tests/mocks --outpkg mocks
 	@echo "🔧 Generating mocks for email service..."
 	cd services/email && mockery --all --output tests/mocks --outpkg mocks
+	@echo "🔧 Generating mocks for token service..."
+	cd services/token && mockery --all --output tests/mocks --outpkg mocks
 
 clean:
 	@echo "🧹 Cleaning up test environment..."

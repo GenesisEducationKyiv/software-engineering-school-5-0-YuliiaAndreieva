@@ -6,18 +6,19 @@ import (
 
 	"token/internal/core/domain"
 	"token/internal/core/usecase"
-	"token/tests"
+	"token/tests/mocks"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 type generateTokenUseCaseTestSetup struct {
 	useCase    *usecase.GenerateTokenUseCase
-	mockLogger *tests.MockLogger
+	mockLogger *mocks.Logger
 }
 
 func setupGenerateTokenUseCaseTest() *generateTokenUseCaseTestSetup {
-	mockLogger := &tests.MockLogger{}
+	mockLogger := &mocks.Logger{}
 	secret := "test-secret-key-for-jwt-signing"
 
 	useCase := usecase.NewGenerateTokenUseCase(mockLogger, secret).(*usecase.GenerateTokenUseCase)
@@ -29,11 +30,15 @@ func setupGenerateTokenUseCaseTest() *generateTokenUseCaseTestSetup {
 }
 
 func (ts *generateTokenUseCaseTestSetup) setupSuccessMocks() {
-	tests.SetupSuccessLoggerMocks(ts.mockLogger)
+	ts.mockLogger.On("Infof", mock.Anything, mock.Anything).Return()
+	ts.mockLogger.On("Warnf", mock.Anything, mock.Anything).Return()
+	ts.mockLogger.On("Errorf", mock.Anything, mock.Anything).Return()
 }
 
 func (ts *generateTokenUseCaseTestSetup) setupWarningMocks() {
-	tests.SetupWarningLoggerMocks(ts.mockLogger)
+	ts.mockLogger.On("Infof", mock.Anything, mock.Anything).Return()
+	ts.mockLogger.On("Warnf", mock.Anything, mock.Anything).Return()
+	ts.mockLogger.On("Errorf", mock.Anything, mock.Anything).Return()
 }
 
 func TestGenerateTokenUseCase_Success(t *testing.T) {
