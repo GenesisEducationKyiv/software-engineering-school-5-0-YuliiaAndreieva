@@ -1,5 +1,9 @@
 version: "2"
 
+run:
+  timeout: 5m
+  go: "1.24"
+
 linters:
   enable:
     - govet
@@ -12,18 +16,18 @@ linters:
   disable: []
   exclusions:
     rules:
-    - path: internal/mocks/.*\.go
-      linters:
-        - errcheck
-    - path: .*_test\.go
-      linters:
-        - errcheck
-    - path: .*mocks\.go
-      linters:
-        - errcheck
-    - path: subscription_handler\.go
-      linters:
-        - errcheck
+      - path: internal/mocks/.*\.go
+        linters:
+          - errcheck
+      - path: .*_test\.go
+        linters:
+          - errcheck
+      - path: .*mocks\.go
+        linters:
+          - errcheck
+      - path: subscription_handler\.go
+        linters:
+          - errcheck
   settings:
     errcheck:
       check-type-assertions: true
@@ -57,8 +61,3 @@ output:
       print-linter-name: false
       print-issued-lines: false
       colors: false
-run:
-  timeout: 5m
-  go: "1.24"
-  skip-dirs:
-    - "tests/mocks"
