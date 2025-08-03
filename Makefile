@@ -32,6 +32,8 @@ generate-mocks:
 	cd services/email && mockery --all --output tests/mocks --outpkg mocks
 	@echo "🔧 Generating mocks for token service..."
 	cd services/token && mockery --all --output tests/mocks --outpkg mocks
+	@echo "🔧 Generating mocks for weather-broadcast service..."
+	cd services/weather-broadcast && mockery --all --output tests/mocks --outpkg mocks
 
 clean:
 	@echo "🧹 Cleaning up test environment..."
