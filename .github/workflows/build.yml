@@ -23,8 +23,6 @@ jobs:
             path: services/weather
           - name: weather-broadcast
             path: services/weather-broadcast
-          - name: gateway
-            path: services/gateway
     
     steps:
     - uses: actions/checkout@v4
