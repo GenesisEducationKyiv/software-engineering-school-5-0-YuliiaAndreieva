@@ -2,7 +2,6 @@ package unit
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -12,43 +11,22 @@ import (
 	httphandler "email/internal/adapter/http"
 	"email/internal/adapter/logger"
 	"email/internal/core/domain"
+	"email/tests/mocks"
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
-type MockSendEmailUseCase struct {
-	sendConfirmationEmailFunc  func(ctx context.Context, req domain.ConfirmationEmailRequest) (*domain.EmailDeliveryResult, error)
-	sendWeatherUpdateEmailFunc func(ctx context.Context, req domain.WeatherUpdateEmailRequest) (*domain.EmailDeliveryResult, error)
-}
-
-func (m *MockSendEmailUseCase) SendConfirmationEmail(ctx context.Context, req domain.ConfirmationEmailRequest) (*domain.EmailDeliveryResult, error) {
-	if m.sendConfirmationEmailFunc != nil {
-		return m.sendConfirmationEmailFunc(ctx, req)
-	}
-	return &domain.EmailDeliveryResult{
-		To:     req.To,
-		Status: domain.StatusDelivered,
-	}, nil
-}
-
-func (m *MockSendEmailUseCase) SendWeatherUpdateEmail(ctx context.Context, req domain.WeatherUpdateEmailRequest) (*domain.EmailDeliveryResult, error) {
-	if m.sendWeatherUpdateEmailFunc != nil {
-		return m.sendWeatherUpdateEmailFunc(ctx, req)
-	}
-	return &domain.EmailDeliveryResult{
-		To:     req.To,
-		Status: domain.StatusDelivered,
-	}, nil
-}
-
 type emailHandlerTestSetup struct {
-	handler *httphandler.EmailHandler
-	router  *gin.Engine
+	handler     *httphandler.EmailHandler
+	router      *gin.Engine
+	mockUseCase *mocks.SendEmailUseCase
 }
 
-func setupEmailHandlerTest(mockUseCase *MockSendEmailUseCase) *emailHandlerTestSetup {
+func setupEmailHandlerTest() *emailHandlerTestSetup {
+	mockUseCase := &mocks.SendEmailUseCase{}
 	logger := logger.NewLogrusLogger()
 	handler := httphandler.NewEmailHandler(mockUseCase, logger)
 
@@ -58,8 +36,9 @@ func setupEmailHandlerTest(mockUseCase *MockSendEmailUseCase) *emailHandlerTestS
 	router.POST("/send/weather-update", handler.SendWeatherUpdateEmail)
 
 	return &emailHandlerTestSetup{
-		handler: handler,
-		router:  router,
+		handler:     handler,
+		router:      router,
+		mockUseCase: mockUseCase,
 	}
 }
 
@@ -130,21 +109,17 @@ func TestEmailHandler_SendConfirmationEmail_Success(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mockUseCase := &MockSendEmailUseCase{
-				sendConfirmationEmailFunc: func(ctx context.Context, req domain.ConfirmationEmailRequest) (*domain.EmailDeliveryResult, error) {
-					return &domain.EmailDeliveryResult{
-						To:     req.To,
-						Status: domain.StatusDelivered,
-					}, nil
-				},
-			}
+			ehts := setupEmailHandlerTest()
+			ehts.mockUseCase.On("SendConfirmationEmail", mock.Anything, mock.Anything).Return(&domain.EmailDeliveryResult{
+				To:     tt.request.To,
+				Status: domain.StatusDelivered,
+			}, nil)
 
-			ts := setupEmailHandlerTest(mockUseCase)
-
-			w, response := ts.makeConfirmationRequest(t, tt.request)
+			w, response := ehts.makeConfirmationRequest(t, tt.request)
 
 			assert.Equal(t, tt.expectedStatus, w.Code)
 			assert.Equal(t, tt.expectedSuccess, response.Success)
+			ehts.mockUseCase.AssertExpectations(t)
 		})
 	}
 }
@@ -157,18 +132,8 @@ func TestEmailHandler_SendConfirmationEmail_InvalidEmail(t *testing.T) {
 		ConfirmationLink: "http://localhost/confirm/token123",
 	}
 
-	mockUseCase := &MockSendEmailUseCase{
-		sendConfirmationEmailFunc: func(ctx context.Context, req domain.ConfirmationEmailRequest) (*domain.EmailDeliveryResult, error) {
-			return &domain.EmailDeliveryResult{
-				To:     req.To,
-				Status: domain.StatusDelivered,
-			}, nil
-		},
-	}
-
-	ts := setupEmailHandlerTest(mockUseCase)
-
-	w, response := ts.makeConfirmationRequest(t, request)
+	ehts := setupEmailHandlerTest()
+	w, response := ehts.makeConfirmationRequest(t, request)
 
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 	assert.False(t, response.Success)
@@ -183,18 +148,9 @@ func TestEmailHandler_SendConfirmationEmail_EmptyFields(t *testing.T) {
 		ConfirmationLink: "",
 	}
 
-	mockUseCase := &MockSendEmailUseCase{
-		sendConfirmationEmailFunc: func(ctx context.Context, req domain.ConfirmationEmailRequest) (*domain.EmailDeliveryResult, error) {
-			return &domain.EmailDeliveryResult{
-				To:     req.To,
-				Status: domain.StatusDelivered,
-			}, nil
-		},
-	}
+	ehts := setupEmailHandlerTest()
 
-	ts := setupEmailHandlerTest(mockUseCase)
-
-	w, response := ts.makeConfirmationRequest(t, request)
+	w, response := ehts.makeConfirmationRequest(t, request)
 
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 	assert.False(t, response.Success)
@@ -209,19 +165,15 @@ func TestEmailHandler_SendConfirmationEmail_UsecaseError(t *testing.T) {
 		ConfirmationLink: "http://localhost/confirm/token123",
 	}
 
-	mockUseCase := &MockSendEmailUseCase{
-		sendConfirmationEmailFunc: func(ctx context.Context, req domain.ConfirmationEmailRequest) (*domain.EmailDeliveryResult, error) {
-			return nil, assert.AnError
-		},
-	}
+	ehts := setupEmailHandlerTest()
+	ehts.mockUseCase.On("SendConfirmationEmail", mock.Anything, mock.Anything).Return(nil, assert.AnError)
 
-	ts := setupEmailHandlerTest(mockUseCase)
-
-	w, response := ts.makeConfirmationRequest(t, request)
+	w, response := ehts.makeConfirmationRequest(t, request)
 
 	assert.Equal(t, http.StatusInternalServerError, w.Code)
 	assert.False(t, response.Success)
 	assert.NotEmpty(t, response.Message)
+	ehts.mockUseCase.AssertExpectations(t)
 }
 
 func TestEmailHandler_SendWeatherUpdateEmail_Success(t *testing.T) {
@@ -265,21 +217,17 @@ func TestEmailHandler_SendWeatherUpdateEmail_Success(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mockUseCase := &MockSendEmailUseCase{
-				sendWeatherUpdateEmailFunc: func(ctx context.Context, req domain.WeatherUpdateEmailRequest) (*domain.EmailDeliveryResult, error) {
-					return &domain.EmailDeliveryResult{
-						To:     req.To,
-						Status: domain.StatusDelivered,
-					}, nil
-				},
-			}
+			ehts := setupEmailHandlerTest()
+			ehts.mockUseCase.On("SendWeatherUpdateEmail", mock.Anything, mock.Anything).Return(&domain.EmailDeliveryResult{
+				To:     tt.request.To,
+				Status: domain.StatusDelivered,
+			}, nil)
 
-			ts := setupEmailHandlerTest(mockUseCase)
-
-			w, response := ts.makeWeatherUpdateRequest(t, tt.request)
+			w, response := ehts.makeWeatherUpdateRequest(t, tt.request)
 
 			assert.Equal(t, tt.expectedStatus, w.Code)
 			assert.Equal(t, tt.expectedSuccess, response.Success)
+			ehts.mockUseCase.AssertExpectations(t)
 		})
 	}
 }
@@ -296,18 +244,8 @@ func TestEmailHandler_SendWeatherUpdateEmail_InvalidEmail(t *testing.T) {
 		WindSpeed:   12,
 	}
 
-	mockUseCase := &MockSendEmailUseCase{
-		sendWeatherUpdateEmailFunc: func(ctx context.Context, req domain.WeatherUpdateEmailRequest) (*domain.EmailDeliveryResult, error) {
-			return &domain.EmailDeliveryResult{
-				To:     req.To,
-				Status: domain.StatusDelivered,
-			}, nil
-		},
-	}
-
-	ts := setupEmailHandlerTest(mockUseCase)
-
-	w, response := ts.makeWeatherUpdateRequest(t, request)
+	ehts := setupEmailHandlerTest()
+	w, response := ehts.makeWeatherUpdateRequest(t, request)
 
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 	assert.False(t, response.Success)
@@ -326,18 +264,9 @@ func TestEmailHandler_SendWeatherUpdateEmail_MissingFields(t *testing.T) {
 		WindSpeed:   12,
 	}
 
-	mockUseCase := &MockSendEmailUseCase{
-		sendWeatherUpdateEmailFunc: func(ctx context.Context, req domain.WeatherUpdateEmailRequest) (*domain.EmailDeliveryResult, error) {
-			return &domain.EmailDeliveryResult{
-				To:     req.To,
-				Status: domain.StatusDelivered,
-			}, nil
-		},
-	}
+	ehts := setupEmailHandlerTest()
 
-	ts := setupEmailHandlerTest(mockUseCase)
-
-	w, response := ts.makeWeatherUpdateRequest(t, request)
+	w, response := ehts.makeWeatherUpdateRequest(t, request)
 
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 	assert.False(t, response.Success)
@@ -356,31 +285,26 @@ func TestEmailHandler_SendWeatherUpdateEmail_UsecaseError(t *testing.T) {
 		WindSpeed:   12,
 	}
 
-	mockUseCase := &MockSendEmailUseCase{
-		sendWeatherUpdateEmailFunc: func(ctx context.Context, req domain.WeatherUpdateEmailRequest) (*domain.EmailDeliveryResult, error) {
-			return nil, assert.AnError
-		},
-	}
+	ehts := setupEmailHandlerTest()
+	ehts.mockUseCase.On("SendWeatherUpdateEmail", mock.Anything, mock.Anything).Return(nil, assert.AnError)
 
-	ts := setupEmailHandlerTest(mockUseCase)
-
-	w, response := ts.makeWeatherUpdateRequest(t, request)
+	w, response := ehts.makeWeatherUpdateRequest(t, request)
 
 	assert.Equal(t, http.StatusInternalServerError, w.Code)
 	assert.False(t, response.Success)
 	assert.NotEmpty(t, response.Message)
+	ehts.mockUseCase.AssertExpectations(t)
 }
 
 func TestEmailHandler_InvalidJSON(t *testing.T) {
-	mockUseCase := &MockSendEmailUseCase{}
-	ts := setupEmailHandlerTest(mockUseCase)
+	ehts := setupEmailHandlerTest()
 
 	t.Run("Invalid JSON for confirmation email", func(t *testing.T) {
 		req := httptest.NewRequest("POST", "/send/confirmation", bytes.NewBufferString(`{"invalid": json`))
 		req.Header.Set("Content-Type", "application/json")
 
 		w := httptest.NewRecorder()
-		ts.router.ServeHTTP(w, req)
+		ehts.router.ServeHTTP(w, req)
 
 		assert.Equal(t, http.StatusBadRequest, w.Code)
 	})
@@ -390,15 +314,14 @@ func TestEmailHandler_InvalidJSON(t *testing.T) {
 		req.Header.Set("Content-Type", "application/json")
 
 		w := httptest.NewRecorder()
-		ts.router.ServeHTTP(w, req)
+		ehts.router.ServeHTTP(w, req)
 
 		assert.Equal(t, http.StatusBadRequest, w.Code)
 	})
 }
 
 func TestEmailHandler_ContentTypeValidation(t *testing.T) {
-	mockUseCase := &MockSendEmailUseCase{}
-	ts := setupEmailHandlerTest(mockUseCase)
+	ehts := setupEmailHandlerTest()
 
 	t.Run("Missing Content-Type header", func(t *testing.T) {
 		request := dto.ConfirmationEmailRequest{
@@ -408,14 +331,20 @@ func TestEmailHandler_ContentTypeValidation(t *testing.T) {
 			ConfirmationLink: "http://localhost/confirm/token",
 		}
 
+		ehts.mockUseCase.On("SendConfirmationEmail", mock.Anything, mock.Anything).Return(&domain.EmailDeliveryResult{
+			To:     request.To,
+			Status: domain.StatusDelivered,
+		}, nil)
+
 		jsonData, err := json.Marshal(request)
 		require.NoError(t, err)
 
 		req := httptest.NewRequest("POST", "/send/confirmation", bytes.NewBuffer(jsonData))
 
 		w := httptest.NewRecorder()
-		ts.router.ServeHTTP(w, req)
+		ehts.router.ServeHTTP(w, req)
 
 		assert.Equal(t, http.StatusOK, w.Code)
+		ehts.mockUseCase.AssertExpectations(t)
 	})
 }

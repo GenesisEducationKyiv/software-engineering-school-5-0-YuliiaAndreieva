@@ -28,6 +28,8 @@ test-e2e:
 generate-mocks:
 	@echo "🔧 Generating mocks for subscription service..."
 	cd services/subscription && mockery --all --output tests/mocks --outpkg mocks
+	@echo "🔧 Generating mocks for email service..."
+	cd services/email && mockery --all --output tests/mocks --outpkg mocks
 
 clean:
 	@echo "🧹 Cleaning up test environment..."

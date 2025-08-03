@@ -1,3 +1,4 @@
+//go:generate mockery --dir . --output ../../../../tests/mocks --outpkg mocks --filename logger_mock.go --structname Logger
 package out
 
 type Logger interface {

@@ -8,42 +8,11 @@ import (
 	"email/internal/adapter/logger"
 	"email/internal/core/domain"
 	"email/internal/core/usecase"
+	"email/tests/mocks"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
-
-type MockEmailSender struct {
-	sendEmailFunc func(ctx context.Context, req domain.EmailRequest) (*domain.EmailDeliveryResult, error)
-}
-
-func (m *MockEmailSender) SendEmail(ctx context.Context, req domain.EmailRequest) (*domain.EmailDeliveryResult, error) {
-	if m.sendEmailFunc != nil {
-		return m.sendEmailFunc(ctx, req)
-	}
-	return &domain.EmailDeliveryResult{
-		To:     req.To,
-		Status: domain.StatusDelivered,
-	}, nil
-}
-
-type MockTemplateBuilder struct {
-	buildConfirmationEmailFunc  func(ctx context.Context, email, city, confirmationLink string) (string, error)
-	buildWeatherUpdateEmailFunc func(ctx context.Context, email, city, description string, humidity int, windSpeed int, temperature int) (string, error)
-}
-
-func (m *MockTemplateBuilder) BuildConfirmationEmail(ctx context.Context, email, city, confirmationLink string) (string, error) {
-	if m.buildConfirmationEmailFunc != nil {
-		return m.buildConfirmationEmailFunc(ctx, email, city, confirmationLink)
-	}
-	return "<html><body>Test confirmation email</body></html>", nil
-}
-
-func (m *MockTemplateBuilder) BuildWeatherUpdateEmail(ctx context.Context, email, city, description string, humidity int, windSpeed int, temperature int) (string, error) {
-	if m.buildWeatherUpdateEmailFunc != nil {
-		return m.buildWeatherUpdateEmailFunc(ctx, email, city, description, humidity, windSpeed, temperature)
-	}
-	return "<html><body>Test weather update email</body></html>", nil
-}
 
 func TestSendEmailUseCase_SendConfirmationEmail_Success(t *testing.T) {
 	logger := logger.NewLogrusLogger()
@@ -77,20 +46,17 @@ func TestSendEmailUseCase_SendConfirmationEmail_Success(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			templateBuilder := &MockTemplateBuilder{
-				buildConfirmationEmailFunc: func(ctx context.Context, email, city, confirmationLink string) (string, error) {
-					return "<html><body>Test template</body></html>", nil
-				},
-			}
+			templateBuilder := &mocks.EmailTemplateBuilder{}
+			emailSender := &mocks.EmailSender{}
 
-			emailSender := &MockEmailSender{
-				sendEmailFunc: func(ctx context.Context, req domain.EmailRequest) (*domain.EmailDeliveryResult, error) {
-					return &domain.EmailDeliveryResult{
-						To:     req.To,
-						Status: domain.StatusDelivered,
-					}, nil
-				},
-			}
+			templateBuilder.On("BuildConfirmationEmail", mock.Anything, tt.request.To, tt.request.City, tt.request.ConfirmationLink).
+				Return("<html><body>Test template</body></html>", nil)
+
+			emailSender.On("SendEmail", mock.Anything, mock.AnythingOfType("domain.EmailRequest")).
+				Return(&domain.EmailDeliveryResult{
+					To:     tt.request.To,
+					Status: domain.StatusDelivered,
+				}, nil)
 
 			useCase := usecase.NewSendEmailUseCase(emailSender, templateBuilder, logger, "http://localhost:8081")
 
@@ -98,7 +64,11 @@ func TestSendEmailUseCase_SendConfirmationEmail_Success(t *testing.T) {
 
 			assert.NoError(t, err)
 			assert.NotNil(t, result)
+			assert.Equal(t, tt.request.To, result.To)
 			assert.Equal(t, tt.expectedStatus, result.Status)
+
+			templateBuilder.AssertExpectations(t)
+			emailSender.AssertExpectations(t)
 		})
 	}
 }
@@ -113,21 +83,11 @@ func TestSendEmailUseCase_SendConfirmationEmail_TemplateBuilderError(t *testing.
 		ConfirmationLink: "http://localhost/confirm/token123",
 	}
 
-	templateBuilder := &MockTemplateBuilder{
-		buildConfirmationEmailFunc: func(ctx context.Context, email, city, confirmationLink string) (string, error) {
-			return "", errors.New("template builder error")
-		},
-	}
+	templateBuilder := &mocks.EmailTemplateBuilder{}
+	templateBuilder.On("BuildConfirmationEmail", mock.Anything, request.To, request.City, request.ConfirmationLink).
+		Return("", errors.New("template builder error"))
 
-	emailSender := &MockEmailSender{
-		sendEmailFunc: func(ctx context.Context, req domain.EmailRequest) (*domain.EmailDeliveryResult, error) {
-			return &domain.EmailDeliveryResult{
-				To:     req.To,
-				Status: domain.StatusDelivered,
-			}, nil
-		},
-	}
-
+	emailSender := &mocks.EmailSender{}
 	useCase := usecase.NewSendEmailUseCase(emailSender, templateBuilder, logger, "http://localhost:8081")
 
 	result, err := useCase.SendConfirmationEmail(context.Background(), request)
@@ -135,6 +95,8 @@ func TestSendEmailUseCase_SendConfirmationEmail_TemplateBuilderError(t *testing.
 	assert.Error(t, err)
 	assert.Nil(t, result)
 	assert.Contains(t, err.Error(), "template builder error")
+
+	templateBuilder.AssertExpectations(t)
 }
 
 func TestSendEmailUseCase_SendConfirmationEmail_EmailSenderError(t *testing.T) {
@@ -147,17 +109,13 @@ func TestSendEmailUseCase_SendConfirmationEmail_EmailSenderError(t *testing.T) {
 		ConfirmationLink: "http://localhost/confirm/token123",
 	}
 
-	templateBuilder := &MockTemplateBuilder{
-		buildConfirmationEmailFunc: func(ctx context.Context, email, city, confirmationLink string) (string, error) {
-			return "<html><body>Test template</body></html>", nil
-		},
-	}
+	templateBuilder := &mocks.EmailTemplateBuilder{}
+	templateBuilder.On("BuildConfirmationEmail", mock.Anything, request.To, request.City, request.ConfirmationLink).
+		Return("<html><body>Test template</body></html>", nil)
 
-	emailSender := &MockEmailSender{
-		sendEmailFunc: func(ctx context.Context, req domain.EmailRequest) (*domain.EmailDeliveryResult, error) {
-			return nil, errors.New("email sender error")
-		},
-	}
+	emailSender := &mocks.EmailSender{}
+	emailSender.On("SendEmail", mock.Anything, mock.AnythingOfType("domain.EmailRequest")).
+		Return(nil, errors.New("email sender error"))
 
 	useCase := usecase.NewSendEmailUseCase(emailSender, templateBuilder, logger, "http://localhost:8081")
 
@@ -166,6 +124,9 @@ func TestSendEmailUseCase_SendConfirmationEmail_EmailSenderError(t *testing.T) {
 	assert.Error(t, err)
 	assert.Nil(t, result)
 	assert.Contains(t, err.Error(), "email sender error")
+
+	templateBuilder.AssertExpectations(t)
+	emailSender.AssertExpectations(t)
 }
 
 func TestSendEmailUseCase_SendWeatherUpdateEmail_Success(t *testing.T) {
@@ -208,20 +169,17 @@ func TestSendEmailUseCase_SendWeatherUpdateEmail_Success(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			templateBuilder := &MockTemplateBuilder{
-				buildWeatherUpdateEmailFunc: func(ctx context.Context, email, city, description string, humidity int, windSpeed int, temperature int) (string, error) {
-					return "<html><body>Test weather template</body></html>", nil
-				},
-			}
+			templateBuilder := &mocks.EmailTemplateBuilder{}
+			emailSender := &mocks.EmailSender{}
 
-			emailSender := &MockEmailSender{
-				sendEmailFunc: func(ctx context.Context, req domain.EmailRequest) (*domain.EmailDeliveryResult, error) {
-					return &domain.EmailDeliveryResult{
-						To:     req.To,
-						Status: domain.StatusDelivered,
-					}, nil
-				},
-			}
+			templateBuilder.On("BuildWeatherUpdateEmail", mock.Anything, tt.request.To, tt.request.City, tt.request.Description, tt.request.Humidity, tt.request.WindSpeed, tt.request.Temperature).
+				Return("<html><body>Test weather template</body></html>", nil)
+
+			emailSender.On("SendEmail", mock.Anything, mock.AnythingOfType("domain.EmailRequest")).
+				Return(&domain.EmailDeliveryResult{
+					To:     tt.request.To,
+					Status: domain.StatusDelivered,
+				}, nil)
 
 			useCase := usecase.NewSendEmailUseCase(emailSender, templateBuilder, logger, "http://localhost:8081")
 
@@ -229,7 +187,11 @@ func TestSendEmailUseCase_SendWeatherUpdateEmail_Success(t *testing.T) {
 
 			assert.NoError(t, err)
 			assert.NotNil(t, result)
+			assert.Equal(t, tt.request.To, result.To)
 			assert.Equal(t, tt.expectedStatus, result.Status)
+
+			templateBuilder.AssertExpectations(t)
+			emailSender.AssertExpectations(t)
 		})
 	}
 }
@@ -248,21 +210,11 @@ func TestSendEmailUseCase_SendWeatherUpdateEmail_TemplateBuilderError(t *testing
 		WindSpeed:   12,
 	}
 
-	templateBuilder := &MockTemplateBuilder{
-		buildWeatherUpdateEmailFunc: func(ctx context.Context, email, city, description string, humidity int, windSpeed int, temperature int) (string, error) {
-			return "", errors.New("template builder error")
-		},
-	}
+	templateBuilder := &mocks.EmailTemplateBuilder{}
+	templateBuilder.On("BuildWeatherUpdateEmail", mock.Anything, request.To, request.City, request.Description, request.Humidity, request.WindSpeed, request.Temperature).
+		Return("", errors.New("template builder error"))
 
-	emailSender := &MockEmailSender{
-		sendEmailFunc: func(ctx context.Context, req domain.EmailRequest) (*domain.EmailDeliveryResult, error) {
-			return &domain.EmailDeliveryResult{
-				To:     req.To,
-				Status: domain.StatusDelivered,
-			}, nil
-		},
-	}
-
+	emailSender := &mocks.EmailSender{}
 	useCase := usecase.NewSendEmailUseCase(emailSender, templateBuilder, logger, "http://localhost:8081")
 
 	result, err := useCase.SendWeatherUpdateEmail(context.Background(), request)
@@ -270,6 +222,8 @@ func TestSendEmailUseCase_SendWeatherUpdateEmail_TemplateBuilderError(t *testing
 	assert.Error(t, err)
 	assert.Nil(t, result)
 	assert.Contains(t, err.Error(), "template builder error")
+
+	templateBuilder.AssertExpectations(t)
 }
 
 func TestSendEmailUseCase_SendWeatherUpdateEmail_EmailSenderError(t *testing.T) {
@@ -286,17 +240,13 @@ func TestSendEmailUseCase_SendWeatherUpdateEmail_EmailSenderError(t *testing.T) 
 		WindSpeed:   12,
 	}
 
-	templateBuilder := &MockTemplateBuilder{
-		buildWeatherUpdateEmailFunc: func(ctx context.Context, email, city, description string, humidity int, windSpeed int, temperature int) (string, error) {
-			return "<html><body>Test weather template</body></html>", nil
-		},
-	}
+	templateBuilder := &mocks.EmailTemplateBuilder{}
+	templateBuilder.On("BuildWeatherUpdateEmail", mock.Anything, request.To, request.City, request.Description, request.Humidity, request.WindSpeed, request.Temperature).
+		Return("<html><body>Test weather template</body></html>", nil)
 
-	emailSender := &MockEmailSender{
-		sendEmailFunc: func(ctx context.Context, req domain.EmailRequest) (*domain.EmailDeliveryResult, error) {
-			return nil, errors.New("email sender error")
-		},
-	}
+	emailSender := &mocks.EmailSender{}
+	emailSender.On("SendEmail", mock.Anything, mock.AnythingOfType("domain.EmailRequest")).
+		Return(nil, errors.New("email sender error"))
 
 	useCase := usecase.NewSendEmailUseCase(emailSender, templateBuilder, logger, "http://localhost:8081")
 
@@ -305,12 +255,15 @@ func TestSendEmailUseCase_SendWeatherUpdateEmail_EmailSenderError(t *testing.T) 
 	assert.Error(t, err)
 	assert.Nil(t, result)
 	assert.Contains(t, err.Error(), "email sender error")
+
+	templateBuilder.AssertExpectations(t)
+	emailSender.AssertExpectations(t)
 }
 
 func TestSendEmailUseCase_Validation(t *testing.T) {
 	logger := logger.NewLogrusLogger()
-	templateBuilder := &MockTemplateBuilder{}
-	emailSender := &MockEmailSender{}
+	templateBuilder := &mocks.EmailTemplateBuilder{}
+	emailSender := &mocks.EmailSender{}
 	useCase := usecase.NewSendEmailUseCase(emailSender, templateBuilder, logger, "http://localhost:8081")
 
 	t.Run("Empty email in confirmation request", func(t *testing.T) {
@@ -321,10 +274,23 @@ func TestSendEmailUseCase_Validation(t *testing.T) {
 			ConfirmationLink: "http://localhost/confirm/token",
 		}
 
+		// Налаштовуємо моки для випадку, коли usecase викликається
+		templateBuilder.On("BuildConfirmationEmail", mock.Anything, request.To, request.City, request.ConfirmationLink).
+			Return("<html><body>Test template</body></html>", nil)
+
+		emailSender.On("SendEmail", mock.Anything, mock.AnythingOfType("domain.EmailRequest")).
+			Return(&domain.EmailDeliveryResult{
+				To:     request.To,
+				Status: domain.StatusDelivered,
+			}, nil)
+
 		result, err := useCase.SendConfirmationEmail(context.Background(), request)
 
 		assert.NoError(t, err)
 		assert.NotNil(t, result)
+
+		templateBuilder.AssertExpectations(t)
+		emailSender.AssertExpectations(t)
 	})
 
 	t.Run("Empty city in weather request", func(t *testing.T) {
@@ -339,9 +305,21 @@ func TestSendEmailUseCase_Validation(t *testing.T) {
 			WindSpeed:   10,
 		}
 
+		templateBuilder.On("BuildWeatherUpdateEmail", mock.Anything, request.To, request.City, request.Description, request.Humidity, request.WindSpeed, request.Temperature).
+			Return("<html><body>Test weather template</body></html>", nil)
+
+		emailSender.On("SendEmail", mock.Anything, mock.AnythingOfType("domain.EmailRequest")).
+			Return(&domain.EmailDeliveryResult{
+				To:     request.To,
+				Status: domain.StatusDelivered,
+			}, nil)
+
 		result, err := useCase.SendWeatherUpdateEmail(context.Background(), request)
 
 		assert.NoError(t, err)
 		assert.NotNil(t, result)
+
+		templateBuilder.AssertExpectations(t)
+		emailSender.AssertExpectations(t)
 	})
 }

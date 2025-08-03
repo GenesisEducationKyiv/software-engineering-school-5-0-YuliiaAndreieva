@@ -1,3 +1,4 @@
+//go:generate mockery --dir . --output ../../../../tests/mocks --outpkg mocks --filename email_template_builder_mock.go --structname EmailTemplateBuilder
 package out
 
 import "context"
