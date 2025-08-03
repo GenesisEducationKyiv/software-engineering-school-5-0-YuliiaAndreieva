@@ -57,7 +57,7 @@ func setupEmailIntegrationTest() *emailIntegrationTestSetup {
 	emailSender := email.NewSMTPSender(email.SMTPConfig{
 		Host: getEnvWithDefault("SMTP_HOST", "localhost"),
 		Port: getEnvAsIntWithDefault("SMTP_PORT", 1025),
-		User: getEnvWithDefault("SMTP_USERNAME", ""),
+		User: getEnvWithDefault("SMTP_USERNAME", "test@example.com"),
 		Pass: getEnvWithDefault("SMTP_PASSWORD", ""),
 	}, logger.NewLogrusLogger())
 

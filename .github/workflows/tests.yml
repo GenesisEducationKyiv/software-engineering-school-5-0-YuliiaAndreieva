@@ -68,6 +68,8 @@ jobs:
           -e MAILHOG_WEB_PORT=8025 \
           -e SMTP_HOST=mailhog-email \
           -e SMTP_PORT=1025 \
+          -e SMTP_USERNAME=test@example.com \
+          -e SMTP_PASSWORD="" \
           email-service-tests
 
   subscription-service-tests:
