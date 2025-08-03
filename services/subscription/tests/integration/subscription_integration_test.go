@@ -45,9 +45,9 @@ type subscriptionIntegrationTestSetup struct {
 }
 
 func setupSubscriptionIntegrationTest(t *testing.T) *subscriptionIntegrationTestSetup {
-	dsn := "host=" + getEnvWithDefault("TEST_DB_HOST", "localhost") +
-		" user=" + getEnvWithDefault("TEST_DB_USER", "postgres") +
-		" password=" + getEnvWithDefault("TEST_DB_PASSWORD", "password") +
+	dsn := "host=" + getEnvWithDefault("TEST_DB_HOST", "postgres-subscription") +
+		" user=" + getEnvWithDefault("TEST_DB_USER", "test") +
+		" password=" + getEnvWithDefault("TEST_DB_PASSWORD", "test") +
 		" dbname=" + getEnvWithDefault("TEST_DB_NAME", "subscription_test") +
 		" port=" + getEnvWithDefault("TEST_DB_PORT", "5432") +
 		" sslmode=disable"

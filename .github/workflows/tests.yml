@@ -74,7 +74,9 @@ jobs:
     
     - name: Start PostgreSQL
       run: |
+        docker network create subscription-test-network
         docker run -d --name postgres-subscription \
+          --network subscription-test-network \
           -e POSTGRES_DB=subscription_test \
           -e POSTGRES_USER=test \
           -e POSTGRES_PASSWORD=test \
@@ -84,6 +86,7 @@ jobs:
     - name: Start MailHog
       run: |
         docker run -d --name mailhog-subscription \
+          --network subscription-test-network \
           -p 1026:1025 \
           -p 8026:8025 \
           mailhog/mailhog:latest
@@ -95,7 +98,7 @@ jobs:
       run: |
         cd services/subscription
         docker build -f Dockerfile.test -t subscription-service-tests .
-        docker run --rm --network host subscription-service-tests
+        docker run --rm --network subscription-test-network -e TEST_DB_HOST=postgres-subscription subscription-service-tests
 
   token-service-tests:
     name: Token Service Tests
