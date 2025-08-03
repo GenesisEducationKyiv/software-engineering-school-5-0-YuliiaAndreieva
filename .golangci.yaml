@@ -16,18 +16,6 @@ linters:
   disable: []
   exclusions:
     rules:
-      - path: internal/mocks/.*\.go
-        linters:
-          - errcheck
-      - path: .*_test\.go
-        linters:
-          - errcheck
-      - path: .*mocks\.go
-        linters:
-          - errcheck
-      - path: subscription_handler\.go
-        linters:
-          - errcheck
       - path: tests/mocks/.*\.go
         linters:
           - errcheck
