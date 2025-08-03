@@ -7,34 +7,9 @@ on:
     branches: [ "*" ]
 
 jobs:
-  test-services:
-    name: Test Services
+  email-service-tests:
+    name: Email Service Tests
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        service:
-          - name: subscription
-            path: services/subscription
-            has-db: true
-            has-mailhog: true
-            mailhog-port: 1026
-            mailhog-web-port: 8026
-          - name: email
-            path: services/email
-            has-db: false
-            has-mailhog: true
-            mailhog-port: 1025
-            mailhog-web-port: 8025
-          - name: token
-            path: services/token
-            has-db: false
-            has-mailhog: false
-          - name: weather-broadcast
-            path: services/weather-broadcast
-            has-db: true
-            has-mailhog: true
-            mailhog-port: 1027
-            mailhog-web-port: 8027
     
     steps:
     - uses: actions/checkout@v4
@@ -44,63 +19,248 @@ jobs:
       with:
         go-version: '1.24'
     
-    - name: Download dependencies for ${{ matrix.service.name }}
+    - name: Download dependencies for Email Service
       run: |
-        cd ${{ matrix.service.path }}
+        cd services/email
         go mod download
         go mod tidy
     
     - name: Install mockery
       run: go install github.com/vektra/mockery/v2@latest
     
-    - name: Generate Mocks for ${{ matrix.service.name }}
+    - name: Generate Mocks for Email Service
       run: |
-        cd ${{ matrix.service.path }}
+        cd services/email
         mockery --all --output tests/mocks --outpkg mocks
-    
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
     
     - name: Cache Docker layers
       uses: actions/cache@v4
       with:
         path: /tmp/.buildx-cache
-        key: ${{ runner.os }}-buildx-${{ matrix.service.name }}-${{ github.sha }}
+        key: ${{ runner.os }}-buildx-email-${{ github.sha }}
         restore-keys: |
-          ${{ runner.os }}-buildx-${{ matrix.service.name }}-
+          ${{ runner.os }}-buildx-email-
           ${{ runner.os }}-buildx-
     
-    - name: Start PostgreSQL
-      if: matrix.service.has-db == 'true'
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+    
+    - name: Start MailHog
       run: |
-        docker run -d --name postgres-${{ matrix.service.name }} \
-          -e POSTGRES_DB=${{ matrix.service.name }}_test \
+        docker network create email-test-network
+        docker run -d --name mailhog-email \
+          --network email-test-network \
+          -p 1025:1025 \
+          -p 8025:8025 \
+          mailhog/mailhog:latest
+    
+    - name: Wait for MailHog
+      run: sleep 5
+    
+    - name: Run Email Service Tests
+      run: |
+        cd services/email
+        docker build -f Dockerfile.test -t email-service-tests .
+        docker run --rm \
+          --network email-test-network \
+          -e MAILHOG_HOST=mailhog-email \
+          -e MAILHOG_PORT=1025 \
+          -e MAILHOG_WEB_PORT=8025 \
+          -e SMTP_HOST=mailhog-email \
+          -e SMTP_PORT=1025 \
+          email-service-tests
+
+  subscription-service-tests:
+    name: Subscription Service Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.24'
+    
+    - name: Download dependencies for Subscription Service
+      run: |
+        cd services/subscription
+        go mod download
+        go mod tidy
+    
+    - name: Install mockery
+      run: go install github.com/vektra/mockery/v2@latest
+    
+    - name: Generate Mocks for Subscription Service
+      run: |
+        cd services/subscription
+        mockery --all --output tests/mocks --outpkg mocks
+    
+    - name: Cache Docker layers
+      uses: actions/cache@v4
+      with:
+        path: /tmp/.buildx-cache
+        key: ${{ runner.os }}-buildx-subscription-${{ github.sha }}
+        restore-keys: |
+          ${{ runner.os }}-buildx-subscription-
+          ${{ runner.os }}-buildx-
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+    
+    - name: Start PostgreSQL
+      run: |
+        docker network create subscription-test-network
+        docker run -d --name postgres-subscription \
+          --network subscription-test-network \
+          -e POSTGRES_DB=subscription_test \
           -e POSTGRES_USER=test \
           -e POSTGRES_PASSWORD=test \
           -p 5432:5432 \
           postgres:15
     
     - name: Start MailHog
-      if: matrix.service.has-mailhog == 'true'
       run: |
-        docker run -d --name mailhog-${{ matrix.service.name }} \
-          -p ${{ matrix.service.mailhog-port }}:1025 \
-          -p ${{ matrix.service.mailhog-web-port }}:8025 \
+        docker run -d --name mailhog-subscription \
+          --network subscription-test-network \
+          -p 1026:1025 \
+          -p 8026:8025 \
           mailhog/mailhog:latest
     
     - name: Wait for services
-      if: matrix.service.has-db == 'true' || matrix.service.has-mailhog == 'true'
       run: sleep 10
     
-    - name: Run ${{ matrix.service.name }} tests
+    - name: Run Subscription Service Tests
       run: |
-        cd ${{ matrix.service.path }}
-        docker build -f Dockerfile.test -t ${{ matrix.service.name }}-service-tests .
+        cd services/subscription
+        docker build -f Dockerfile.test -t subscription-service-tests .
         docker run --rm \
-          --network host \
-          -e MAILHOG_HOST=localhost \
-          -e MAILHOG_PORT=${{ matrix.service.mailhog-port }} \
-          -e MAILHOG_WEB_PORT=${{ matrix.service.mailhog-web-port }} \
-          -e SMTP_HOST=localhost \
-          -e SMTP_PORT=${{ matrix.service.mailhog-port }} \
-          ${{ matrix.service.name }}-service-tests
+          --network subscription-test-network \
+          -e TEST_DB_HOST=postgres-subscription \
+          -e TEST_DB_PORT=5432 \
+          -e TEST_DB_USER=test \
+          -e TEST_DB_PASSWORD=test \
+          -e TEST_DB_NAME=subscription_test \
+          subscription-service-tests
+
+  token-service-tests:
+    name: Token Service Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.24'
+    
+    - name: Download dependencies for Token Service
+      run: |
+        cd services/token
+        go mod download
+        go mod tidy
+    
+    - name: Install mockery
+      run: go install github.com/vektra/mockery/v2@latest
+    
+    - name: Generate Mocks for Token Service
+      run: |
+        cd services/token
+        mockery --all --output tests/mocks --outpkg mocks
+    
+    - name: Cache Docker layers
+      uses: actions/cache@v4
+      with:
+        path: /tmp/.buildx-cache
+        key: ${{ runner.os }}-buildx-token-${{ github.sha }}
+        restore-keys: |
+          ${{ runner.os }}-buildx-token-
+          ${{ runner.os }}-buildx-
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+    
+    - name: Run Token Service Tests
+      run: |
+        cd services/token
+        docker build -f Dockerfile.test -t token-service-tests .
+        docker run --rm token-service-tests
+
+  weather-broadcast-service-tests:
+    name: Weather Broadcast Service Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.24'
+    
+    - name: Download dependencies for Weather Broadcast Service
+      run: |
+        cd services/weather-broadcast
+        go mod download
+        go mod tidy
+    
+    - name: Install mockery
+      run: go install github.com/vektra/mockery/v2@latest
+    
+    - name: Generate Mocks for Weather Broadcast Service
+      run: |
+        cd services/weather-broadcast
+        mockery --all --output tests/mocks --outpkg mocks
+    
+    - name: Cache Docker layers
+      uses: actions/cache@v4
+      with:
+        path: /tmp/.buildx-cache
+        key: ${{ runner.os }}-buildx-weather-broadcast-${{ github.sha }}
+        restore-keys: |
+          ${{ runner.os }}-buildx-weather-broadcast-
+          ${{ runner.os }}-buildx-
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+    
+    - name: Start PostgreSQL
+      run: |
+        docker network create weather-broadcast-test-network
+        docker run -d --name postgres-weather-broadcast \
+          --network weather-broadcast-test-network \
+          -e POSTGRES_DB=weather_broadcast_test \
+          -e POSTGRES_USER=test \
+          -e POSTGRES_PASSWORD=test \
+          -p 5432:5432 \
+          postgres:15
+    
+    - name: Start MailHog
+      run: |
+        docker run -d --name mailhog-weather-broadcast \
+          --network weather-broadcast-test-network \
+          -p 1027:1025 \
+          -p 8027:8025 \
+          mailhog/mailhog:latest
+    
+    - name: Wait for services
+      run: sleep 10
+    
+    - name: Run Weather Broadcast Service Tests
+      run: |
+        cd services/weather-broadcast
+        docker build -f Dockerfile.test -t weather-broadcast-service-tests .
+        docker run --rm \
+          --network weather-broadcast-test-network \
+          -e TEST_DB_HOST=postgres-weather-broadcast \
+          -e TEST_DB_PORT=5432 \
+          -e TEST_DB_USER=test \
+          -e TEST_DB_PASSWORD=test \
+          -e TEST_DB_NAME=weather_broadcast_test \
+          -e MAILHOG_HOST=mailhog-weather-broadcast \
+          -e MAILHOG_PORT=1025 \
+          -e MAILHOG_WEB_PORT=8025 \
+          -e SMTP_HOST=mailhog-weather-broadcast \
+          -e SMTP_PORT=1025 \
+          weather-broadcast-service-tests
