@@ -25,41 +25,53 @@ func NewUnsubscribeUseCase(
 	}
 }
 
-func (uc *UnsubscribeUseCase) Unsubscribe(ctx context.Context, token string) (*domain.UnsubscribeResponse, error) {
-	uc.logger.Infof("Starting unsubscribe process for token: %s", token)
+func (uc *UnsubscribeUseCase) Unsubscribe(ctx context.Context, req domain.UnsubscribeRequest) (*domain.UnsubscribeResponse, error) {
+	uc.logger.Infof("Starting subscription unsubscription for token: %s", req.Token)
 
-	valid, err := uc.tokenService.ValidateToken(ctx, token)
-	if err != nil {
-		uc.logger.Errorf("Failed to validate token: %v", err)
+	if req.Token == "" {
+		uc.logger.Errorf("Token is empty")
 		return &domain.UnsubscribeResponse{
 			Success: false,
-			Message: "Token validation failed",
+			Message: "Token is required",
 		}, nil
 	}
 
-	if !valid {
-		uc.logger.Errorf("Invalid token: %s", token)
+	isValid, err := uc.tokenService.ValidateToken(ctx, req.Token)
+	if err != nil {
+		uc.logger.Errorf("Failed to validate token %s: %v", req.Token, err)
+		return &domain.UnsubscribeResponse{
+			Success: false,
+			Message: "Failed to validate token",
+		}, err
+	}
+
+	if !isValid {
+		uc.logger.Errorf("Invalid token: %s", req.Token)
 		return &domain.UnsubscribeResponse{
 			Success: false,
 			Message: "Invalid token",
 		}, nil
 	}
 
-	_, err = uc.subscriptionRepo.GetSubscriptionByToken(ctx, token)
+	_, err = uc.subscriptionRepo.GetByToken(ctx, req.Token)
 	if err != nil {
-		uc.logger.Errorf("Failed to get subscription by token: %v", err)
+		uc.logger.Errorf("Failed to get subscription by token %s: %v", req.Token, err)
 		return &domain.UnsubscribeResponse{
 			Success: false,
-			Message: "Token not found",
-		}, nil
+			Message: "Subscription not found",
+		}, err
 	}
 
-	if err := uc.subscriptionRepo.DeleteSubscription(ctx, token); err != nil {
-		uc.logger.Errorf("Failed to delete subscription: %v", err)
-		return nil, err
+	err = uc.subscriptionRepo.Delete(ctx, req.Token)
+	if err != nil {
+		uc.logger.Errorf("Failed to delete subscription for token %s: %v", req.Token, err)
+		return &domain.UnsubscribeResponse{
+			Success: false,
+			Message: "Failed to unsubscribe",
+		}, err
 	}
 
-	uc.logger.Infof("Successfully unsubscribed for token: %s", token)
+	uc.logger.Infof("Successfully unsubscribed for token: %s", req.Token)
 	return &domain.UnsubscribeResponse{
 		Success: true,
 		Message: "Successfully unsubscribed",

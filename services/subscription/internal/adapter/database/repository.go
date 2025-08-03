@@ -14,11 +14,29 @@ type SubscriptionRepo struct {
 }
 
 func NewSubscriptionRepo(db *gorm.DB, logger out.Logger) out.SubscriptionRepository {
-	return &SubscriptionRepo{db: db, logger: logger}
+	return &SubscriptionRepo{
+		db:     db,
+		logger: logger,
+	}
 }
 
-func (r *SubscriptionRepo) CreateSubscription(ctx context.Context, s domain.Subscription) error {
+func (r *SubscriptionRepo) Create(ctx context.Context, s domain.Subscription) error {
 	r.logger.Debugf("Creating subscription in database for email: %s, city: %s", s.Email, s.City)
+
+	var existingCount int64
+	err := r.db.WithContext(ctx).Model(&Subscription{}).
+		Where("email = ? AND city = ? AND frequency = ?", s.Email, s.City, s.Frequency).
+		Count(&existingCount).Error
+
+	if err != nil {
+		r.logger.Errorf("Failed to check existing subscription: %v", err)
+		return err
+	}
+
+	if existingCount > 0 {
+		r.logger.Warnf("Subscription already exists for email: %s, city: %s, frequency: %s", s.Email, s.City, s.Frequency)
+		return domain.ErrDuplicateSubscription
+	}
 
 	sub := Subscription{
 		Email:     s.Email,
@@ -28,7 +46,7 @@ func (r *SubscriptionRepo) CreateSubscription(ctx context.Context, s domain.Subs
 		Confirmed: s.IsConfirmed,
 	}
 
-	err := r.db.WithContext(ctx).Create(&sub).Error
+	err = r.db.WithContext(ctx).Create(&sub).Error
 	if err != nil {
 		r.logger.Errorf("Failed to create subscription in database: %v", err)
 		return err
@@ -38,7 +56,7 @@ func (r *SubscriptionRepo) CreateSubscription(ctx context.Context, s domain.Subs
 	return nil
 }
 
-func (r *SubscriptionRepo) GetSubscriptionByToken(ctx context.Context, token string) (*domain.Subscription, error) {
+func (r *SubscriptionRepo) GetByToken(ctx context.Context, token string) (*domain.Subscription, error) {
 	r.logger.Debugf("Getting subscription by token: %s", token)
 
 	var sub Subscription
@@ -58,7 +76,7 @@ func (r *SubscriptionRepo) GetSubscriptionByToken(ctx context.Context, token str
 	}, nil
 }
 
-func (r *SubscriptionRepo) UpdateSubscription(ctx context.Context, s domain.Subscription) error {
+func (r *SubscriptionRepo) Update(ctx context.Context, s domain.Subscription) error {
 	r.logger.Debugf("Updating subscription for token: %s", s.Token)
 
 	err := r.db.WithContext(ctx).Model(&Subscription{}).
@@ -76,7 +94,7 @@ func (r *SubscriptionRepo) UpdateSubscription(ctx context.Context, s domain.Subs
 	return nil
 }
 
-func (r *SubscriptionRepo) DeleteSubscription(ctx context.Context, token string) error {
+func (r *SubscriptionRepo) Delete(ctx context.Context, token string) error {
 	r.logger.Debugf("Deleting subscription for token: %s", token)
 
 	err := r.db.WithContext(ctx).Where("token = ?", token).Delete(&Subscription{}).Error
@@ -89,30 +107,12 @@ func (r *SubscriptionRepo) DeleteSubscription(ctx context.Context, token string)
 	return nil
 }
 
-func (r *SubscriptionRepo) IsSubscriptionExists(ctx context.Context, email, city string) (bool, error) {
-	r.logger.Debugf("Checking if subscription exists for email: %s, city: %s", email, city)
-
-	var count int64
-	err := r.db.WithContext(ctx).Model(&Subscription{}).
-		Where("email = ? AND city = ?", email, city).
-		Count(&count).Error
-
-	if err != nil {
-		r.logger.Errorf("Failed to check subscription existence: %v", err)
-		return false, err
-	}
-
-	exists := count > 0
-	r.logger.Debugf("Subscription exists check for email %s, city %s: %t", email, city, exists)
-	return exists, nil
-}
-
-func (r *SubscriptionRepo) ListByFrequency(ctx context.Context, frequency string, lastID, pageSize int) ([]domain.Subscription, error) {
+func (r *SubscriptionRepo) ListByFrequency(ctx context.Context, frequency domain.Frequency, lastID, pageSize int) (*domain.SubscriptionList, error) {
 	r.logger.Debugf("Listing subscriptions by frequency: %s, lastID: %d, pageSize: %d", frequency, lastID, pageSize)
 
 	var subs []Subscription
 
-	query := r.db.WithContext(ctx).Where("frequency = ? AND confirmed = ?", frequency, true)
+	query := r.db.WithContext(ctx).Where("frequency = ? AND confirmed = ?", string(frequency), true)
 
 	if lastID > 0 {
 		query = query.Where("id > ?", lastID)
@@ -135,6 +135,14 @@ func (r *SubscriptionRepo) ListByFrequency(ctx context.Context, frequency string
 		}
 	}
 
+	lastIndex := 0
+	if len(result) > 0 {
+		lastIndex = int(result[len(result)-1].ID)
+	}
+
 	r.logger.Infof("Found %d subscriptions for frequency: %s", len(result), frequency)
-	return result, nil
+	return &domain.SubscriptionList{
+		Subscriptions: result,
+		LastIndex:     lastIndex,
+	}, nil
 }

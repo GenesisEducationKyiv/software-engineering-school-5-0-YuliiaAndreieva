@@ -24,7 +24,7 @@ func NewEmailClient(baseURL string, httpClient *http.Client, logger out.Logger) 
 	}
 }
 
-func (c *EmailClient) SendConfirmationEmail(ctx context.Context, req domain.ConfirmationEmailRequest) (out.EmailDeliveryResult, error) {
+func (c *EmailClient) SendConfirmationEmail(ctx context.Context, req domain.ConfirmationEmailRequest) error {
 	c.logger.Debugf("Sending confirmation email to: %s for city: %s", req.To, req.City)
 
 	url := fmt.Sprintf("%s/send/confirmation", c.baseURL)
@@ -32,13 +32,13 @@ func (c *EmailClient) SendConfirmationEmail(ctx context.Context, req domain.Conf
 	jsonBody, err := json.Marshal(req)
 	if err != nil {
 		c.logger.Errorf("Failed to marshal request body for confirmation email: %v", err)
-		return out.EmailDeliveryResult{}, fmt.Errorf("failed to marshal request body: %w", err)
+		return fmt.Errorf("failed to marshal request body: %w", err)
 	}
 
 	httpReq, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBuffer(jsonBody))
 	if err != nil {
 		c.logger.Errorf("Failed to create request for confirmation email: %v", err)
-		return out.EmailDeliveryResult{}, fmt.Errorf("failed to create request: %w", err)
+		return fmt.Errorf("failed to create request: %w", err)
 	}
 
 	httpReq.Header.Set("Content-Type", "application/json")
@@ -47,7 +47,7 @@ func (c *EmailClient) SendConfirmationEmail(ctx context.Context, req domain.Conf
 	resp, err := c.httpClient.Do(httpReq)
 	if err != nil {
 		c.logger.Errorf("Failed to send confirmation email request: %v", err)
-		return out.EmailDeliveryResult{}, fmt.Errorf("failed to send request: %w", err)
+		return fmt.Errorf("failed to send request: %w", err)
 	}
 	defer func() {
 		if closeErr := resp.Body.Close(); closeErr != nil {
@@ -57,12 +57,9 @@ func (c *EmailClient) SendConfirmationEmail(ctx context.Context, req domain.Conf
 
 	if resp.StatusCode != http.StatusOK {
 		c.logger.Errorf("Email service returned status: %d", resp.StatusCode)
-		return out.EmailDeliveryResult{}, fmt.Errorf("email service returned status: %d", resp.StatusCode)
+		return fmt.Errorf("email service returned status: %d", resp.StatusCode)
 	}
 
 	c.logger.Infof("Successfully sent confirmation email to %s", req.To)
-	return out.EmailDeliveryResult{
-		To:     req.To,
-		Status: "delivered",
-	}, nil
+	return nil
 }

@@ -5,6 +5,6 @@ import (
 )
 
 type TokenService interface {
-	GenerateToken(ctx context.Context) (string, error)
+	GenerateToken(ctx context.Context, email string, expiresIn string) (string, error)
 	ValidateToken(ctx context.Context, token string) (bool, error)
 }

@@ -22,22 +22,12 @@ func NewListByFrequencyUseCase(subscriptionRepo out.SubscriptionRepository, logg
 func (uc *ListByFrequencyUseCase) ListByFrequency(ctx context.Context, query domain.ListSubscriptionsQuery) (*domain.SubscriptionList, error) {
 	uc.logger.Infof("Listing subscriptions by frequency: %s, lastID: %d, pageSize: %d", query.Frequency, query.LastID, query.PageSize)
 
-	subscriptions, err := uc.subscriptionRepo.ListByFrequency(ctx, string(query.Frequency), query.LastID, query.PageSize)
+	subscriptions, err := uc.subscriptionRepo.ListByFrequency(ctx, domain.Frequency(query.Frequency), query.LastID, query.PageSize)
 	if err != nil {
 		uc.logger.Errorf("Failed to list subscriptions: %v", err)
 		return nil, err
 	}
 
-	lastIndex := query.LastID
-	if len(subscriptions) > 0 {
-		lastIndex = int(subscriptions[len(subscriptions)-1].ID)
-	}
-
-	result := &domain.SubscriptionList{
-		Subscriptions: subscriptions,
-		LastIndex:     lastIndex,
-	}
-
-	uc.logger.Infof("Found %d subscriptions", len(subscriptions))
-	return result, nil
+	uc.logger.Infof("Found %d subscriptions", len(subscriptions.Subscriptions))
+	return subscriptions, nil
 }

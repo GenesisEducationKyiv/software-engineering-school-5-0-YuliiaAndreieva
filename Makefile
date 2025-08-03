@@ -1,4 +1,4 @@
-.PHONY: test test-unit test-integration test-e2e test-all clean
+.PHONY: test test-unit test-integration test-e2e test-all clean generate-mocks
 
 test-all: test-unit test-integration test-e2e
 
@@ -24,6 +24,10 @@ test-e2e:
 	@echo "Running E2E Tests..."
 	npm run test:e2e
 	docker compose -f docker-compose.test.yml down
+
+generate-mocks:
+	@echo "🔧 Generating mocks for subscription service..."
+	cd services/subscription && mockery --all --output tests/mocks --outpkg mocks
 
 clean:
 	@echo "🧹 Cleaning up test environment..."

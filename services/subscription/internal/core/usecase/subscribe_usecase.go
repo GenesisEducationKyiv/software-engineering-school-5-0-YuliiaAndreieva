@@ -32,21 +32,6 @@ func NewSubscribeUseCase(
 func (uc *SubscribeUseCase) Subscribe(ctx context.Context, req domain.SubscriptionRequest) (*domain.SubscriptionResponse, error) {
 	uc.logger.Infof("Starting subscription process for email: %s, city: %s, frequency: %s", req.Email, req.City, req.Frequency)
 
-	uc.logger.Debugf("Checking if subscription already exists for email: %s and city: %s", req.Email, req.City)
-	exists, err := uc.subscriptionRepo.IsSubscriptionExists(ctx, req.Email, req.City)
-	if err != nil {
-		uc.logger.Errorf("Failed to check subscription existence: %v", err)
-		return nil, err
-	}
-
-	if exists {
-		uc.logger.Warnf("Email %s already subscribed to city %s", req.Email, req.City)
-		return &domain.SubscriptionResponse{
-			Success: false,
-			Message: "Email already subscribed to this city",
-		}, nil
-	}
-
 	uc.logger.Debugf("Generating token for email: %s", req.Email)
 	token, err := uc.tokenService.GenerateToken(ctx, req.Email, "24h")
 	if err != nil {
@@ -64,8 +49,15 @@ func (uc *SubscribeUseCase) Subscribe(ctx context.Context, req domain.Subscripti
 	}
 
 	uc.logger.Debugf("Creating subscription in database for email: %s, city: %s", req.Email, req.City)
-	if err := uc.subscriptionRepo.CreateSubscription(ctx, subscription); err != nil {
+	if err := uc.subscriptionRepo.Create(ctx, subscription); err != nil {
 		uc.logger.Errorf("Failed to create subscription: %v", err)
+
+		if err == domain.ErrDuplicateSubscription {
+			return &domain.SubscriptionResponse{
+				Success: false,
+				Message: "Subscription already exists for this email, city and frequency",
+			}, nil
+		}
 		return nil, err
 	}
 	uc.logger.Infof("Subscription created successfully in database for email: %s, city: %s", req.Email, req.City)
@@ -79,7 +71,7 @@ func (uc *SubscribeUseCase) Subscribe(ctx context.Context, req domain.Subscripti
 		ConfirmationLink: fmt.Sprintf("%s/confirm/%s", "http://localhost:8082", token),
 	}
 
-	_, err = uc.emailService.SendConfirmationEmail(ctx, confirmationReq)
+	err = uc.emailService.SendConfirmationEmail(ctx, confirmationReq)
 	if err != nil {
 		uc.logger.Errorf("Failed to send confirmation email: %v", err)
 		uc.logger.Warnf("Subscription created but email delivery failed for email: %s", req.Email)

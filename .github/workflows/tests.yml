@@ -48,6 +48,19 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.24'
+    
+    - name: Install mockery
+      run: go install github.com/vektra/mockery/v2@latest
+    
+    - name: Generate Mocks for Subscription Service
+      run: |
+        cd services/subscription
+        mockery --all --output tests/mocks --outpkg mocks
+    
     - name: Cache Docker layers
       uses: actions/cache@v4
       with:

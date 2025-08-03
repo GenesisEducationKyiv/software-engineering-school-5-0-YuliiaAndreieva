@@ -1,5 +1,7 @@
 package domain
 
+import "errors"
+
 type Frequency string
 
 const (
@@ -7,6 +9,15 @@ const (
 	Weekly  Frequency = "weekly"
 	Monthly Frequency = "monthly"
 )
+
+type Subscription struct {
+	ID          int64  `json:"id"`
+	Email       string `json:"email"`
+	City        string `json:"city"`
+	Frequency   string `json:"frequency"`
+	Token       string `json:"token"`
+	IsConfirmed bool   `json:"is_confirmed"`
+}
 
 type SubscriptionRequest struct {
 	Email     string `json:"email" validate:"required,email"`
@@ -18,7 +29,6 @@ type SubscriptionResponse struct {
 	Success bool   `json:"success"`
 	Message string `json:"message"`
 	Token   string `json:"token,omitempty"`
-	Error   string `json:"error,omitempty"`
 }
 
 type ConfirmRequest struct {
@@ -28,7 +38,6 @@ type ConfirmRequest struct {
 type ConfirmResponse struct {
 	Success bool   `json:"success"`
 	Message string `json:"message"`
-	Error   string `json:"error,omitempty"`
 }
 
 type UnsubscribeRequest struct {
@@ -38,22 +47,12 @@ type UnsubscribeRequest struct {
 type UnsubscribeResponse struct {
 	Success bool   `json:"success"`
 	Message string `json:"message"`
-	Error   string `json:"error,omitempty"`
-}
-
-type Subscription struct {
-	ID          int64  `json:"id"`
-	Email       string `json:"email"`
-	City        string `json:"city"`
-	Frequency   string `json:"frequency"`
-	Token       string `json:"token"`
-	IsConfirmed bool   `json:"is_confirmed"`
 }
 
 type ListSubscriptionsQuery struct {
-	Frequency Frequency `json:"frequency"`
-	LastID    int       `json:"last_id"`
-	PageSize  int       `json:"page_size"`
+	Frequency string `json:"frequency" validate:"required"`
+	LastID    int    `json:"last_id"`
+	PageSize  int    `json:"page_size"`
 }
 
 type SubscriptionList struct {
@@ -62,8 +61,29 @@ type SubscriptionList struct {
 }
 
 type ConfirmationEmailRequest struct {
-	To               string `json:"to" validate:"required,email"`
-	Subject          string `json:"subject" validate:"required"`
-	City             string `json:"city" validate:"required"`
-	ConfirmationLink string `json:"confirmationLink" validate:"required"`
+	To               string `json:"to"`
+	Subject          string `json:"subject"`
+	City             string `json:"city"`
+	ConfirmationLink string `json:"confirmation_link"`
+}
+
+var ErrDuplicateSubscription = errors.New("subscription already exists")
+
+type SubscriptionEvent struct {
+	Email     string `json:"email"`
+	City      string `json:"city"`
+	Frequency string `json:"frequency"`
+	Token     string `json:"token"`
+}
+
+type ConfirmedEvent struct {
+	Email string `json:"email"`
+	City  string `json:"city"`
+	Token string `json:"token"`
+}
+
+type UnsubscribedEvent struct {
+	Email string `json:"email"`
+	City  string `json:"city"`
+	Token string `json:"token"`
 }

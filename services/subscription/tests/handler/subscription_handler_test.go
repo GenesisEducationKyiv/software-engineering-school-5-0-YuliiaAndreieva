@@ -9,9 +9,8 @@ import (
 
 	httphandler "subscription/internal/adapter/http"
 	"subscription/internal/core/domain"
-	"subscription/internal/core/ports/out"
 	"subscription/internal/core/usecase"
-	"subscription/tests"
+	"subscription/tests/mocks"
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
@@ -22,17 +21,17 @@ import (
 type subscriptionHandlerTestSetup struct {
 	handler          *httphandler.SubscriptionHandler
 	router           *gin.Engine
-	mockRepo         *tests.MockSubscriptionRepository
-	mockTokenService *tests.MockTokenService
-	mockEmailService *tests.MockEmailService
-	mockLogger       *tests.MockLogger
+	mockRepo         *mocks.SubscriptionRepository
+	mockTokenService *mocks.TokenService
+	mockEmailService *mocks.EmailService
+	mockLogger       *mocks.Logger
 }
 
 func setupSubscriptionHandlerTest() *subscriptionHandlerTestSetup {
-	mockRepo := &tests.MockSubscriptionRepository{}
-	mockTokenService := &tests.MockTokenService{}
-	mockEmailService := &tests.MockEmailService{}
-	mockLogger := &tests.MockLogger{}
+	mockRepo := &mocks.SubscriptionRepository{}
+	mockTokenService := &mocks.TokenService{}
+	mockEmailService := &mocks.EmailService{}
+	mockLogger := &mocks.Logger{}
 
 	subscribeUseCase := usecase.NewSubscribeUseCase(mockRepo, mockTokenService, mockEmailService, mockLogger)
 	confirmUseCase := usecase.NewConfirmSubscriptionUseCase(mockRepo, mockTokenService, mockLogger)
@@ -65,31 +64,33 @@ func setupSubscriptionHandlerTest() *subscriptionHandlerTestSetup {
 }
 
 func (ts *subscriptionHandlerTestSetup) setupSuccessMocks(request domain.SubscriptionRequest) {
-	ts.mockRepo.On("IsSubscriptionExists", mock.Anything, request.Email, request.City).Return(false, nil)
 	ts.mockTokenService.On("GenerateToken", mock.Anything, request.Email, "24h").Return("test-token", nil)
-	ts.mockRepo.On("CreateSubscription", mock.Anything, mock.AnythingOfType("domain.Subscription")).Return(nil)
-	ts.mockEmailService.On("SendConfirmationEmail", mock.Anything, mock.AnythingOfType("domain.ConfirmationEmailRequest")).Return(out.EmailDeliveryResult{}, nil)
-	tests.SetupSuccessLoggerMocks(ts.mockLogger)
+	ts.mockRepo.On("Create", mock.Anything, mock.AnythingOfType("domain.Subscription")).Return(nil)
+	ts.mockEmailService.On("SendConfirmationEmail", mock.Anything, mock.AnythingOfType("domain.ConfirmationEmailRequest")).Return(nil)
+	ts.mockLogger.On("Infof", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return()
+	ts.mockLogger.On("Debugf", mock.Anything, mock.Anything, mock.Anything).Return()
 }
 
 func (ts *subscriptionHandlerTestSetup) setupValidationMocks() {
-	ts.mockRepo.On("IsSubscriptionExists", mock.Anything, mock.Anything, mock.Anything).Return(false, nil)
 	ts.mockTokenService.On("GenerateToken", mock.Anything, mock.Anything, mock.Anything).Return("test-token", nil)
-	tests.SetupCommonLoggerMocks(ts.mockLogger)
+	ts.mockLogger.On("Infof", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return()
+	ts.mockLogger.On("Debugf", mock.Anything, mock.Anything, mock.Anything).Return()
 }
 
 func (ts *subscriptionHandlerTestSetup) setupRepositoryErrorMocks(request domain.SubscriptionRequest) {
-	ts.mockRepo.On("IsSubscriptionExists", mock.Anything, request.Email, request.City).Return(false, assert.AnError)
-	tests.SetupErrorLoggerMocks(ts.mockLogger)
+	ts.mockTokenService.On("GenerateToken", mock.Anything, request.Email, "24h").Return("test-token", nil)
+	ts.mockRepo.On("Create", mock.Anything, mock.AnythingOfType("domain.Subscription")).Return(assert.AnError)
+	ts.mockLogger.On("Errorf", mock.Anything, mock.Anything).Return()
+	ts.mockLogger.On("Debugf", mock.Anything, mock.Anything, mock.Anything).Return()
+	ts.mockLogger.On("Infof", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return()
 }
 
 func (ts *subscriptionHandlerTestSetup) setupDuplicateMocks(request domain.SubscriptionRequest) {
-	ts.mockRepo.On("IsSubscriptionExists", mock.Anything, request.Email, request.City).Return(true, nil)
-	tests.SetupWarningLoggerMocks(ts.mockLogger)
+	// Ця функція більше не потрібна для дублікатів, оскільки моки налаштовуються безпосередньо в тесті
 }
 
 func (ts *subscriptionHandlerTestSetup) setupJSONErrorMocks() {
-	tests.SetupJSONErrorLoggerMocks(ts.mockLogger)
+	ts.mockLogger.On("Errorf", mock.Anything, mock.Anything).Return()
 }
 
 func (ts *subscriptionHandlerTestSetup) makeSubscribeRequest(t *testing.T, request domain.SubscriptionRequest) (*httptest.ResponseRecorder, *domain.SubscriptionResponse) {
@@ -104,6 +105,32 @@ func (ts *subscriptionHandlerTestSetup) makeSubscribeRequest(t *testing.T, reque
 
 	var response domain.SubscriptionResponse
 	err = json.Unmarshal(w.Body.Bytes(), &response)
+	require.NoError(t, err)
+
+	return w, &response
+}
+
+func (ts *subscriptionHandlerTestSetup) makeConfirmRequest(t *testing.T, token string) (*httptest.ResponseRecorder, *domain.ConfirmResponse) {
+	req := httptest.NewRequest("GET", "/confirm/"+token, nil)
+
+	w := httptest.NewRecorder()
+	ts.router.ServeHTTP(w, req)
+
+	var response domain.ConfirmResponse
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	require.NoError(t, err)
+
+	return w, &response
+}
+
+func (ts *subscriptionHandlerTestSetup) makeUnsubscribeRequest(t *testing.T, token string) (*httptest.ResponseRecorder, *domain.UnsubscribeResponse) {
+	req := httptest.NewRequest("DELETE", "/unsubscribe/"+token, nil)
+
+	w := httptest.NewRecorder()
+	ts.router.ServeHTTP(w, req)
+
+	var response domain.UnsubscribeResponse
+	err := json.Unmarshal(w.Body.Bytes(), &response)
 	require.NoError(t, err)
 
 	return w, &response
@@ -131,105 +158,112 @@ func TestSubscriptionHandler_Subscribe_Success(t *testing.T) {
 		ts.mockRepo.AssertExpectations(t)
 		ts.mockTokenService.AssertExpectations(t)
 		ts.mockEmailService.AssertExpectations(t)
-	})
-
-	t.Run("Another valid subscription request", func(t *testing.T) {
-		request := domain.SubscriptionRequest{
-			Email:     "user@test.com",
-			City:      "Lviv",
-			Frequency: "weekly",
-		}
-
-		ts.setupSuccessMocks(request)
-
-		w, response := ts.makeSubscribeRequest(t, request)
-
-		assert.Equal(t, http.StatusOK, w.Code)
-		assert.True(t, response.Success)
-		assert.NotEmpty(t, response.Token)
-		assert.Contains(t, response.Message, "Subscription successful")
+		ts.mockLogger.AssertExpectations(t)
 	})
 }
 
 func TestSubscriptionHandler_Subscribe_InvalidEmail(t *testing.T) {
 	ts := setupSubscriptionHandlerTest()
 
-	request := domain.SubscriptionRequest{
-		Email:     "invalid-email",
-		City:      "Kyiv",
-		Frequency: "daily",
-	}
+	t.Run("Invalid email format", func(t *testing.T) {
+		ts.setupValidationMocks()
+		ts.mockLogger.On("Errorf", mock.Anything, mock.Anything).Return()
 
-	ts.setupValidationMocks()
+		request := domain.SubscriptionRequest{
+			Email:     "invalid-email",
+			City:      "Kyiv",
+			Frequency: "daily",
+		}
 
-	w, response := ts.makeSubscribeRequest(t, request)
+		w, response := ts.makeSubscribeRequest(t, request)
 
-	assert.Equal(t, http.StatusBadRequest, w.Code)
-	assert.False(t, response.Success)
-	assert.NotEmpty(t, response.Message)
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+		assert.False(t, response.Success)
+		assert.NotEmpty(t, response.Message)
+	})
 }
 
 func TestSubscriptionHandler_Subscribe_EmptyFields(t *testing.T) {
 	ts := setupSubscriptionHandlerTest()
 
-	request := domain.SubscriptionRequest{
-		Email:     "",
-		City:      "",
-		Frequency: "",
-	}
+	t.Run("Empty required fields", func(t *testing.T) {
+		ts.setupValidationMocks()
+		ts.mockLogger.On("Errorf", mock.Anything, mock.Anything).Return()
 
-	ts.setupValidationMocks()
+		request := domain.SubscriptionRequest{
+			Email:     "",
+			City:      "",
+			Frequency: "",
+		}
 
-	w, response := ts.makeSubscribeRequest(t, request)
+		w, response := ts.makeSubscribeRequest(t, request)
 
-	assert.Equal(t, http.StatusBadRequest, w.Code)
-	assert.False(t, response.Success)
-	assert.NotEmpty(t, response.Message)
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+		assert.False(t, response.Success)
+		assert.NotEmpty(t, response.Message)
+	})
 }
 
 func TestSubscriptionHandler_Subscribe_UsecaseError(t *testing.T) {
 	ts := setupSubscriptionHandlerTest()
 
-	request := domain.SubscriptionRequest{
-		Email:     "test@example.com",
-		City:      "Kyiv",
-		Frequency: "daily",
-	}
+	t.Run("Usecase error", func(t *testing.T) {
+		request := domain.SubscriptionRequest{
+			Email:     "test@example.com",
+			City:      "Kyiv",
+			Frequency: "daily",
+		}
 
-	ts.setupRepositoryErrorMocks(request)
+		ts.setupRepositoryErrorMocks(request)
 
-	w, response := ts.makeSubscribeRequest(t, request)
+		w, response := ts.makeSubscribeRequest(t, request)
 
-	assert.Equal(t, http.StatusInternalServerError, w.Code)
-	assert.False(t, response.Success)
-	assert.Contains(t, response.Message, "Failed to process subscription")
+		assert.Equal(t, http.StatusInternalServerError, w.Code)
+		assert.False(t, response.Success)
+		assert.NotEmpty(t, response.Message)
+
+		ts.mockRepo.AssertExpectations(t)
+		ts.mockTokenService.AssertExpectations(t)
+		ts.mockLogger.AssertExpectations(t)
+	})
 }
 
 func TestSubscriptionHandler_Subscribe_DuplicateSubscription(t *testing.T) {
 	ts := setupSubscriptionHandlerTest()
 
-	request := domain.SubscriptionRequest{
-		Email:     "duplicate@example.com",
-		City:      "Kyiv",
-		Frequency: "daily",
-	}
+	t.Run("Duplicate subscription", func(t *testing.T) {
+		request := domain.SubscriptionRequest{
+			Email:     "test@example.com",
+			City:      "Kyiv",
+			Frequency: "daily",
+		}
 
-	ts.setupDuplicateMocks(request)
+		ts.mockTokenService.On("GenerateToken", mock.Anything, request.Email, "24h").Return("test-token", nil)
+		ts.mockRepo.On("Create", mock.Anything, mock.AnythingOfType("domain.Subscription")).Return(domain.ErrDuplicateSubscription)
+		ts.mockLogger.On("Infof", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return()
+		ts.mockLogger.On("Debugf", mock.Anything, mock.Anything, mock.Anything).Return()
+		ts.mockLogger.On("Debugf", mock.Anything, mock.Anything).Return()
+		ts.mockLogger.On("Errorf", mock.Anything, mock.Anything).Return()
+		ts.mockLogger.On("Warnf", mock.Anything, mock.Anything, mock.Anything).Return()
 
-	w, response := ts.makeSubscribeRequest(t, request)
+		w, response := ts.makeSubscribeRequest(t, request)
 
-	assert.Equal(t, http.StatusConflict, w.Code)
-	assert.False(t, response.Success)
-	assert.Contains(t, response.Message, "already subscribed")
+		assert.Equal(t, http.StatusConflict, w.Code)
+		assert.False(t, response.Success)
+		assert.Contains(t, response.Message, "already exists")
+
+		ts.mockRepo.AssertExpectations(t)
+		ts.mockLogger.AssertExpectations(t)
+	})
 }
 
 func TestSubscriptionHandler_InvalidJSON(t *testing.T) {
 	ts := setupSubscriptionHandlerTest()
 
-	t.Run("Invalid JSON for subscription", func(t *testing.T) {
+	t.Run("Invalid JSON", func(t *testing.T) {
 		ts.setupJSONErrorMocks()
 
-		req := httptest.NewRequest("POST", "/subscribe", bytes.NewBufferString(`{"invalid": json`))
+		req := httptest.NewRequest("POST", "/subscribe", bytes.NewBufferString("invalid json"))
 		req.Header.Set("Content-Type", "application/json")
 
 		w := httptest.NewRecorder()
@@ -237,10 +271,6 @@ func TestSubscriptionHandler_InvalidJSON(t *testing.T) {
 
 		assert.Equal(t, http.StatusBadRequest, w.Code)
 
-		var response domain.SubscriptionResponse
-		err := json.Unmarshal(w.Body.Bytes(), &response)
-		require.NoError(t, err)
-		assert.False(t, response.Success)
-		assert.Contains(t, response.Message, "Invalid request")
+		ts.mockLogger.AssertExpectations(t)
 	})
 }

@@ -14,8 +14,7 @@ import (
 	"subscription/internal/adapter/database"
 	httphandler "subscription/internal/adapter/http"
 	"subscription/internal/core/domain"
-	"subscription/internal/core/ports/out"
-	"subscription/tests"
+	"subscription/tests/mocks"
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
@@ -40,9 +39,9 @@ type subscriptionIntegrationTestSetup struct {
 	handler          *httphandler.SubscriptionHandler
 	router           *gin.Engine
 	gormDB           *gorm.DB
-	mockTokenService *tests.MockTokenService
-	mockEmailService *tests.MockEmailService
-	mockLogger       *tests.MockLogger
+	mockTokenService *mocks.TokenService
+	mockEmailService *mocks.EmailService
+	mockLogger       *mocks.Logger
 }
 
 func setupSubscriptionIntegrationTest(t *testing.T) *subscriptionIntegrationTestSetup {
@@ -59,9 +58,9 @@ func setupSubscriptionIntegrationTest(t *testing.T) *subscriptionIntegrationTest
 	err = gormDB.AutoMigrate(&database.Subscription{})
 	require.NoError(t, err)
 
-	mockTokenService := &tests.MockTokenService{}
-	mockEmailService := &tests.MockEmailService{}
-	mockLogger := &tests.MockLogger{}
+	mockTokenService := &mocks.TokenService{}
+	mockEmailService := &mocks.EmailService{}
+	mockLogger := &mocks.Logger{}
 
 	repository := database.NewSubscriptionRepo(gormDB, mockLogger)
 
@@ -104,9 +103,10 @@ func (sits *subscriptionIntegrationTestSetup) cleanup() {
 
 func (sits *subscriptionIntegrationTestSetup) setupLoggerMocks() {
 	sits.mockLogger.On("Infof", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return()
-	sits.mockLogger.On("Debugf", mock.Anything, mock.Anything).Return()
+	sits.mockLogger.On("Debugf", mock.Anything, mock.Anything, mock.Anything).Return()
 	sits.mockLogger.On("Errorf", mock.Anything, mock.Anything).Return()
 	sits.mockLogger.On("Warnf", mock.Anything, mock.Anything, mock.Anything).Return()
+	sits.mockLogger.On("Warnf", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return()
 }
 
 func (sits *subscriptionIntegrationTestSetup) makeSubscribeRequest(t *testing.T, request domain.SubscriptionRequest) (*httptest.ResponseRecorder, *domain.SubscriptionResponse) {
@@ -126,26 +126,26 @@ func (sits *subscriptionIntegrationTestSetup) makeSubscribeRequest(t *testing.T,
 	return w, &response
 }
 
-func (sits *subscriptionIntegrationTestSetup) makeConfirmRequest(t *testing.T, token string) (*httptest.ResponseRecorder, *domain.SubscriptionResponse) {
+func (sits *subscriptionIntegrationTestSetup) makeConfirmRequest(t *testing.T, token string) (*httptest.ResponseRecorder, *domain.ConfirmResponse) {
 	req := httptest.NewRequest("GET", "/confirm/"+token, nil)
 
 	w := httptest.NewRecorder()
 	sits.router.ServeHTTP(w, req)
 
-	var response domain.SubscriptionResponse
+	var response domain.ConfirmResponse
 	err := json.Unmarshal(w.Body.Bytes(), &response)
 	require.NoError(t, err)
 
 	return w, &response
 }
 
-func (sits *subscriptionIntegrationTestSetup) makeUnsubscribeRequest(t *testing.T, token string) (*httptest.ResponseRecorder, *domain.SubscriptionResponse) {
+func (sits *subscriptionIntegrationTestSetup) makeUnsubscribeRequest(t *testing.T, token string) (*httptest.ResponseRecorder, *domain.UnsubscribeResponse) {
 	req := httptest.NewRequest("DELETE", "/unsubscribe/"+token, nil)
 
 	w := httptest.NewRecorder()
 	sits.router.ServeHTTP(w, req)
 
-	var response domain.SubscriptionResponse
+	var response domain.UnsubscribeResponse
 	err := json.Unmarshal(w.Body.Bytes(), &response)
 	require.NoError(t, err)
 
@@ -166,7 +166,7 @@ func TestSubscriptionIntegration_Subscribe(t *testing.T) {
 		}
 
 		ts.mockTokenService.On("GenerateToken", mock.Anything, request.Email, "24h").Return("test-token", nil)
-		ts.mockEmailService.On("SendConfirmationEmail", mock.Anything, mock.AnythingOfType("domain.ConfirmationEmailRequest")).Return(out.EmailDeliveryResult{}, nil)
+		ts.mockEmailService.On("SendConfirmationEmail", mock.Anything, mock.AnythingOfType("domain.ConfirmationEmailRequest")).Return(nil)
 
 		w, response := ts.makeSubscribeRequest(t, request)
 
@@ -218,7 +218,7 @@ func TestSubscriptionIntegration_Subscribe(t *testing.T) {
 		}
 
 		ts.mockTokenService.On("GenerateToken", mock.Anything, request.Email, "24h").Return("duplicate-token", nil)
-		ts.mockEmailService.On("SendConfirmationEmail", mock.Anything, mock.AnythingOfType("domain.ConfirmationEmailRequest")).Return(out.EmailDeliveryResult{}, nil)
+		ts.mockEmailService.On("SendConfirmationEmail", mock.Anything, mock.AnythingOfType("domain.ConfirmationEmailRequest")).Return(nil)
 
 		w, response := ts.makeSubscribeRequest(t, request)
 
@@ -229,7 +229,7 @@ func TestSubscriptionIntegration_Subscribe(t *testing.T) {
 
 		assert.Equal(t, http.StatusConflict, w.Code)
 		assert.False(t, response.Success)
-		assert.Contains(t, response.Message, "already subscribed")
+		assert.Contains(t, response.Message, "already exists")
 	})
 }
 
@@ -247,7 +247,7 @@ func TestSubscriptionIntegration_Confirm(t *testing.T) {
 		}
 
 		ts.mockTokenService.On("GenerateToken", mock.Anything, request.Email, "24h").Return("confirm-token", nil)
-		ts.mockEmailService.On("SendConfirmationEmail", mock.Anything, mock.AnythingOfType("domain.ConfirmationEmailRequest")).Return(out.EmailDeliveryResult{}, nil)
+		ts.mockEmailService.On("SendConfirmationEmail", mock.Anything, mock.AnythingOfType("domain.ConfirmationEmailRequest")).Return(nil)
 
 		w, _ := ts.makeSubscribeRequest(t, request)
 		assert.Equal(t, http.StatusOK, w.Code)
@@ -296,7 +296,7 @@ func TestSubscriptionIntegration_Unsubscribe(t *testing.T) {
 		}
 
 		ts.mockTokenService.On("GenerateToken", mock.Anything, request.Email, "24h").Return("unsubscribe-token", nil)
-		ts.mockEmailService.On("SendConfirmationEmail", mock.Anything, mock.AnythingOfType("domain.ConfirmationEmailRequest")).Return(out.EmailDeliveryResult{}, nil)
+		ts.mockEmailService.On("SendConfirmationEmail", mock.Anything, mock.AnythingOfType("domain.ConfirmationEmailRequest")).Return(nil)
 
 		w, _ := ts.makeSubscribeRequest(t, request)
 		assert.Equal(t, http.StatusOK, w.Code)
@@ -306,7 +306,7 @@ func TestSubscriptionIntegration_Unsubscribe(t *testing.T) {
 		w, _ = ts.makeConfirmRequest(t, "unsubscribe-token")
 		assert.Equal(t, http.StatusOK, w.Code)
 
-		w, response = ts.makeUnsubscribeRequest(t, "unsubscribe-token")
+		w, response := ts.makeUnsubscribeRequest(t, "unsubscribe-token")
 
 		assert.Equal(t, http.StatusOK, w.Code)
 		assert.True(t, response.Success)

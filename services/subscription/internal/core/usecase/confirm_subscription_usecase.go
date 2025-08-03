@@ -45,7 +45,7 @@ func (uc *ConfirmSubscriptionUseCase) ConfirmSubscription(ctx context.Context, t
 		}, nil
 	}
 
-	subscription, err := uc.subscriptionRepo.GetSubscriptionByToken(ctx, token)
+	subscription, err := uc.subscriptionRepo.GetByToken(ctx, token)
 	if err != nil {
 		uc.logger.Errorf("Failed to get subscription by token: %v", err)
 		return &domain.ConfirmResponse{
@@ -63,7 +63,7 @@ func (uc *ConfirmSubscriptionUseCase) ConfirmSubscription(ctx context.Context, t
 	}
 
 	subscription.IsConfirmed = true
-	if err := uc.subscriptionRepo.UpdateSubscription(ctx, *subscription); err != nil {
+	if err := uc.subscriptionRepo.Update(ctx, *subscription); err != nil {
 		uc.logger.Errorf("Failed to update subscription: %v", err)
 		return nil, err
 	}

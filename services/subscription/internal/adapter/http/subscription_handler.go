@@ -53,7 +53,6 @@ func (h *SubscriptionHandler) Subscribe(c *gin.Context) {
 		return
 	}
 
-	// Validate the request.
 	if err := h.validate.Struct(req); err != nil {
 		h.logger.Errorf("Validation failed for subscription request: %v", err)
 		var errorMessages []string
@@ -134,7 +133,11 @@ func (h *SubscriptionHandler) Unsubscribe(c *gin.Context) {
 		return
 	}
 
-	result, err := h.unsubscribeUseCase.Unsubscribe(c.Request.Context(), token)
+	req := domain.UnsubscribeRequest{
+		Token: token,
+	}
+
+	result, err := h.unsubscribeUseCase.Unsubscribe(c.Request.Context(), req)
 	if err != nil {
 		h.logger.Errorf("Failed to unsubscribe: %v", err)
 		c.JSON(http.StatusInternalServerError, domain.UnsubscribeResponse{
