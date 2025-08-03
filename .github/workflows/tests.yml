@@ -17,10 +17,14 @@ jobs:
             path: services/subscription
             has-db: true
             has-mailhog: true
+            mailhog-port: 1026
+            mailhog-web-port: 8026
           - name: email
             path: services/email
             has-db: false
             has-mailhog: true
+            mailhog-port: 1025
+            mailhog-web-port: 8025
           - name: token
             path: services/token
             has-db: false
@@ -29,6 +33,8 @@ jobs:
             path: services/weather-broadcast
             has-db: true
             has-mailhog: true
+            mailhog-port: 1027
+            mailhog-web-port: 8027
     
     steps:
     - uses: actions/checkout@v4
@@ -78,8 +84,8 @@ jobs:
       if: matrix.service.has-mailhog == 'true'
       run: |
         docker run -d --name mailhog-${{ matrix.service.name }} \
-          -p 1025:1025 \
-          -p 8025:8025 \
+          -p ${{ matrix.service.mailhog-port }}:1025 \
+          -p ${{ matrix.service.mailhog-web-port }}:8025 \
           mailhog/mailhog:latest
     
     - name: Wait for services
@@ -90,4 +96,8 @@ jobs:
       run: |
         cd ${{ matrix.service.path }}
         docker build -f Dockerfile.test -t ${{ matrix.service.name }}-service-tests .
-        docker run --rm --network host ${{ matrix.service.name }}-service-tests
+        docker run --rm --network host \
+          -e MAILHOG_HOST=localhost \
+          -e MAILHOG_PORT=${{ matrix.service.mailhog-port }} \
+          -e MAILHOG_WEB_PORT=${{ matrix.service.mailhog-web-port }} \
+          ${{ matrix.service.name }}-service-tests
