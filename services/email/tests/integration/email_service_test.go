@@ -265,7 +265,7 @@ func TestEmailServiceIntegration_TemplateGeneration(t *testing.T) {
 		windspeed := 12
 		temperature := 12
 
-		template, err := templateBuilder.BuildWeatherUpdateEmail(ctx, email, city, description, humidity, windspeed, temperature)
+		template, err := templateBuilder.BuildWeatherUpdateEmail(ctx, email, city, description, humidity, windspeed, temperature, "test-unsubscribe-token")
 		assert.NoError(t, err)
 		assert.NotEmpty(t, template)
 		assert.Contains(t, template, city)

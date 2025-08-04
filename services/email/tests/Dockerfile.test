@@ -10,6 +10,9 @@ RUN apk add --no-cache \
 # Set working directory
 WORKDIR /app
 
+# Copy proto files first (from root of the project)
+COPY ../../../proto/ ./proto/
+
 # Copy go mod files
 COPY go.mod go.sum ./
 
