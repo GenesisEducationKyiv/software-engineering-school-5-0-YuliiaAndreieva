@@ -5,9 +5,8 @@ import "errors"
 type Frequency string
 
 const (
-	Daily   Frequency = "daily"
-	Weekly  Frequency = "weekly"
-	Monthly Frequency = "monthly"
+	Daily  Frequency = "daily"
+	Hourly Frequency = "hourly"
 )
 
 type Subscription struct {

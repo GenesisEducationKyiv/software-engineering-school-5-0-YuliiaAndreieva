@@ -31,18 +31,10 @@ type WeatherUpdateEmailRequest struct {
 	UnsubscribeToken string `json:"unsubscribeToken"`
 }
 
-type EmailTemplate struct {
-	Subject string
-	Body    string
-}
-
 type EmailDeliveryStatus string
 
 const (
-	StatusPending   EmailDeliveryStatus = "pending"
-	StatusSent      EmailDeliveryStatus = "sent"
 	StatusFailed    EmailDeliveryStatus = "failed"
-	StatusBounced   EmailDeliveryStatus = "bounced"
 	StatusDelivered EmailDeliveryStatus = "delivered"
 )
 

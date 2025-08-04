@@ -32,10 +32,8 @@ func main() {
 		c.JSON(http.StatusOK, gin.H{"status": "ok", "service": "gateway"})
 	})
 
-	// Weather routes
 	router.GET("/weather", weatherHandler.Get)
 
-	// Subscription routes
 	router.POST("/subscribe", subscriptionHandler.Subscribe)
 	router.GET("/confirm/:token", subscriptionHandler.Confirm)
 	router.GET("/unsubscribe/:token", subscriptionHandler.Unsubscribe)

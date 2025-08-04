@@ -29,47 +29,69 @@ func NewWeatherHandler(weatherServiceURL string, httpClient out.HTTPClient, logg
 func (h *WeatherHandler) Get(c *gin.Context) {
 	h.logger.Infof("Proxying weather request to %s", h.weatherServiceURL)
 
-	city := c.Query("city")
-	if city == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "City parameter is required"})
+	city, err := h.validateCityParameter(c)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
+	requestBody, err := h.createWeatherRequest(city)
+	if err != nil {
+		h.logger.Errorf("Failed to create request body: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
+		return
+	}
+
+	responseBody, statusCode, err := h.forwardRequestToWeatherService(requestBody)
+	if err != nil {
+		h.logger.Errorf("Failed to forward request: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get weather data"})
+		return
+	}
+
+	c.Data(statusCode, "application/json", responseBody)
+}
+
+func (h *WeatherHandler) validateCityParameter(c *gin.Context) (string, error) {
+	city := c.Query("city")
+	if city == "" {
+		return "", fmt.Errorf("City parameter is required")
+	}
+	return city, nil
+}
+
+func (h *WeatherHandler) createWeatherRequest(city string) ([]byte, error) {
 	requestBody := map[string]string{
 		"city": city,
 	}
 
 	jsonBody, err := json.Marshal(requestBody)
 	if err != nil {
-		h.logger.Errorf("Failed to marshal request body: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
-		return
+		return nil, fmt.Errorf("failed to marshal request body: %w", err)
 	}
 
+	return jsonBody, nil
+}
+
+func (h *WeatherHandler) forwardRequestToWeatherService(requestBody []byte) ([]byte, int, error) {
 	weatherURL := fmt.Sprintf("%s/weather", h.weatherServiceURL)
-	req, err := http.NewRequest("POST", weatherURL, bytes.NewBuffer(jsonBody))
+	req, err := http.NewRequest("POST", weatherURL, bytes.NewBuffer(requestBody))
 	if err != nil {
-		h.logger.Errorf("Failed to create request: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
-		return
+		return nil, 0, fmt.Errorf("failed to create request: %w", err)
 	}
 
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := h.httpClient.Do(req)
 	if err != nil {
-		h.logger.Errorf("Failed to send request to weather service: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get weather data"})
-		return
+		return nil, 0, fmt.Errorf("failed to send request to weather service: %w", err)
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		h.logger.Errorf("Failed to read response body: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
-		return
+		return nil, 0, fmt.Errorf("failed to read response body: %w", err)
 	}
 
-	c.Data(resp.StatusCode, "application/json", body)
+	return body, resp.StatusCode, nil
 }

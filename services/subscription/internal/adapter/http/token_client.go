@@ -28,42 +28,125 @@ func (c *TokenClient) GenerateToken(ctx context.Context, email string, expiresIn
 
 	url := fmt.Sprintf("%s/generate", c.baseURL)
 
-	reqBody := map[string]interface{}{
+	reqBody := c.createTokenGenerationRequest(email, expiresIn)
+	jsonBody, err := c.marshalRequestBody(reqBody, "token generation")
+	if err != nil {
+		return "", err
+	}
+
+	req, err := c.createHTTPRequest(ctx, "POST", url, jsonBody)
+	if err != nil {
+		return "", err
+	}
+
+	resp, err := c.sendRequest(req, "token generation")
+	if err != nil {
+		return "", err
+	}
+
+	token, err := c.decodeTokenResponse(resp)
+	if err != nil {
+		return "", err
+	}
+
+	c.logger.Infof("Successfully generated token for email: %s", email)
+	return token, nil
+}
+
+func (c *TokenClient) ValidateToken(ctx context.Context, token string) (bool, error) {
+	c.logger.Debugf("Validating token: %s", token)
+
+	url := fmt.Sprintf("%s/validate", c.baseURL)
+
+	reqBody := c.createTokenValidationRequest(token)
+	jsonBody, err := c.marshalRequestBody(reqBody, "token validation")
+	if err != nil {
+		return false, err
+	}
+
+	req, err := c.createHTTPRequest(ctx, "POST", url, jsonBody)
+	if err != nil {
+		return false, err
+	}
+
+	resp, err := c.sendRequest(req, "token validation")
+	if err != nil {
+		return false, err
+	}
+
+	valid, err := c.decodeValidationResponse(resp)
+	if err != nil {
+		return false, err
+	}
+
+	c.logger.Debugf("Token validation result: %t", valid)
+	return valid, nil
+}
+
+func (c *TokenClient) createTokenGenerationRequest(email, expiresIn string) map[string]interface{} {
+	return map[string]interface{}{
 		"email":      email,
 		"expires_in": expiresIn,
 	}
+}
 
+func (c *TokenClient) createTokenValidationRequest(token string) map[string]interface{} {
+	return map[string]interface{}{
+		"token": token,
+	}
+}
+
+func (c *TokenClient) marshalRequestBody(reqBody map[string]interface{}, operation string) ([]byte, error) {
 	jsonBody, err := json.Marshal(reqBody)
 	if err != nil {
-		c.logger.Errorf("Failed to marshal request body for token generation: %v", err)
-		return "", fmt.Errorf("failed to marshal request body: %w", err)
+		c.logger.Errorf("Failed to marshal request body for %s: %v", operation, err)
+		return nil, fmt.Errorf("failed to marshal request body: %w", err)
 	}
+	return jsonBody, nil
+}
 
-	req, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBuffer(jsonBody))
+func (c *TokenClient) createHTTPRequest(ctx context.Context, method, url string, body []byte) (*http.Request, error) {
+	req, err := http.NewRequestWithContext(ctx, method, url, bytes.NewBuffer(body))
 	if err != nil {
-		c.logger.Errorf("Failed to create request for token generation: %v", err)
-		return "", fmt.Errorf("failed to create request: %w", err)
+		c.logger.Errorf("Failed to create request: %v", err)
+		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
 	req.Header.Set("Content-Type", "application/json")
+	return req, nil
+}
 
-	c.logger.Debugf("Sending token generation request to: %s", url)
+func (c *TokenClient) sendRequest(req *http.Request, operation string) (*http.Response, error) {
+	c.logger.Debugf("Sending %s request to: %s", operation, req.URL.String())
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		c.logger.Errorf("Failed to send token generation request: %v", err)
-		return "", fmt.Errorf("failed to send request: %w", err)
+		c.logger.Errorf("Failed to send %s request: %v", operation, err)
+		return nil, fmt.Errorf("failed to send request: %w", err)
 	}
-	defer func() {
-		if closeErr := resp.Body.Close(); closeErr != nil {
-			c.logger.Warnf("Failed to close response body: %v", closeErr)
-		}
-	}()
+	defer c.closeResponseBody(resp)
 
+	if err := c.validateResponse(resp); err != nil {
+		return nil, err
+	}
+
+	return resp, nil
+}
+
+func (c *TokenClient) closeResponseBody(resp *http.Response) {
+	if closeErr := resp.Body.Close(); closeErr != nil {
+		c.logger.Warnf("Failed to close response body: %v", closeErr)
+	}
+}
+
+func (c *TokenClient) validateResponse(resp *http.Response) error {
 	if resp.StatusCode != http.StatusOK {
 		c.logger.Errorf("Token service returned status: %d", resp.StatusCode)
-		return "", fmt.Errorf("token service returned status: %d", resp.StatusCode)
+		return fmt.Errorf("token service returned status: %d", resp.StatusCode)
 	}
+	return nil
+}
 
+func (c *TokenClient) decodeTokenResponse(resp *http.Response) (string, error) {
 	var response struct {
 		Token string `json:"token"`
 	}
@@ -73,50 +156,10 @@ func (c *TokenClient) GenerateToken(ctx context.Context, email string, expiresIn
 		return "", fmt.Errorf("failed to decode response: %w", err)
 	}
 
-	c.logger.Infof("Successfully generated token for email: %s", email)
 	return response.Token, nil
 }
 
-func (c *TokenClient) ValidateToken(ctx context.Context, token string) (bool, error) {
-	c.logger.Debugf("Validating token: %s", token)
-
-	url := fmt.Sprintf("%s/validate", c.baseURL)
-
-	reqBody := map[string]interface{}{
-		"token": token,
-	}
-
-	jsonBody, err := json.Marshal(reqBody)
-	if err != nil {
-		c.logger.Errorf("Failed to marshal request body for token validation: %v", err)
-		return false, fmt.Errorf("failed to marshal request body: %w", err)
-	}
-
-	req, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBuffer(jsonBody))
-	if err != nil {
-		c.logger.Errorf("Failed to create request for token validation: %v", err)
-		return false, fmt.Errorf("failed to create request: %w", err)
-	}
-
-	req.Header.Set("Content-Type", "application/json")
-
-	c.logger.Debugf("Sending token validation request to: %s", url)
-	resp, err := c.httpClient.Do(req)
-	if err != nil {
-		c.logger.Errorf("Failed to send token validation request: %v", err)
-		return false, fmt.Errorf("failed to send request: %w", err)
-	}
-	defer func() {
-		if closeErr := resp.Body.Close(); closeErr != nil {
-			c.logger.Warnf("Failed to close response body: %v", closeErr)
-		}
-	}()
-
-	if resp.StatusCode != http.StatusOK {
-		c.logger.Errorf("Token service returned status: %d", resp.StatusCode)
-		return false, fmt.Errorf("token service returned status: %d", resp.StatusCode)
-	}
-
+func (c *TokenClient) decodeValidationResponse(resp *http.Response) (bool, error) {
 	var response struct {
 		Valid bool `json:"valid"`
 	}
@@ -126,6 +169,5 @@ func (c *TokenClient) ValidateToken(ctx context.Context, token string) (bool, er
 		return false, fmt.Errorf("failed to decode response: %w", err)
 	}
 
-	c.logger.Debugf("Token validation result: %t", response.Valid)
 	return response.Valid, nil
 }

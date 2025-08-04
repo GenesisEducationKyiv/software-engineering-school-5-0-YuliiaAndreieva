@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+	"fmt"
 	"subscription/internal/core/domain"
 	"subscription/internal/core/ports/in"
 	"subscription/internal/core/ports/out"
@@ -28,52 +29,77 @@ func NewUnsubscribeUseCase(
 func (uc *UnsubscribeUseCase) Unsubscribe(ctx context.Context, req domain.UnsubscribeRequest) (*domain.UnsubscribeResponse, error) {
 	uc.logger.Infof("Starting subscription unsubscription for token: %s", req.Token)
 
-	if req.Token == "" {
-		uc.logger.Errorf("Token is empty")
-		return &domain.UnsubscribeResponse{
-			Success: false,
-			Message: "Token is required",
-		}, nil
+	if err := uc.validateToken(req.Token); err != nil {
+		return uc.createErrorResponse(err.Error()), nil
 	}
 
-	isValid, err := uc.tokenService.ValidateToken(ctx, req.Token)
-	if err != nil {
-		uc.logger.Errorf("Failed to validate token %s: %v", req.Token, err)
-		return &domain.UnsubscribeResponse{
-			Success: false,
-			Message: "Failed to validate token",
-		}, err
+	if err := uc.validateTokenService(ctx, req.Token); err != nil {
+		return uc.createErrorResponse("Failed to validate token"), err
 	}
 
-	if !isValid {
-		uc.logger.Errorf("Invalid token: %s", req.Token)
-		return &domain.UnsubscribeResponse{
-			Success: false,
-			Message: "Invalid token",
-		}, nil
+	if err := uc.checkSubscriptionExists(ctx, req.Token); err != nil {
+		return uc.createErrorResponse("Subscription not found"), err
 	}
 
-	_, err = uc.subscriptionRepo.GetByToken(ctx, req.Token)
-	if err != nil {
-		uc.logger.Errorf("Failed to get subscription by token %s: %v", req.Token, err)
-		return &domain.UnsubscribeResponse{
-			Success: false,
-			Message: "Subscription not found",
-		}, err
-	}
-
-	err = uc.subscriptionRepo.Delete(ctx, req.Token)
-	if err != nil {
-		uc.logger.Errorf("Failed to delete subscription for token %s: %v", req.Token, err)
-		return &domain.UnsubscribeResponse{
-			Success: false,
-			Message: "Failed to unsubscribe",
-		}, err
+	if err := uc.deleteSubscription(ctx, req.Token); err != nil {
+		return uc.createErrorResponse("Failed to unsubscribe"), err
 	}
 
 	uc.logger.Infof("Successfully unsubscribed for token: %s", req.Token)
+	return uc.createSuccessResponse(), nil
+}
+
+func (uc *UnsubscribeUseCase) validateToken(token string) error {
+	if token == "" {
+		uc.logger.Errorf("Token is empty")
+		return fmt.Errorf("Token is required")
+	}
+	return nil
+}
+
+func (uc *UnsubscribeUseCase) validateTokenService(ctx context.Context, token string) error {
+	isValid, err := uc.tokenService.ValidateToken(ctx, token)
+	if err != nil {
+		uc.logger.Errorf("Failed to validate token %s: %v", token, err)
+		return err
+	}
+
+	if !isValid {
+		uc.logger.Errorf("Invalid token: %s", token)
+		return fmt.Errorf("Invalid token")
+	}
+
+	return nil
+}
+
+func (uc *UnsubscribeUseCase) checkSubscriptionExists(ctx context.Context, token string) error {
+	_, err := uc.subscriptionRepo.GetByToken(ctx, token)
+	if err != nil {
+		uc.logger.Errorf("Failed to get subscription by token %s: %v", token, err)
+		return err
+	}
+	return nil
+}
+
+func (uc *UnsubscribeUseCase) deleteSubscription(ctx context.Context, token string) error {
+	err := uc.subscriptionRepo.Delete(ctx, token)
+	if err != nil {
+		uc.logger.Errorf("Failed to delete subscription for token %s: %v", token, err)
+		return err
+	}
+	return nil
+}
+
+func (uc *UnsubscribeUseCase) createErrorResponse(message string) *domain.UnsubscribeResponse {
+	return &domain.UnsubscribeResponse{
+		Success: false,
+		Message: message,
+	}
+}
+
+func (uc *UnsubscribeUseCase) createSuccessResponse() *domain.UnsubscribeResponse {
 	return &domain.UnsubscribeResponse{
 		Success: true,
 		Message: "Successfully unsubscribed",
-	}, nil
+	}
 }
