@@ -16,6 +16,7 @@ type Config struct {
 	BaseURL               string        `envconfig:"BASE_URL" default:"http://localhost:8084"`
 	HTTPReadTimeout       time.Duration `envconfig:"HTTP_READ_TIMEOUT" default:"10s"`
 	HTTPWriteTimeout      time.Duration `envconfig:"HTTP_WRITE_TIMEOUT" default:"10s"`
+	ShutdownTimeout       time.Duration `envconfig:"SHUTDOWN_TIMEOUT" default:"5s"`
 	RedisAddress          string        `envconfig:"REDIS_ADDRESS" default:"localhost:6379"`
 	RedisTTL              time.Duration `envconfig:"REDIS_TTL" default:"30m"`
 	RedisDialTimeout      time.Duration `envconfig:"REDIS_DIAL_TIMEOUT" default:"5s"`

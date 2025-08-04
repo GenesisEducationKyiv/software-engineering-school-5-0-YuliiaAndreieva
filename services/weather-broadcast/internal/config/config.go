@@ -19,6 +19,7 @@ type Config struct {
 	HTTPClientTimeout      time.Duration `envconfig:"HTTP_CLIENT_TIMEOUT" default:"10s"`
 	HTTPReadTimeout        time.Duration `envconfig:"HTTP_READ_TIMEOUT" default:"10s"`
 	HTTPWriteTimeout       time.Duration `envconfig:"HTTP_WRITE_TIMEOUT" default:"10s"`
+	ShutdownTimeout        time.Duration `envconfig:"SHUTDOWN_TIMEOUT" default:"5s"`
 }
 
 func LoadConfig() (*Config, error) {

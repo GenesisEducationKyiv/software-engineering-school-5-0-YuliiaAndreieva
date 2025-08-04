@@ -8,7 +8,6 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
 	"email/internal/adapter/email"
 	grpchandler "email/internal/adapter/grpc"
@@ -90,7 +89,7 @@ func main() {
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), cfg.Timeout.ShutdownTimeout)
 	defer cancel()
 
 	grpcSrv.GracefulStop()

@@ -4,13 +4,15 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/joho/godotenv"
 )
 
 type Config struct {
-	SMTP   SMTPConfig
-	Server ServerConfig
+	SMTP    SMTPConfig
+	Server  ServerConfig
+	Timeout TimeoutConfig
 }
 
 type SMTPConfig struct {
@@ -24,6 +26,10 @@ type ServerConfig struct {
 	Port     string
 	GRPCPort string
 	BaseURL  string
+}
+
+type TimeoutConfig struct {
+	ShutdownTimeout time.Duration
 }
 
 func LoadConfig() *Config {
@@ -43,6 +49,9 @@ func LoadConfig() *Config {
 			GRPCPort: getEnv("GRPC_PORT", "9091"),
 			BaseURL:  getEnv("BASE_URL", "http://localhost:8081"),
 		},
+		Timeout: TimeoutConfig{
+			ShutdownTimeout: getDurationEnv("SHUTDOWN_TIMEOUT", 5*time.Second),
+		},
 	}
 }
 
@@ -57,6 +66,15 @@ func getEnvAsInt(key string, defaultValue int) int {
 	if value := os.Getenv(key); value != "" {
 		if intValue, err := strconv.Atoi(value); err == nil {
 			return intValue
+		}
+	}
+	return defaultValue
+}
+
+func getDurationEnv(key string, defaultValue time.Duration) time.Duration {
+	if value := os.Getenv(key); value != "" {
+		if duration, err := time.ParseDuration(value); err == nil {
+			return duration
 		}
 	}
 	return defaultValue

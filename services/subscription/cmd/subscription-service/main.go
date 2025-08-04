@@ -32,17 +32,17 @@ func main() {
 	var db *gorm.DB
 	var err error
 
-	for i := 0; i < 30; i++ {
+	for i := 0; i < cfg.Timeout.DatabaseMaxRetries; i++ {
 		db, err = gorm.Open(postgres.Open(cfg.Database.DSN), &gorm.Config{})
 		if err == nil {
 			break
 		}
-		loggerInstance.Warnf("Failed to connect to database, retrying in 2 seconds... (attempt %d/30)", i+1)
-		time.Sleep(2 * time.Second)
+		loggerInstance.Warnf("Failed to connect to database, retrying in %v... (attempt %d/%d)", cfg.Timeout.DatabaseRetryDelay, i+1, cfg.Timeout.DatabaseMaxRetries)
+		time.Sleep(cfg.Timeout.DatabaseRetryDelay)
 	}
 
 	if err != nil {
-		panic(fmt.Sprintf("Failed to connect to database after 30 attempts: %v", err))
+		panic(fmt.Sprintf("Failed to connect to database after %d attempts: %v", cfg.Timeout.DatabaseMaxRetries, err))
 	}
 
 	if err := db.AutoMigrate(&database.Subscription{}); err != nil {
@@ -52,11 +52,11 @@ func main() {
 
 	repo := database.NewSubscriptionRepo(db, loggerInstance)
 
-	httpClient := &http.Client{Timeout: 10 * time.Second}
+	httpClient := &http.Client{Timeout: cfg.Timeout.HTTPClientTimeout}
 	emailClient := httphandler.NewEmailClient(cfg.Email.ServiceURL, httpClient, loggerInstance)
-	tokenClient := httphandler.NewTokenClient("http://token-service:8083", httpClient, loggerInstance)
+	tokenClient := httphandler.NewTokenClient(cfg.Token.ServiceURL, httpClient, loggerInstance)
 
-	subscribeUseCase := usecase.NewSubscribeUseCase(repo, tokenClient, emailClient, loggerInstance)
+	subscribeUseCase := usecase.NewSubscribeUseCase(repo, tokenClient, emailClient, loggerInstance, cfg)
 	confirmUseCase := usecase.NewConfirmSubscriptionUseCase(repo, tokenClient, loggerInstance)
 	unsubscribeUseCase := usecase.NewUnsubscribeUseCase(repo, tokenClient, loggerInstance)
 	listByFrequencyUseCase := usecase.NewListByFrequencyUseCase(repo, loggerInstance)
@@ -117,7 +117,7 @@ func main() {
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), cfg.Timeout.ShutdownTimeout)
 	defer cancel()
 
 	grpcSrv.GracefulStop()

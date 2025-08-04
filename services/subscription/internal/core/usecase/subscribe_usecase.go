@@ -3,6 +3,7 @@ package usecase
 import (
 	"context"
 	"fmt"
+	"subscription/internal/config"
 	"subscription/internal/core/domain"
 	"subscription/internal/core/ports/in"
 	"subscription/internal/core/ports/out"
@@ -13,6 +14,7 @@ type SubscribeUseCase struct {
 	tokenService     out.TokenService
 	emailService     out.EmailService
 	logger           out.Logger
+	config           *config.Config
 }
 
 func NewSubscribeUseCase(
@@ -20,12 +22,14 @@ func NewSubscribeUseCase(
 	tokenService out.TokenService,
 	emailService out.EmailService,
 	logger out.Logger,
+	config *config.Config,
 ) in.SubscribeUseCase {
 	return &SubscribeUseCase{
 		subscriptionRepo: subscriptionRepo,
 		tokenService:     tokenService,
 		emailService:     emailService,
 		logger:           logger,
+		config:           config,
 	}
 }
 
@@ -50,8 +54,8 @@ func (uc *SubscribeUseCase) Subscribe(ctx context.Context, req domain.Subscripti
 }
 
 func (uc *SubscribeUseCase) generateToken(ctx context.Context, email string) (string, error) {
-	uc.logger.Debugf("Generating token for email: %s", email)
-	token, err := uc.tokenService.GenerateToken(ctx, email, "24h")
+	uc.logger.Debugf("Generating token for email: %s with expiration: %s", email, uc.config.Token.Expiration)
+	token, err := uc.tokenService.GenerateToken(ctx, email, uc.config.Token.Expiration)
 	if err != nil {
 		uc.logger.Errorf("Failed to generate token: %v", err)
 		return "", err

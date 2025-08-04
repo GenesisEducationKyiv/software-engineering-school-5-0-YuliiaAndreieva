@@ -2,15 +2,13 @@ package main
 
 import (
 	"context"
+	httphandler "gateway/internal/adapter/http"
+	"gateway/internal/adapter/logger"
+	"gateway/internal/config"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
-
-	httphandler "gateway/internal/adapter/http"
-	"gateway/internal/adapter/logger"
-	"gateway/internal/config"
 
 	"github.com/gin-gonic/gin"
 )
@@ -20,7 +18,7 @@ func main() {
 
 	loggerInstance := logger.NewLogger()
 
-	httpClient := &http.Client{Timeout: 30 * time.Second}
+	httpClient := &http.Client{Timeout: cfg.Timeout.HTTPClientTimeout}
 
 	weatherHandler := httphandler.NewWeatherHandler(cfg.WeatherServiceURL, httpClient, loggerInstance)
 	subscriptionHandler := httphandler.NewSubscriptionHandler(cfg.SubscriptionServiceURL, httpClient, loggerInstance)
@@ -53,7 +51,7 @@ func main() {
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), cfg.Timeout.ShutdownTimeout)
 	defer cancel()
 	if err := srv.Shutdown(ctx); err != nil {
 		panic("Server forced to shutdown: " + err.Error())
