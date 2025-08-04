@@ -8,6 +8,7 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
+	grpcclient "weather-broadcast/internal/adapter/grpc"
 	httphandler "weather-broadcast/internal/adapter/http"
 	"weather-broadcast/internal/adapter/logger"
 	"weather-broadcast/internal/config"
@@ -26,25 +27,20 @@ func main() {
 
 	loggerInstance := logger.NewLogrusLogger()
 
-	httpClient := &http.Client{Timeout: cfg.HTTPClientTimeout}
+	subscriptionClient, err := grpcclient.NewSubscriptionClient(cfg.SubscriptionGRPCURL, loggerInstance)
+	if err != nil {
+		panic(fmt.Sprintf("Failed to create subscription gRPC client: %v", err))
+	}
 
-	subscriptionClient := httphandler.NewSubscriptionClient(
-		cfg.SubscriptionServiceURL,
-		httpClient,
-		loggerInstance,
-	)
+	emailClient, err := grpcclient.NewEmailClient(cfg.EmailGRPCURL, loggerInstance)
+	if err != nil {
+		panic(fmt.Sprintf("Failed to create email gRPC client: %v", err))
+	}
 
-	weatherClient := httphandler.NewWeatherClient(
-		cfg.WeatherServiceURL,
-		httpClient,
-		loggerInstance,
-	)
-
-	emailClient := httphandler.NewEmailClient(
-		cfg.EmailServiceURL,
-		httpClient,
-		loggerInstance,
-	)
+	weatherClient, err := grpcclient.NewWeatherClient(cfg.WeatherGRPCURL, loggerInstance)
+	if err != nil {
+		panic(fmt.Sprintf("Failed to create weather gRPC client: %v", err))
+	}
 
 	broadcastUseCase := usecase.NewBroadcastUseCase(
 		subscriptionClient,

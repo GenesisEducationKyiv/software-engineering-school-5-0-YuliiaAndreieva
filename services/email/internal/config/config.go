@@ -21,8 +21,9 @@ type SMTPConfig struct {
 }
 
 type ServerConfig struct {
-	Port    string
-	BaseURL string
+	Port     string
+	GRPCPort string
+	BaseURL  string
 }
 
 func LoadConfig() *Config {
@@ -38,8 +39,9 @@ func LoadConfig() *Config {
 			Pass: getEnv("SMTP_PASS", ""),
 		},
 		Server: ServerConfig{
-			Port:    getEnv("SERVER_PORT", "8081"),
-			BaseURL: getEnv("BASE_URL", "http://localhost:8081"),
+			Port:     getEnv("SERVER_PORT", "8081"),
+			GRPCPort: getEnv("GRPC_PORT", "9091"),
+			BaseURL:  getEnv("BASE_URL", "http://localhost:8081"),
 		},
 	}
 }

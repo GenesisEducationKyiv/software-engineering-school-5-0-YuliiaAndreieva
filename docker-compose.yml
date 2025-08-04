@@ -21,6 +21,7 @@ services:
     container_name: email-service
     ports:
       - "8081:8081"
+      - "9091:9091"
     env_file:
       - services/email/.env
     networks:
@@ -33,6 +34,7 @@ services:
     container_name: subscription-service
     ports:
       - "8082:8082"
+      - "9090:9090"
     env_file:
       - services/subscription/.env
     depends_on:
@@ -64,6 +66,7 @@ services:
     container_name: weather-service
     ports:
       - "8084:8084"
+      - "9092:9092"
     env_file:
       - services/weather/.env
     depends_on:

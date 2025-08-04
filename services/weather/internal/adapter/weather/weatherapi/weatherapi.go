@@ -7,9 +7,8 @@ import (
 	"net/http"
 	"net/url"
 	"time"
-	"weather/internal/adapter/
 	"weather/internal/adapter/weather"
-	"time"
+	"weather/internal/core/domain"
 )
 
 const (

@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+package subscription;
+
+option go_package = "proto/subscription";
+
+service SubscriptionService {
+  rpc ListByFrequency(ListByFrequencyRequest) returns (ListByFrequencyResponse);
+}
+
+message ListByFrequencyRequest {
+  string frequency = 1;
+  int32 last_id = 2;
+  int32 page_size = 3;
+}
+
+message ListByFrequencyResponse {
+  repeated Subscription subscriptions = 1;
+  int32 last_index = 2;
+}
+
+message Subscription {
+  int32 id = 1;
+  string email = 2;
+  string city = 3;
+  string frequency = 4;
+  bool confirmed = 5;
+  string token = 6;
+} 

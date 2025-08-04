@@ -2,6 +2,7 @@ FROM golang:1.24-alpine AS builder
 
 WORKDIR /app
 
+COPY proto/ ./proto/
 COPY services/weather/go.mod services/weather/go.sum ./
 COPY services/weather/ ./
 

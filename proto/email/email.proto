@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+package email;
+
+option go_package = "proto/email";
+
+service EmailService {
+  rpc SendWeatherUpdate(WeatherUpdateRequest) returns (EmailResponse);
+}
+
+message WeatherUpdateRequest {
+  string to = 1;
+  string subject = 2;
+  string name = 3;
+  string city = 4;
+  string description = 5;
+  int32 temperature = 6;
+  int32 humidity = 7;
+  int32 wind_speed = 8;
+  string unsubscribe_token = 9;
+}
+
+message EmailResponse {
+  bool success = 1;
+  string message = 2;
+  string error = 3;
+} 

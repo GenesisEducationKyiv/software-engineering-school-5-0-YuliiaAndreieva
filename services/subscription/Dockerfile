@@ -2,6 +2,7 @@ FROM golang:1.24-alpine AS builder
 
 WORKDIR /app
 
+COPY proto/ ./proto/
 COPY services/subscription/go.mod services/subscription/go.sum ./
 COPY services/subscription/ ./
 

@@ -9,7 +9,10 @@ require (
 	github.com/prometheus/client_golang v1.23.0
 	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.10.0
+	proto v0.0.0-00010101000000-000000000000
 )
+
+replace proto => ./proto
 
 require (
 	github.com/beorn7/perks v1.0.1 // indirect

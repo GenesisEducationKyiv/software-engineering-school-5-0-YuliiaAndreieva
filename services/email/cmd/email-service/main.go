@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"fmt"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -9,12 +11,15 @@ import (
 	"time"
 
 	"email/internal/adapter/email"
+	grpchandler "email/internal/adapter/grpc"
 	httphandler "email/internal/adapter/http"
 	"email/internal/adapter/logger"
 	"email/internal/config"
 	"email/internal/core/usecase"
+	pb "proto/email"
 
 	"github.com/gin-gonic/gin"
+	"google.golang.org/grpc"
 )
 
 func main() {
@@ -39,6 +44,8 @@ func main() {
 
 	emailHandler := httphandler.NewEmailHandler(sendEmailUseCase, loggerInstance)
 
+	grpcHandler := grpchandler.NewEmailHandler(sendEmailUseCase)
+
 	r := gin.Default()
 
 	r.GET("/health", func(c *gin.Context) {
@@ -48,14 +55,34 @@ func main() {
 	r.POST("/send/confirmation", emailHandler.SendConfirmationEmail)
 	r.POST("/send/weather-update", emailHandler.SendWeatherUpdateEmail)
 
-	srv := &http.Server{
+	httpSrv := &http.Server{
 		Addr:    ":" + cfg.Server.Port,
 		Handler: r,
 	}
 
+	grpcSrv := grpc.NewServer()
+	pb.RegisterEmailServiceServer(grpcSrv, grpcHandler)
+
 	go func() {
-		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			panic("Failed to start server: " + err.Error())
+		loggerInstance.Infof("Starting HTTP server on port %s", cfg.Server.Port)
+		if err := httpSrv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			panic("Failed to start HTTP server: " + err.Error())
+		}
+	}()
+
+	go func() {
+		grpcPort := cfg.Server.GRPCPort
+		if grpcPort == "" {
+			grpcPort = "9091"
+		}
+		lis, err := net.Listen("tcp", ":"+grpcPort)
+		if err != nil {
+			panic(fmt.Sprintf("Failed to listen for gRPC: %v", err))
+		}
+
+		loggerInstance.Infof("Starting gRPC server on port %s", grpcPort)
+		if err := grpcSrv.Serve(lis); err != nil {
+			panic("Failed to start gRPC server: " + err.Error())
 		}
 	}()
 
@@ -65,7 +92,9 @@ func main() {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	if err := srv.Shutdown(ctx); err != nil {
-		panic("Server forced to shutdown: " + err.Error())
+
+	grpcSrv.GracefulStop()
+	if err := httpSrv.Shutdown(ctx); err != nil {
+		panic("HTTP server forced to shutdown: " + err.Error())
 	}
 }
