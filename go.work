@@ -2,9 +2,11 @@ go 1.24
 
 use (
 	./services/email
+	./services/gateway
 	./services/subscription
 	./services/token
 	./services/weather
 	./services/weather-broadcast
-	./services/gateway
-) 
+)
+
+replace proto => ./proto

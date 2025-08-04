@@ -1,118 +1,128 @@
-# Weather API Service
+# Weather Services
 
-A Go-based weather API service that provides weather updates via email subscriptions. Users can subscribe to receive weather updates for their preferred cities either hourly or daily.
+Microservices architecture for weather notifications with gRPC communication between services.
 
-### 🚨 Please be aware that site is deployed at https://weatherapi-rpum.onrender.com (currently unavailable) 🚨
 ## Architecture
 
-The project follows a clean architecture pattern with the following structure:
-
 ```
-weather-api/
-├── cmd/
-│   └── server/         # Application entry point
-├── internal/
-│   ├── adapter/        # External service adapters (email, weather API, database)
-│   ├── core/           # Domain models and business logic
-│   ├── handler/        # HTTP handlers
-│   ├── mocks/          # Mock implementations for testing
-│   └── util/           # Utility functions and configuration
-├── migrations/         # Database migrations
-└── web/               # Frontend static files
-```
-
-### Key Components
-
-- **Weather Service**: Fetches weather data from external weather API
-- **Email Service**: Handles email notifications using SMTP
-- **Subscription Service**: Manages user subscriptions and confirmation
-- **Token Service**: Generates subscription tokens
-- **PostgreSQL Database**: Stores subscription information
-
-## Prerequisites
-
-- Go 1.24
-- PostgreSQL
-- SMTP server access (google app generated pass)
-- Weather API key (https://www.weatherapi.com)
-
-## Environment Variables
-
-Create a `.env` file in the root directory with the following variables:
-
-```env
-DB_CONN_STR=postgres://username:password@localhost:5432/weather_db?sslmode=disable
-WEATHER_API_KEY=your_weather_api_key
-BASE_URL=http://localhost:8080
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=587
-SMTP_USER=your_email@gmail.com
-SMTP_PASS=your_app_specific_password
-PORT=8080
+┌─────────────────┐    HTTP    ┌─────────────────┐
+│   Gateway       │◄──────────►│   Client        │
+└─────────────────┘            └─────────────────┘
+         │
+         │ HTTP
+         ▼
+┌─────────────────┐    gRPC    ┌─────────────────┐    gRPC    ┌─────────────────┐
+│ Weather-Broadcast│◄──────────►│   Subscription  │◄──────────►│     Email       │
+└─────────────────┘            └─────────────────┘            └─────────────────┘
+         │                              │
+         │ gRPC                         │
+         ▼                              │
+┌─────────────────┐                     │
+│    Weather      │◄────────────────────┘
+└─────────────────┘
 ```
 
-## Running the Project
+**Services:**
+- **Gateway** (8080) - API Gateway
+- **Email** (8081/9091) - Email notifications
+- **Subscription** (8082/9090) - Subscription management
+- **Token** (8083) - JWT tokens
+- **Weather** (8084/9092) - Weather data
+- **Weather-Broadcast** (8085) - Weather broadcast service
 
-1. Start the server and postgres db using docker:
+## Build & Run
+
+### Docker
 ```bash
-docker compose up -d
+# Build all services
+docker-compose build
+
+# Start
+docker-compose up
+
+# Stop
+docker-compose down
 ```
-Migrations will be automatically applied upon lift.
-The server will start on port 8080 by default.
 
-## Running Tests
-
-Run all tests:
+### Local Development
 ```bash
-go test ./...
+# Generate proto files
+cd proto
+protoc --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative subscription/subscription.proto
+protoc --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative email/email.proto
+protoc --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative weather/weather.proto
+go mod tidy
+
+# Run services (separately)
+cd services/email && go run cmd/email-service/main.go
+cd services/subscription && go run cmd/subscription-service/main.go
+cd services/weather && go run cmd/weather-service/main.go
+cd services/weather-broadcast && go run cmd/weather-broadcast-service/main.go
 ```
 
-Run tests only in core/service directory:
+## Testing
+
+### Generate Mocks
 ```bash
-go test ./internal/core/service/...
+# Email service
+cd services/email
+mockgen -source=internal/core/ports/in/email_usecase.go -destination=tests/mocks/email_usecase_mock.go
+
+# Subscription service  
+cd services/subscription
+mockgen -source=internal/core/ports/in/subscription_usecase.go -destination=tests/mocks/subscription_usecase_mock.go
+
+# Weather service
+cd services/weather
+mockgen -source=internal/core/ports/in/weather_usecase.go -destination=tests/mocks/weather_usecase_mock.go
+
+# Weather-broadcast service
+cd services/weather-broadcast
+mockgen -source=internal/core/ports/out/subscription_client.go -destination=tests/mocks/subscription_client_mock.go
+mockgen -source=internal/core/ports/out/email_client.go -destination=tests/mocks/email_client_mock.go
+mockgen -source=internal/core/ports/out/weather_client.go -destination=tests/mocks/weather_client_mock.go
 ```
 
-### Code Quality with golangci-lint
-
-Install golangci-lint:
-
+### Run Tests
 ```bash
-go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.1.6
+# Unit tests
+cd services/email && go test ./tests/unit/...
+cd services/subscription && go test ./tests/usecase/...
+cd services/weather && go test ./tests/unit/...
+cd services/weather-broadcast && go test ./tests/usecase/...
+
+# Integration tests
+cd services/email && go test ./tests/integration/...
+cd services/subscription && go test ./tests/integration/...
+cd services/weather && go test ./tests/integration/...
+
+# All service tests
+cd services/email && go test ./...
+cd services/subscription && go test ./...
+cd services/weather && go test ./...
+cd services/weather-broadcast && go test ./...
 ```
 
-Run the linter:
+### Docker Tests
 ```bash
-golangci-lint run -v
+# Email service tests
+cd services/email/tests
+docker-compose -f docker-compose.test.yml up --build --abort-on-container-exit
+
+# Subscription service tests  
+cd services/subscription/tests
+docker-compose -f docker-compose.test.yml up --build --abort-on-container-exit
 ```
 
-## API Endpoints
+## Technologies
 
-- `GET /api/weather` - Get current weather for a city
-- `POST /api/subscribe` - Subscribe to weather updates
-- `GET /api/confirm/:token` - Confirm subscription
-- `GET /api/unsubscribe/:token` - Unsubscribe from updates
-
-## Subscription Frequencies
-
-The service supports two types of update frequencies:
-
-1. **Hourly Updates**: Sent every hour
-2. **Daily Updates**: Sent once daily at 8:00 AM
-
-**Please be aware, that after click button Subscribe - on ui only button changes color and email sent, no alerts**
-To modify the update schedule, edit the cron expressions in `cmd/server/main.go`:
-
-```go
-cron.AddFunc("0 * * * *", func() { emailService.SendUpdates(context.Background(), domain.FrequencyHourly) })
-cron.AddFunc("0 0 * * *", func() { emailService.SendUpdates(context.Background(), domain.FrequencyDaily) })
-```
-
-## Example Subscription Request
-
-```json
-{
-    "email": "user@example.com",
-    "city": "Kyiv",
-    "frequency": "hourly"
-}
-```
+- **Go 1.24** - main language
+- **gRPC** - inter-service communication
+- **HTTP/REST** - external APIs
+- **PostgreSQL** - database
+- **Redis** - caching
+- **Docker** - containerization
+- **Gin** - HTTP framework
+- **GORM** - ORM
+- **Logrus** - logging
+- **Cron** - task scheduling 
