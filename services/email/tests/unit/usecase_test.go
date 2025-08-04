@@ -172,7 +172,7 @@ func TestSendEmailUseCase_SendWeatherUpdateEmail_Success(t *testing.T) {
 			templateBuilder := &mocks.EmailTemplateBuilder{}
 			emailSender := &mocks.EmailSender{}
 
-			templateBuilder.On("BuildWeatherUpdateEmail", mock.Anything, tt.request.To, tt.request.City, tt.request.Description, tt.request.Humidity, tt.request.WindSpeed, tt.request.Temperature).
+			templateBuilder.On("BuildWeatherUpdateEmail", mock.Anything, tt.request.To, tt.request.City, tt.request.Description, tt.request.Humidity, tt.request.WindSpeed, tt.request.Temperature, mock.Anything).
 				Return("<html><body>Test weather template</body></html>", nil)
 
 			emailSender.On("SendEmail", mock.Anything, mock.AnythingOfType("domain.EmailRequest")).
@@ -211,7 +211,7 @@ func TestSendEmailUseCase_SendWeatherUpdateEmail_TemplateBuilderError(t *testing
 	}
 
 	templateBuilder := &mocks.EmailTemplateBuilder{}
-	templateBuilder.On("BuildWeatherUpdateEmail", mock.Anything, request.To, request.City, request.Description, request.Humidity, request.WindSpeed, request.Temperature).
+	templateBuilder.On("BuildWeatherUpdateEmail", mock.Anything, request.To, request.City, request.Description, request.Humidity, request.WindSpeed, request.Temperature, mock.Anything).
 		Return("", errors.New("template builder error"))
 
 	emailSender := &mocks.EmailSender{}
@@ -241,7 +241,7 @@ func TestSendEmailUseCase_SendWeatherUpdateEmail_EmailSenderError(t *testing.T) 
 	}
 
 	templateBuilder := &mocks.EmailTemplateBuilder{}
-	templateBuilder.On("BuildWeatherUpdateEmail", mock.Anything, request.To, request.City, request.Description, request.Humidity, request.WindSpeed, request.Temperature).
+	templateBuilder.On("BuildWeatherUpdateEmail", mock.Anything, request.To, request.City, request.Description, request.Humidity, request.WindSpeed, request.Temperature, mock.Anything).
 		Return("<html><body>Test weather template</body></html>", nil)
 
 	emailSender := &mocks.EmailSender{}
@@ -305,7 +305,7 @@ func TestSendEmailUseCase_Validation(t *testing.T) {
 			WindSpeed:   10,
 		}
 
-		templateBuilder.On("BuildWeatherUpdateEmail", mock.Anything, request.To, request.City, request.Description, request.Humidity, request.WindSpeed, request.Temperature).
+		templateBuilder.On("BuildWeatherUpdateEmail", mock.Anything, request.To, request.City, request.Description, request.Humidity, request.WindSpeed, request.Temperature, mock.Anything).
 			Return("<html><body>Test weather template</body></html>", nil)
 
 		emailSender.On("SendEmail", mock.Anything, mock.AnythingOfType("domain.EmailRequest")).

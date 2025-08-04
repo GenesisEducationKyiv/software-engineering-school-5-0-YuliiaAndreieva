@@ -1,4 +1,4 @@
-//go:generate mockery --dir . --output ../../../../tests/mocks --outpkg mocks --filename email_usecase_mock.go --structname SendEmailUseCase
+//go:generate mockery --dir . --output ../../../../tests/mocks --outpkg mocks --filename email_usecase_mock.go --structname SendEmailUseCase --name SendEmailUseCase
 package in
 
 import (

@@ -125,6 +125,7 @@ func TestTemplateBuilder_BuildWeatherUpdateEmail(t *testing.T) {
 				tt.humidity,
 				tt.windSpeed,
 				tt.temperature,
+				"test-unsubscribe-token",
 			)
 
 			if err != nil {
@@ -183,6 +184,7 @@ func TestTemplateBuilder_EdgeCases(t *testing.T) {
 			0,
 			0,
 			0,
+			"test-unsubscribe-token",
 		)
 
 		if err != nil {
