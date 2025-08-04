@@ -11,7 +11,7 @@ import (
 
 	httphandler "weather-broadcast/internal/adapter/http"
 	"weather-broadcast/internal/core/domain"
-	"weather-broadcast/tests"
+	"weather-broadcast/tests/mocks"
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
@@ -32,12 +32,12 @@ type broadcastHandlerTestSetup struct {
 	handler              *httphandler.BroadcastHandler
 	router               *gin.Engine
 	mockBroadcastUseCase *MockBroadcastUseCase
-	mockLogger           *tests.MockLogger
+	mockLogger           *mocks.Logger
 }
 
 func setupBroadcastHandlerTest() *broadcastHandlerTestSetup {
 	mockBroadcastUseCase := &MockBroadcastUseCase{}
-	mockLogger := &tests.MockLogger{}
+	mockLogger := &mocks.Logger{}
 
 	handler := httphandler.NewBroadcastHandler(mockBroadcastUseCase, mockLogger)
 
@@ -54,11 +54,14 @@ func setupBroadcastHandlerTest() *broadcastHandlerTestSetup {
 }
 
 func (ts *broadcastHandlerTestSetup) setupSuccessMocks() {
-	tests.SetupSuccessLoggerMocks(ts.mockLogger)
+	ts.mockLogger.On("Infof", mock.Anything, mock.Anything, mock.Anything).Return()
+	ts.mockLogger.On("Debugf", mock.Anything, mock.Anything, mock.Anything).Return()
 }
 
 func (ts *broadcastHandlerTestSetup) setupErrorMocks() {
-	tests.SetupErrorLoggerMocks(ts.mockLogger)
+	ts.mockLogger.On("Errorf", mock.Anything, mock.Anything).Return()
+	ts.mockLogger.On("Warnf", mock.Anything, mock.Anything, mock.Anything).Return()
+	ts.mockLogger.On("Infof", mock.Anything, mock.Anything).Return()
 }
 
 func (ts *broadcastHandlerTestSetup) makeBroadcastRequest(t *testing.T, request domain.BroadcastRequest) (*httptest.ResponseRecorder, map[string]interface{}) {
