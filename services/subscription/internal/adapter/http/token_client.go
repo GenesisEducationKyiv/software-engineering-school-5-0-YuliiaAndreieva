@@ -123,9 +123,9 @@ func (c *TokenClient) sendRequest(req *http.Request, operation string) (*http.Re
 		c.logger.Errorf("Failed to send %s request: %v", operation, err)
 		return nil, fmt.Errorf("failed to send request: %w", err)
 	}
-	defer c.closeResponseBody(resp)
 
 	if err := c.validateResponse(resp); err != nil {
+		c.closeResponseBody(resp)
 		return nil, err
 	}
 
@@ -147,6 +147,8 @@ func (c *TokenClient) validateResponse(resp *http.Response) error {
 }
 
 func (c *TokenClient) decodeTokenResponse(resp *http.Response) (string, error) {
+	defer c.closeResponseBody(resp)
+
 	var response struct {
 		Token string `json:"token"`
 	}
@@ -160,6 +162,8 @@ func (c *TokenClient) decodeTokenResponse(resp *http.Response) (string, error) {
 }
 
 func (c *TokenClient) decodeValidationResponse(resp *http.Response) (bool, error) {
+	defer c.closeResponseBody(resp)
+
 	var response struct {
 		Valid bool `json:"valid"`
 	}

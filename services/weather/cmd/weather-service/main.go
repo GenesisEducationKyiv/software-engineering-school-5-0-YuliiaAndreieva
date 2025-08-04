@@ -26,7 +26,8 @@ import (
 	"weather/internal/core/usecase"
 
 	"github.com/gin-gonic/gin"
-	"google.golang.org/grpc"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	
 )
 
 func main() {
@@ -96,6 +97,8 @@ func main() {
 	r.GET("/health", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"status": "ok", "service": "weather"})
 	})
+
+	r.GET("/metrics", gin.WrapH(promhttp.Handler()))
 
 	r.POST("/weather", weatherHandler.GetWeather)
 

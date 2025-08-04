@@ -14,7 +14,7 @@ require (
 	proto v0.0.0-00010101000000-000000000000
 )
 
-replace proto => ../../proto
+replace proto => ./proto
 
 require (
 	github.com/beorn7/perks v1.0.1 // indirect

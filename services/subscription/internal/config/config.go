@@ -50,17 +50,17 @@ func LoadConfig() *Config {
 	return &Config{
 		Server: ServerConfig{
 			Port:     getEnv("SERVER_PORT", "8082"),
-			GRPCPort: getEnv("GRPC_PORT", "9090"),
+			GRPCPort: getEnv("GRPC_PORT", "9093"),
 		},
 		Email: EmailConfig{
-			ServiceURL: getEnv("EMAIL_SERVICE_URL", "http://localhost:8081"),
+			ServiceURL: getEnv("EMAIL_SERVICE_URL", "http://email-service:8081"),
 		},
 		Token: TokenConfig{
-			ServiceURL: getEnv("TOKEN_SERVICE_URL", "http://localhost:8083"),
+			ServiceURL: getEnv("TOKEN_SERVICE_URL", "http://token-service:8083"),
 			Expiration: getEnv("TOKEN_EXPIRATION", "24h"),
 		},
 		Database: DatabaseConfig{
-			DSN: getEnv("DATABASE_DSN", "host=localhost user=postgres password=postgres dbname=subscriptions port=5432 sslmode=disable"),
+			DSN: getEnv("DATABASE_DSN", "host=postgres user=postgres password=postgres dbname=subscriptions port=5432 sslmode=disable"),
 		},
 		Timeout: TimeoutConfig{
 			HTTPClientTimeout:  getDurationEnv("HTTP_CLIENT_TIMEOUT", 10*time.Second),

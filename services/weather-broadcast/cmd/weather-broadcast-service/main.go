@@ -16,6 +16,7 @@ import (
 	"weather-broadcast/internal/core/usecase"
 
 	"github.com/gin-gonic/gin"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/robfig/cron/v3"
 )
 
@@ -76,6 +77,8 @@ func main() {
 		c.JSON(http.StatusOK, gin.H{"status": "ok", "service": "weather-broadcast"})
 	})
 
+	r.GET("/metrics", gin.WrapH(promhttp.Handler()))
+
 	r.POST("/broadcast", broadcastHandler.Broadcast)
 
 	srv := &http.Server{
@@ -98,8 +101,9 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), cfg.ShutdownTimeout)
 	defer cancel()
 
-	c.Stop()
 	if err := srv.Shutdown(ctx); err != nil {
 		panic("Server forced to shutdown: " + err.Error())
 	}
+
+	loggerInstance.Infof("Server stopped")
 }

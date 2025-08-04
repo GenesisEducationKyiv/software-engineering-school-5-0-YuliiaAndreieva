@@ -53,7 +53,7 @@ func (p *RabbitMQPublisher) PublishSubscriptionCreated(ctx context.Context, subs
 	event := domain.SubscriptionCreatedEvent{
 		Email:       subscription.Email,
 		City:        subscription.City,
-		Frequency:   subscription.Frequency,
+		Frequency:   domain.Frequency(subscription.Frequency),
 		Token:       subscription.Token,
 		IsConfirmed: subscription.IsConfirmed,
 	}

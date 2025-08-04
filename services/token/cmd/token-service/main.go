@@ -13,6 +13,7 @@ import (
 	"token/internal/core/usecase"
 
 	"github.com/gin-gonic/gin"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 func main() {
@@ -30,6 +31,8 @@ func main() {
 	r.GET("/health", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"status": "ok", "service": "token"})
 	})
+
+	r.GET("/metrics", gin.WrapH(promhttp.Handler()))
 
 	r.POST("/generate", tokenHandler.GenerateToken)
 	r.POST("/validate", tokenHandler.ValidateToken)
