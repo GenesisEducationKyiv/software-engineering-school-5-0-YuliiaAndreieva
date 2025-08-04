@@ -86,3 +86,11 @@ type UnsubscribedEvent struct {
 	City  string `json:"city"`
 	Token string `json:"token"`
 }
+
+type SubscriptionCreatedEvent struct {
+	Email       string    `json:"email"`
+	City        string    `json:"city"`
+	Frequency   Frequency `json:"frequency"`
+	Token       string    `json:"token"`
+	IsConfirmed bool      `json:"is_confirmed"`
+}

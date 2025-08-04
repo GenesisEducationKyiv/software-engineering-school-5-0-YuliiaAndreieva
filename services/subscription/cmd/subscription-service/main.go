@@ -15,6 +15,7 @@ import (
 	grpchandler "subscription/internal/adapter/grpc"
 	httphandler "subscription/internal/adapter/http"
 	"subscription/internal/adapter/logger"
+	"subscription/internal/adapter/messaging"
 	"subscription/internal/config"
 	"subscription/internal/core/usecase"
 
@@ -56,7 +57,13 @@ func main() {
 	emailClient := httphandler.NewEmailClient(cfg.Email.ServiceURL, httpClient, loggerInstance)
 	tokenClient := httphandler.NewTokenClient(cfg.Token.ServiceURL, httpClient, loggerInstance)
 
-	subscribeUseCase := usecase.NewSubscribeUseCase(repo, tokenClient, emailClient, loggerInstance, cfg)
+	eventPublisher, err := messaging.NewRabbitMQPublisher(cfg.RabbitMQ.URL, cfg.RabbitMQ.Exchange, loggerInstance)
+	if err != nil {
+		panic(fmt.Sprintf("Failed to create RabbitMQ publisher: %v", err))
+	}
+	defer eventPublisher.Close()
+
+	subscribeUseCase := usecase.NewSubscribeUseCase(repo, tokenClient, emailClient, eventPublisher, loggerInstance, cfg)
 	confirmUseCase := usecase.NewConfirmSubscriptionUseCase(repo, tokenClient, loggerInstance)
 	unsubscribeUseCase := usecase.NewUnsubscribeUseCase(repo, tokenClient, loggerInstance)
 	listByFrequencyUseCase := usecase.NewListByFrequencyUseCase(repo, loggerInstance)

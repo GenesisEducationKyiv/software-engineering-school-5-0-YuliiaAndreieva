@@ -13,10 +13,18 @@ type EmailResponse struct {
 }
 
 type ConfirmationEmailRequest struct {
-	To               string `json:"to" validate:"required,email"`
-	Subject          string `json:"subject" validate:"required"`
-	City             string `json:"city" validate:"required"`
-	ConfirmationLink string `json:"confirmationLink" validate:"required"`
+	To               string `json:"to"`
+	Subject          string `json:"subject"`
+	City             string `json:"city"`
+	ConfirmationLink string `json:"confirmationLink"`
+}
+
+type SubscriptionCreatedEvent struct {
+	Email       string `json:"email"`
+	City        string `json:"city"`
+	Frequency   string `json:"frequency"`
+	Token       string `json:"token"`
+	IsConfirmed bool   `json:"is_confirmed"`
 }
 
 type WeatherUpdateEmailRequest struct {

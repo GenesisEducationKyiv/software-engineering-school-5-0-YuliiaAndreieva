@@ -10,9 +10,10 @@ import (
 )
 
 type Config struct {
-	SMTP    SMTPConfig
-	Server  ServerConfig
-	Timeout TimeoutConfig
+	SMTP     SMTPConfig
+	Server   ServerConfig
+	Timeout  TimeoutConfig
+	RabbitMQ RabbitMQConfig
 }
 
 type SMTPConfig struct {
@@ -30,6 +31,12 @@ type ServerConfig struct {
 
 type TimeoutConfig struct {
 	ShutdownTimeout time.Duration
+}
+
+type RabbitMQConfig struct {
+	URL      string
+	Exchange string
+	Queue    string
 }
 
 func LoadConfig() *Config {
@@ -51,6 +58,11 @@ func LoadConfig() *Config {
 		},
 		Timeout: TimeoutConfig{
 			ShutdownTimeout: getDurationEnv("SHUTDOWN_TIMEOUT", 5*time.Second),
+		},
+		RabbitMQ: RabbitMQConfig{
+			URL:      getEnv("RABBITMQ_URL", "amqp://admin:password@rabbitmq:5672/"),
+			Exchange: getEnv("RABBITMQ_EXCHANGE", "subscription_events"),
+			Queue:    getEnv("RABBITMQ_QUEUE", "email_notifications"),
 		},
 	}
 }

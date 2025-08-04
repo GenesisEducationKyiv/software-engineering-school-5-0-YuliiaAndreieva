@@ -24,6 +24,9 @@ services:
       - "9091:9091"
     env_file:
       - services/email/.env
+    depends_on:
+      rabbitmq:
+        condition: service_started
     networks:
       - weather-network
 
@@ -43,6 +46,8 @@ services:
       email-service:
         condition: service_started
       token-service:
+        condition: service_started
+      rabbitmq:
         condition: service_started
     networks:
       - weather-network
@@ -114,6 +119,18 @@ services:
     container_name: redis
     ports:
       - "6379:6379"
+    networks:
+      - weather-network
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      - RABBITMQ_DEFAULT_USER=admin
+      - RABBITMQ_DEFAULT_PASS=password
     networks:
       - weather-network
 

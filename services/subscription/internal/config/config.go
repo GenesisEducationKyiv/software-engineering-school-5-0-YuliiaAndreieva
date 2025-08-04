@@ -12,6 +12,7 @@ type Config struct {
 	Token    TokenConfig
 	Database DatabaseConfig
 	Timeout  TimeoutConfig
+	RabbitMQ RabbitMQConfig
 }
 
 type ServerConfig struct {
@@ -39,6 +40,12 @@ type TimeoutConfig struct {
 	DatabaseMaxRetries int
 }
 
+type RabbitMQConfig struct {
+	URL      string
+	Exchange string
+	Queue    string
+}
+
 func LoadConfig() *Config {
 	return &Config{
 		Server: ServerConfig{
@@ -60,6 +67,11 @@ func LoadConfig() *Config {
 			ShutdownTimeout:    getDurationEnv("SHUTDOWN_TIMEOUT", 5*time.Second),
 			DatabaseRetryDelay: getDurationEnv("DATABASE_RETRY_DELAY", 2*time.Second),
 			DatabaseMaxRetries: getIntEnv("DATABASE_MAX_RETRIES", 30),
+		},
+		RabbitMQ: RabbitMQConfig{
+			URL:      getEnv("RABBITMQ_URL", "amqp://admin:password@rabbitmq:5672/"),
+			Exchange: getEnv("RABBITMQ_EXCHANGE", "subscription_events"),
+			Queue:    getEnv("RABBITMQ_QUEUE", "email_notifications"),
 		},
 	}
 }

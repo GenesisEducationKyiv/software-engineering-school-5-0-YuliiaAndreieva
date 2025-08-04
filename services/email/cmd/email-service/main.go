@@ -13,6 +13,7 @@ import (
 	grpchandler "email/internal/adapter/grpc"
 	httphandler "email/internal/adapter/http"
 	"email/internal/adapter/logger"
+	"email/internal/adapter
 	"email/internal/config"
 	"email/internal/core/usecase"
 	pb "proto/email"
@@ -44,6 +45,16 @@ func main() {
 	emailHandler := httphandler.NewEmailHandler(sendEmailUseCase, loggerInstance)
 
 	grpcHandler := grpchandler.NewEmailHandler(sendEmailUseCase)
+
+	consumer, err := messaging.NewRabbitMQConsumer(cfg.RabbitMQ.URL, cfg.RabbitMQ.Exchange, cfg.RabbitMQ.Queue, sendEmailUseCase, loggerInstance)
+	if err != nil {
+		panic(fmt.Sprintf("Failed to create RabbitMQ consumer: %v", err))
+	}
+	defer consumer.Close()
+
+	if err := consumer.Start(context.Background()); err != nil {
+		panic(fmt.Sprintf("Failed to start RabbitMQ consumer: %v", err))
+	}
 
 	r := gin.Default()
 
