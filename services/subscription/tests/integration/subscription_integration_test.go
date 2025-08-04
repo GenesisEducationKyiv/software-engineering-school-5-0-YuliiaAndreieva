@@ -22,10 +22,11 @@ import (
 	"github.com/stretchr/testify/require"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	"subscription/internal/config"
 )
 
 func init() {
-	godotenv.Load("test.env")
+	godotenv.Load("../../test.env")
 }
 
 func getEnvWithDefault(key, defaultValue string) string {
@@ -36,12 +37,13 @@ func getEnvWithDefault(key, defaultValue string) string {
 }
 
 type subscriptionIntegrationTestSetup struct {
-	handler          *httphandler.SubscriptionHandler
-	router           *gin.Engine
-	gormDB           *gorm.DB
-	mockTokenService *mocks.TokenService
-	mockEmailService *mocks.EmailService
-	mockLogger       *mocks.Logger
+	handler            *httphandler.SubscriptionHandler
+	router             *gin.Engine
+	gormDB             *gorm.DB
+	mockTokenService   *mocks.TokenService
+	mockEmailService   *mocks.EmailService
+	mockEventPublisher *mocks.EventPublisher
+	mockLogger         *mocks.Logger
 }
 
 func setupSubscriptionIntegrationTest(t *testing.T) *subscriptionIntegrationTestSetup {
@@ -60,11 +62,18 @@ func setupSubscriptionIntegrationTest(t *testing.T) *subscriptionIntegrationTest
 
 	mockTokenService := &mocks.TokenService{}
 	mockEmailService := &mocks.EmailService{}
+	mockEventPublisher := &mocks.EventPublisher{}
 	mockLogger := &mocks.Logger{}
 
 	repository := database.NewSubscriptionRepo(gormDB, mockLogger)
 
-	subscribeUseCase := usecase.NewSubscribeUseCase(repository, mockTokenService, mockEmailService, mockLogger)
+	cfg := &config.Config{
+		Token: config.TokenConfig{
+			Expiration: "24h",
+		},
+	}
+
+	subscribeUseCase := usecase.NewSubscribeUseCase(repository, mockTokenService, mockEmailService, mockEventPublisher, mockLogger, cfg)
 	confirmUseCase := usecase.NewConfirmSubscriptionUseCase(repository, mockTokenService, mockLogger)
 	unsubscribeUseCase := usecase.NewUnsubscribeUseCase(repository, mockTokenService, mockLogger)
 	listByFrequencyUseCase := usecase.NewListByFrequencyUseCase(repository, mockLogger)
@@ -85,12 +94,13 @@ func setupSubscriptionIntegrationTest(t *testing.T) *subscriptionIntegrationTest
 	router.GET("/list", handler.ListByFrequency)
 
 	return &subscriptionIntegrationTestSetup{
-		handler:          handler,
-		router:           router,
-		gormDB:           gormDB,
-		mockTokenService: mockTokenService,
-		mockEmailService: mockEmailService,
-		mockLogger:       mockLogger,
+		handler:            handler,
+		router:             router,
+		gormDB:             gormDB,
+		mockTokenService:   mockTokenService,
+		mockEmailService:   mockEmailService,
+		mockEventPublisher: mockEventPublisher,
+		mockLogger:         mockLogger,
 	}
 }
 
@@ -107,6 +117,10 @@ func (sits *subscriptionIntegrationTestSetup) setupLoggerMocks() {
 	sits.mockLogger.On("Errorf", mock.Anything, mock.Anything).Return()
 	sits.mockLogger.On("Warnf", mock.Anything, mock.Anything, mock.Anything).Return()
 	sits.mockLogger.On("Warnf", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return()
+}
+
+func (sits *subscriptionIntegrationTestSetup) setupEventPublisherMocks() {
+	sits.mockEventPublisher.On("PublishSubscriptionCreated", mock.Anything, mock.Anything).Return(nil)
 }
 
 func (sits *subscriptionIntegrationTestSetup) makeSubscribeRequest(t *testing.T, request domain.SubscriptionRequest) (*httptest.ResponseRecorder, *domain.SubscriptionResponse) {
@@ -158,6 +172,7 @@ func TestSubscriptionIntegration_Subscribe(t *testing.T) {
 
 	t.Run("Valid subscription request", func(t *testing.T) {
 		ts.setupLoggerMocks()
+		ts.setupEventPublisherMocks()
 
 		request := domain.SubscriptionRequest{
 			Email:     "test@example.com",
@@ -178,6 +193,7 @@ func TestSubscriptionIntegration_Subscribe(t *testing.T) {
 
 	t.Run("Invalid email format", func(t *testing.T) {
 		ts.setupLoggerMocks()
+		ts.setupEventPublisherMocks()
 
 		request := domain.SubscriptionRequest{
 			Email:     "invalid-email",
@@ -194,6 +210,7 @@ func TestSubscriptionIntegration_Subscribe(t *testing.T) {
 
 	t.Run("Empty required fields", func(t *testing.T) {
 		ts.setupLoggerMocks()
+		ts.setupEventPublisherMocks()
 
 		request := domain.SubscriptionRequest{
 			Email:     "",
@@ -205,11 +222,12 @@ func TestSubscriptionIntegration_Subscribe(t *testing.T) {
 
 		assert.Equal(t, http.StatusBadRequest, w.Code)
 		assert.False(t, response.Success)
-		assert.Contains(t, response.Message, "Validation failed")
+		assert.Contains(t, response.Message, "validation failed")
 	})
 
 	t.Run("Duplicate subscription", func(t *testing.T) {
 		ts.setupLoggerMocks()
+		ts.setupEventPublisherMocks()
 
 		request := domain.SubscriptionRequest{
 			Email:     "duplicate@example.com",
@@ -239,6 +257,7 @@ func TestSubscriptionIntegration_Confirm(t *testing.T) {
 
 	t.Run("Valid confirmation", func(t *testing.T) {
 		ts.setupLoggerMocks()
+		ts.setupEventPublisherMocks()
 
 		request := domain.SubscriptionRequest{
 			Email:     "confirm@example.com",
@@ -263,6 +282,7 @@ func TestSubscriptionIntegration_Confirm(t *testing.T) {
 
 	t.Run("Invalid token", func(t *testing.T) {
 		ts.setupLoggerMocks()
+		ts.setupEventPublisherMocks()
 
 		ts.mockTokenService.On("ValidateToken", mock.Anything, "invalid-token").Return(false, nil)
 
@@ -288,6 +308,7 @@ func TestSubscriptionIntegration_Unsubscribe(t *testing.T) {
 
 	t.Run("Valid unsubscribe", func(t *testing.T) {
 		ts.setupLoggerMocks()
+		ts.setupEventPublisherMocks()
 
 		request := domain.SubscriptionRequest{
 			Email:     "unsubscribe@example.com",
@@ -315,6 +336,7 @@ func TestSubscriptionIntegration_Unsubscribe(t *testing.T) {
 
 	t.Run("Invalid token", func(t *testing.T) {
 		ts.setupLoggerMocks()
+		ts.setupEventPublisherMocks()
 
 		ts.mockTokenService.On("ValidateToken", mock.Anything, "invalid-token").Return(false, nil)
 

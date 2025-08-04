@@ -71,7 +71,11 @@ func (h *SubscriptionHandler) Confirm(c *gin.Context) {
 		return
 	}
 
-	h.handleConfirmResult(c, *result, token)
+	if result.Success {
+		h.handleConfirmResult(c, *result, token)
+	} else {
+		h.sendConfirmErrorResponse(c, http.StatusBadRequest, result.Message)
+	}
 }
 
 func (h *SubscriptionHandler) Unsubscribe(c *gin.Context) {
@@ -89,7 +93,11 @@ func (h *SubscriptionHandler) Unsubscribe(c *gin.Context) {
 		return
 	}
 
-	h.handleUnsubscribeResult(c, *result, token)
+	if result.Success {
+		h.handleUnsubscribeResult(c, *result, token)
+	} else {
+		h.sendUnsubscribeErrorResponse(c, http.StatusBadRequest, result.Message)
+	}
 }
 
 func (h *SubscriptionHandler) ListByFrequency(c *gin.Context) {
