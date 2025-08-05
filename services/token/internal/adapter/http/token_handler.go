@@ -63,7 +63,7 @@ func (h *TokenHandler) ValidateToken(c *gin.Context) {
 	if err := c.ShouldBindJSON(&req); err != nil {
 		h.logger.Errorf("Failed to bind JSON for token validation: %v", err)
 		c.JSON(http.StatusBadRequest, domain.ValidateTokenResponse{
-			Success: false,
+			Valid:   false,
 			Message: "Invalid request: " + err.Error(),
 		})
 		return
@@ -73,21 +73,16 @@ func (h *TokenHandler) ValidateToken(c *gin.Context) {
 	if err != nil {
 		h.logger.Errorf("Failed to validate token: %v", err)
 		c.JSON(http.StatusInternalServerError, domain.ValidateTokenResponse{
-			Success: false,
+			Valid:   false,
 			Message: "Failed to validate token: " + err.Error(),
 		})
 		return
 	}
 
-	if result.Success {
-		if result.Valid {
-			h.logger.Infof("Token validated successfully")
-		} else {
-			h.logger.Warnf("Token validation failed: %s", result.Message)
-		}
-		c.JSON(http.StatusOK, result)
+	if result.Valid {
+		h.logger.Infof("Token validated successfully")
 	} else {
-		h.logger.Errorf("Token validation error: %s", result.Message)
-		c.JSON(http.StatusInternalServerError, result)
+		h.logger.Warnf("Token validation failed: %s", result.Message)
 	}
+	c.JSON(http.StatusOK, result)
 }

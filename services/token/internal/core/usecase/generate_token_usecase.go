@@ -12,6 +12,10 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
+const (
+	defaultTokenExpiration = 24 * time.Hour
+)
+
 type GenerateTokenUseCase struct {
 	logger sharedlogger.Logger
 	secret []byte
@@ -27,7 +31,7 @@ func NewGenerateTokenUseCase(logger sharedlogger.Logger, secret string) in.Gener
 func (uc *GenerateTokenUseCase) GenerateToken(ctx context.Context, req domain.GenerateTokenRequest) (*domain.GenerateTokenResponse, error) {
 	uc.logger.Infof("Generating JWT token for subject: %s", req.Subject)
 
-	expiresIn := 24 * time.Hour
+	expiresIn := defaultTokenExpiration
 	if req.ExpiresIn != "" {
 		if parsed, err := time.ParseDuration(req.ExpiresIn); err == nil {
 			expiresIn = parsed
@@ -36,11 +40,21 @@ func (uc *GenerateTokenUseCase) GenerateToken(ctx context.Context, req domain.Ge
 		}
 	}
 
+	jti, err := uc.generateJTI()
+	if err != nil {
+		uc.logger.Errorf("Failed to generate JTI: %v", err)
+		return &domain.GenerateTokenResponse{
+			Success: false,
+			Message: "Failed to generate token",
+			Error:   err.Error(),
+		}, nil
+	}
+
 	claims := jwt.MapClaims{
 		"sub": req.Subject,
 		"exp": time.Now().Add(expiresIn).Unix(),
 		"iat": time.Now().Unix(),
-		"jti": uc.generateJTI(),
+		"jti": jti,
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
@@ -62,11 +76,11 @@ func (uc *GenerateTokenUseCase) GenerateToken(ctx context.Context, req domain.Ge
 	}, nil
 }
 
-func (uc *GenerateTokenUseCase) generateJTI() string {
+func (uc *GenerateTokenUseCase) generateJTI() (string, error) {
 	bytes := make([]byte, 16)
 	if _, err := rand.Read(bytes); err != nil {
 		uc.logger.Errorf("Failed to generate random bytes: %v", err)
-		return ""
+		return "", err
 	}
-	return base64.URLEncoding.EncodeToString(bytes)
+	return base64.RawURLEncoding.EncodeToString(bytes), nil
 }

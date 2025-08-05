@@ -95,10 +95,6 @@ func (ts *subscriptionHandlerTestSetup) setupRepositoryErrorMocks(request domain
 	ts.mockLogger.On("Infof", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return()
 }
 
-func (ts *subscriptionHandlerTestSetup) setupDuplicateMocks(request domain.SubscriptionRequest) {
-	// Ця функція більше не потрібна для дублікатів, оскільки моки налаштовуються безпосередньо в тесті
-}
-
 func (ts *subscriptionHandlerTestSetup) setupJSONErrorMocks() {
 	ts.mockLogger.On("Errorf", mock.Anything, mock.Anything).Return()
 }

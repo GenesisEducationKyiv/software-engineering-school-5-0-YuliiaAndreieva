@@ -17,7 +17,6 @@ type ValidateTokenRequest struct {
 }
 
 type ValidateTokenResponse struct {
-	Success bool   `json:"success"`
 	Valid   bool   `json:"valid"`
 	Message string `json:"message"`
 	Error   string `json:"error,omitempty"`
