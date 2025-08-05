@@ -74,16 +74,16 @@ func main() {
 
 	loggerInstance.Infof("Successfully connected to RabbitMQ")
 
-	eventPublisherWithMetrics := messaging.NewRabbitMQMetricsPublisherDecorator(eventPublisher, metricsCollector)
+	eventPublisherWithMetrics := messaging.NewWithMetrics(eventPublisher, metricsCollector)
 
 	subscribeUseCase := usecase.NewSubscribeUseCase(repo, tokenClient, emailClient, eventPublisherWithMetrics, loggerInstance, cfg)
 	confirmUseCase := usecase.NewConfirmSubscriptionUseCase(repo, tokenClient, loggerInstance)
 	unsubscribeUseCase := usecase.NewUnsubscribeUseCase(repo, tokenClient, loggerInstance)
 	listByFrequencyUseCase := usecase.NewListByFrequencyUseCase(repo, loggerInstance)
 
-	subscribeUseCaseWithMetrics := usecase.NewSubscribeMetricsDecorator(subscribeUseCase, metricsCollector)
-	confirmUseCaseWithMetrics := usecase.NewConfirmSubscriptionMetricsDecorator(confirmUseCase, metricsCollector)
-	unsubscribeUseCaseWithMetrics := usecase.NewUnsubscribeMetricsDecorator(unsubscribeUseCase, metricsCollector)
+	subscribeUseCaseWithMetrics := usecase.NewSubscribeWithMetrics(subscribeUseCase, metricsCollector)
+	confirmUseCaseWithMetrics := usecase.NewConfirmSubscriptionWithMetrics(confirmUseCase, metricsCollector)
+	unsubscribeUseCaseWithMetrics := usecase.NewUnsubscribeWithMetrics(unsubscribeUseCase, metricsCollector)
 
 	subscriptionHandler := httphandler.NewSubscriptionHandler(
 		subscribeUseCaseWithMetrics,
