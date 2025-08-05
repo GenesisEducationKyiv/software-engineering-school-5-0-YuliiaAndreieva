@@ -42,7 +42,7 @@ func main() {
 		Pass: cfg.SMTP.Pass,
 	}
 	emailSender := email.NewSMTPSender(smtpConfig, loggerInstance)
-	templateBuilder := email.NewTemplateBuilder(loggerInstance)
+	templateBuilder := email.NewTemplateBuilder(loggerInstance, cfg.Server.BaseURL)
 
 	sendEmailUseCase := usecase.NewSendEmailUseCase(emailSender, templateBuilder, loggerInstance, cfg.Server.BaseURL)
 
@@ -54,7 +54,7 @@ func main() {
 	err := retry.Do(
 		func() error {
 			var err error
-			consumer, err = messaging.NewRabbitMQConsumer(cfg.RabbitMQ.URL, cfg.RabbitMQ.Exchange, cfg.RabbitMQ.Queue, sendEmailUseCase, loggerInstance)
+			consumer, err = messaging.NewRabbitMQConsumer(cfg.RabbitMQ.URL, cfg.RabbitMQ.Exchange, cfg.RabbitMQ.Queue, sendEmailUseCase, loggerInstance, cfg.Server.BaseURL)
 			return err
 		},
 		retry.Attempts(10),

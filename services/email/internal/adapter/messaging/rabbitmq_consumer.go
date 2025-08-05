@@ -17,9 +17,10 @@ type RabbitMQConsumer struct {
 	queue    string
 	useCase  in.SendEmailUseCase
 	logger   out.Logger
+	baseURL  string
 }
 
-func NewRabbitMQConsumer(url, exchange, queue string, useCase in.SendEmailUseCase, logger out.Logger) (*RabbitMQConsumer, error) {
+func NewRabbitMQConsumer(url, exchange, queue string, useCase in.SendEmailUseCase, logger out.Logger, baseURL string) (*RabbitMQConsumer, error) {
 	conn, err := amqp.Dial(url)
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to RabbitMQ at %s: %w", url, err)
@@ -82,6 +83,7 @@ func NewRabbitMQConsumer(url, exchange, queue string, useCase in.SendEmailUseCas
 		queue:    queue,
 		useCase:  useCase,
 		logger:   logger,
+		baseURL:  baseURL,
 	}, nil
 }
 
@@ -150,7 +152,7 @@ func (c *RabbitMQConsumer) handleMessage(ctx context.Context, msg amqp.Delivery)
 		To:               event.Email,
 		Subject:          "Confirm your weather subscription",
 		City:             event.City,
-		ConfirmationLink: fmt.Sprintf("%s/confirm/%s", "http://localhost:8082", event.Token),
+		ConfirmationLink: fmt.Sprintf("%s/confirm/%s", c.baseURL, event.Token),
 	}
 
 	result, err := c.useCase.SendConfirmationEmail(ctx, req)

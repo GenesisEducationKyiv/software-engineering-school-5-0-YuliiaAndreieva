@@ -106,7 +106,7 @@ func (uc *SubscribeUseCase) createConfirmationEmailRequest(req domain.Subscripti
 		To:               req.Email,
 		Subject:          "Confirm your weather subscription",
 		City:             req.City,
-		ConfirmationLink: fmt.Sprintf("%s/confirm/%s", "http://localhost:8082", token),
+		ConfirmationLink: fmt.Sprintf("%s/confirm/%s", uc.config.Server.BaseURL, token),
 	}
 }
 

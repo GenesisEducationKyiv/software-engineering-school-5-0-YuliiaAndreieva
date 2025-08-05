@@ -9,12 +9,14 @@ import (
 )
 
 type TemplateBuilder struct {
-	logger out.Logger
+	logger  out.Logger
+	baseURL string
 }
 
-func NewTemplateBuilder(logger out.Logger) out.EmailTemplateBuilder {
+func NewTemplateBuilder(logger out.Logger, baseURL string) out.EmailTemplateBuilder {
 	return &TemplateBuilder{
-		logger: logger,
+		logger:  logger,
+		baseURL: baseURL,
 	}
 }
 
@@ -45,7 +47,7 @@ func (tb *TemplateBuilder) BuildWeatherUpdateEmail(ctx context.Context, email, c
 
 	unsubscribeLink := ""
 	if unsubscribeToken != "" {
-		unsubscribeLink = fmt.Sprintf(`<p><a href="http://localhost:8080/unsubscribe/%s">Unsubscribe from weather updates</a></p>`, unsubscribeToken)
+		unsubscribeLink = fmt.Sprintf(`<p><a href="%s/unsubscribe/%s">Unsubscribe from weather updates</a></p>`, tb.baseURL, unsubscribeToken)
 	}
 
 	template := fmt.Sprintf(`

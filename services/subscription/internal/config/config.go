@@ -19,6 +19,7 @@ type Config struct {
 type ServerConfig struct {
 	Port     string
 	GRPCPort string
+	BaseURL  string
 }
 
 type EmailConfig struct {
@@ -58,6 +59,7 @@ func LoadConfig() *Config {
 		Server: ServerConfig{
 			Port:     getEnv("SERVER_PORT", "8082"),
 			GRPCPort: getEnv("GRPC_PORT", "9093"),
+			BaseURL:  getEnv("BASE_URL", "http://localhost:8082"),
 		},
 		Email: EmailConfig{
 			ServiceURL: getEnv("EMAIL_SERVICE_URL", "http://email-service:8081"),
