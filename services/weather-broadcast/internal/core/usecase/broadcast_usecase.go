@@ -61,40 +61,36 @@ func (s *BroadcastUseCase) Broadcast(ctx context.Context, frequency domain.Frequ
 			break
 		}
 
-		for _, subscription := range subscriptions {
-			if _, ok := cityWeatherMap[subscription.City]; !ok {
-				weather, err := s.weatherClient.GetWeatherByCity(ctx, subscription.City)
-				s.logger.Infof("Weather for %s: %v", subscription.City, weather)
+		for _, sub := range subscriptions {
+			select {
+			case <-ctx.Done():
+				s.logger.Warnf("Broadcast canceled during subscription processing: %v", ctx.Err())
+				return ctx.Err()
+			default:
+				sem <- struct{}{}
+				wg.Add(1)
 
-				if err != nil {
-					cityWeatherMap[subscription.City] = nil
-				} else {
-					cityWeatherMap[subscription.City] = weather
-				}
+				go func(sub domain.Subscription, weather *domain.Weather) {
+					defer wg.Done()
+					defer func() { <-sem }()
+
+					select {
+					case <-ctx.Done():
+						s.logger.Warnf("Broadcast canceled during email sending: %v", ctx.Err())
+						return
+					default:
+						s.logger.Infof("Processing subscription for user: %s", sub.Email)
+						if err := s.weatherMailer.SendWeather(ctx, &domain.WeatherMailSuccessInfo{
+							Email:   sub.Email,
+							City:    sub.City,
+							Weather: *weather,
+							Token:   sub.Token,
+						}); err != nil {
+							s.logger.Errorf("Failed to send weather email to %s: %v", sub.Email, err)
+						}
+					}
+				}(sub, cityWeatherMap[sub.City])
 			}
-
-			sem <- struct{}{}
-			wg.Add(1)
-
-			go func(sub domain.Subscription, weather *domain.Weather) {
-				defer func() { <-sem }()
-				defer wg.Done()
-
-				if weather != nil {
-					info := &domain.WeatherMailSuccessInfo{
-						Email:   sub.Email,
-						City:    sub.City,
-						Weather: *weather,
-						Token:   sub.Token,
-					}
-
-					if err := s.weatherMailer.SendWeather(ctx, info); err != nil {
-						s.logger.Errorf("Failed to send weather email to %s: %v", sub.Email, err)
-					}
-				} else {
-					s.logger.Warnf("Skipping subscription for %s - weather data unavailable", sub.Email)
-				}
-			}(subscription, cityWeatherMap[subscription.City])
 		}
 	}
 	wg.Wait()
