@@ -26,11 +26,7 @@ func (uc *GetWeatherUseCase) GetWeather(ctx context.Context, req domain.WeatherR
 	weather, err := uc.weatherProvider.GetWeather(ctx, req.City)
 	if err != nil {
 		uc.logger.Errorf("Failed to get weather data for city %s: %v", req.City, err)
-		return &domain.WeatherResponse{
-			Success: false,
-			Message: "Failed to get weather data",
-			Error:   err.Error(),
-		}, nil
+		return nil, err
 	}
 
 	weather.City = req.City
@@ -39,8 +35,6 @@ func (uc *GetWeatherUseCase) GetWeather(ctx context.Context, req domain.WeatherR
 	uc.logger.Debugf("Weather data retrieved: temperature=%s, description=%s", weather.Temperature, weather.Description)
 
 	return &domain.WeatherResponse{
-		Success: true,
 		Weather: weather,
-		Message: "Weather data retrieved successfully",
 	}, nil
 }

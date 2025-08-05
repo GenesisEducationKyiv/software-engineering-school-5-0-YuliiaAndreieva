@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.5.1
 // - protoc             v6.31.1
-// source: weather/weather.proto
+// source: weather.proto
 
 package weather
 
@@ -26,7 +26,6 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type WeatherServiceClient interface {
-	// Отримати погоду за містом
 	GetWeatherByCity(ctx context.Context, in *WeatherRequest, opts ...grpc.CallOption) (*WeatherResponse, error)
 }
 
@@ -52,7 +51,6 @@ func (c *weatherServiceClient) GetWeatherByCity(ctx context.Context, in *Weather
 // All implementations must embed UnimplementedWeatherServiceServer
 // for forward compatibility.
 type WeatherServiceServer interface {
-	// Отримати погоду за містом
 	GetWeatherByCity(context.Context, *WeatherRequest) (*WeatherResponse, error)
 	mustEmbedUnimplementedWeatherServiceServer()
 }
@@ -119,5 +117,5 @@ var WeatherService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "weather/weather.proto",
+	Metadata: "weather.proto",
 }

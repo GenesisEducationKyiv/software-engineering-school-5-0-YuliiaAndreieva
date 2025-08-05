@@ -27,9 +27,7 @@ func (m *MockGetWeatherUseCase) GetWeather(ctx context.Context, req domain.Weath
 		return m.getWeatherFunc(ctx, req)
 	}
 	return &domain.WeatherResponse{
-		Success: true,
 		Weather: domain.Weather{},
-		Message: "Success",
 	}, nil
 }
 
@@ -82,9 +80,7 @@ func TestWeatherHandler_GetWeather_Success(t *testing.T) {
 	mockUseCase := &MockGetWeatherUseCase{
 		getWeatherFunc: func(ctx context.Context, req domain.WeatherRequest) (*domain.WeatherResponse, error) {
 			return &domain.WeatherResponse{
-				Success: true,
 				Weather: expectedWeather,
-				Message: "Weather data retrieved successfully",
 			}, nil
 		},
 	}
@@ -98,7 +94,6 @@ func TestWeatherHandler_GetWeather_Success(t *testing.T) {
 	w, response := ts.makeRequest(t, request)
 
 	assert.Equal(t, http.StatusOK, w.Code)
-	assert.True(t, response.Success)
 	assert.Equal(t, expectedWeather.City, response.Weather.City)
 	assert.Equal(t, expectedWeather.Temperature, response.Weather.Temperature)
 	assert.Equal(t, expectedWeather.Humidity, response.Weather.Humidity)
@@ -119,9 +114,7 @@ func TestWeatherHandler_GetWeather_AnotherValidRequest(t *testing.T) {
 	mockUseCase := &MockGetWeatherUseCase{
 		getWeatherFunc: func(ctx context.Context, req domain.WeatherRequest) (*domain.WeatherResponse, error) {
 			return &domain.WeatherResponse{
-				Success: true,
 				Weather: expectedWeather,
-				Message: "Weather data retrieved successfully",
 			}, nil
 		},
 	}
@@ -135,7 +128,6 @@ func TestWeatherHandler_GetWeather_AnotherValidRequest(t *testing.T) {
 	w, response := ts.makeRequest(t, request)
 
 	assert.Equal(t, http.StatusOK, w.Code)
-	assert.True(t, response.Success)
 	assert.Equal(t, expectedWeather.City, response.Weather.City)
 	assert.Equal(t, expectedWeather.Temperature, response.Weather.Temperature)
 	assert.Equal(t, expectedWeather.Humidity, response.Weather.Humidity)
@@ -159,8 +151,7 @@ func TestWeatherHandler_GetWeather_InvalidJSON(t *testing.T) {
 	err := json.Unmarshal(w.Body.Bytes(), &response)
 	require.NoError(t, err)
 
-	assert.False(t, response.Success)
-	assert.Contains(t, response.Message, "Invalid request")
+	assert.Equal(t, "Invalid request", response.Message)
 }
 
 func TestWeatherHandler_GetWeather_EmptyCity(t *testing.T) {
@@ -174,8 +165,7 @@ func TestWeatherHandler_GetWeather_EmptyCity(t *testing.T) {
 	w, response := ts.makeRequest(t, request)
 
 	assert.Equal(t, http.StatusBadRequest, w.Code)
-	assert.False(t, response.Success)
-	assert.Contains(t, response.Message, "City is required")
+	assert.Equal(t, "City is required", response.Message)
 }
 
 func TestWeatherHandler_GetWeather_WhitespaceCity(t *testing.T) {
@@ -189,8 +179,7 @@ func TestWeatherHandler_GetWeather_WhitespaceCity(t *testing.T) {
 	w, response := ts.makeRequest(t, request)
 
 	assert.Equal(t, http.StatusBadRequest, w.Code)
-	assert.False(t, response.Success)
-	assert.Contains(t, response.Message, "City is required")
+	assert.Equal(t, "City is required", response.Message)
 }
 
 func TestWeatherHandler_GetWeather_UsecaseError(t *testing.T) {
@@ -209,15 +198,13 @@ func TestWeatherHandler_GetWeather_UsecaseError(t *testing.T) {
 	w, response := ts.makeRequest(t, request)
 
 	assert.Equal(t, http.StatusInternalServerError, w.Code)
-	assert.False(t, response.Success)
-	assert.Contains(t, response.Message, "Failed to get weather data")
+	assert.Equal(t, "Failed to get weather data", response.Message)
 }
 
 func TestWeatherHandler_GetWeather_ProviderFailure(t *testing.T) {
 	mockUseCase := &MockGetWeatherUseCase{
 		getWeatherFunc: func(ctx context.Context, req domain.WeatherRequest) (*domain.WeatherResponse, error) {
 			return &domain.WeatherResponse{
-				Success: false,
 				Message: "Failed to get weather data",
 				Error:   "provider error",
 			}, nil
@@ -233,9 +220,8 @@ func TestWeatherHandler_GetWeather_ProviderFailure(t *testing.T) {
 	w, response := ts.makeRequest(t, request)
 
 	assert.Equal(t, http.StatusBadRequest, w.Code)
-	assert.False(t, response.Success)
-	assert.Contains(t, response.Message, "Failed to get weather data")
-	assert.Contains(t, response.Error, "provider error")
+	assert.Equal(t, "Failed to get weather data", response.Message)
+	assert.Equal(t, "provider error", response.Error)
 }
 
 func TestWeatherHandler_GetWeather_MissingContentType(t *testing.T) {

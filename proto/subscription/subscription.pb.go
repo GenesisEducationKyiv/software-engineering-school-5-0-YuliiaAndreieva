@@ -2,7 +2,7 @@
 // versions:
 // 	protoc-gen-go v1.36.6
 // 	protoc        v6.31.1
-// source: subscription/subscription.proto
+// source: subscription.proto
 
 package subscription
 
@@ -32,7 +32,7 @@ type ListByFrequencyRequest struct {
 
 func (x *ListByFrequencyRequest) Reset() {
 	*x = ListByFrequencyRequest{}
-	mi := &file_subscription_subscription_proto_msgTypes[0]
+	mi := &file_subscription_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -44,7 +44,7 @@ func (x *ListByFrequencyRequest) String() string {
 func (*ListByFrequencyRequest) ProtoMessage() {}
 
 func (x *ListByFrequencyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_subscription_subscription_proto_msgTypes[0]
+	mi := &file_subscription_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -57,7 +57,7 @@ func (x *ListByFrequencyRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListByFrequencyRequest.ProtoReflect.Descriptor instead.
 func (*ListByFrequencyRequest) Descriptor() ([]byte, []int) {
-	return file_subscription_subscription_proto_rawDescGZIP(), []int{0}
+	return file_subscription_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *ListByFrequencyRequest) GetFrequency() string {
@@ -84,14 +84,14 @@ func (x *ListByFrequencyRequest) GetPageSize() int32 {
 type ListByFrequencyResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Subscriptions []*Subscription        `protobuf:"bytes,1,rep,name=subscriptions,proto3" json:"subscriptions,omitempty"`
-	LastIndex     int32                  `protobuf:"varint,2,opt,name=last_index,json=lastIndex,proto3" json:"last_index,omitempty"`
+	LastId        int32                  `protobuf:"varint,2,opt,name=last_id,json=lastId,proto3" json:"last_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *ListByFrequencyResponse) Reset() {
 	*x = ListByFrequencyResponse{}
-	mi := &file_subscription_subscription_proto_msgTypes[1]
+	mi := &file_subscription_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -103,7 +103,7 @@ func (x *ListByFrequencyResponse) String() string {
 func (*ListByFrequencyResponse) ProtoMessage() {}
 
 func (x *ListByFrequencyResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_subscription_subscription_proto_msgTypes[1]
+	mi := &file_subscription_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -116,7 +116,7 @@ func (x *ListByFrequencyResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListByFrequencyResponse.ProtoReflect.Descriptor instead.
 func (*ListByFrequencyResponse) Descriptor() ([]byte, []int) {
-	return file_subscription_subscription_proto_rawDescGZIP(), []int{1}
+	return file_subscription_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *ListByFrequencyResponse) GetSubscriptions() []*Subscription {
@@ -126,9 +126,9 @@ func (x *ListByFrequencyResponse) GetSubscriptions() []*Subscription {
 	return nil
 }
 
-func (x *ListByFrequencyResponse) GetLastIndex() int32 {
+func (x *ListByFrequencyResponse) GetLastId() int32 {
 	if x != nil {
-		return x.LastIndex
+		return x.LastId
 	}
 	return 0
 }
@@ -147,7 +147,7 @@ type Subscription struct {
 
 func (x *Subscription) Reset() {
 	*x = Subscription{}
-	mi := &file_subscription_subscription_proto_msgTypes[2]
+	mi := &file_subscription_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -159,7 +159,7 @@ func (x *Subscription) String() string {
 func (*Subscription) ProtoMessage() {}
 
 func (x *Subscription) ProtoReflect() protoreflect.Message {
-	mi := &file_subscription_subscription_proto_msgTypes[2]
+	mi := &file_subscription_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -172,7 +172,7 @@ func (x *Subscription) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Subscription.ProtoReflect.Descriptor instead.
 func (*Subscription) Descriptor() ([]byte, []int) {
-	return file_subscription_subscription_proto_rawDescGZIP(), []int{2}
+	return file_subscription_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *Subscription) GetId() int32 {
@@ -217,19 +217,18 @@ func (x *Subscription) GetToken() string {
 	return ""
 }
 
-var File_subscription_subscription_proto protoreflect.FileDescriptor
+var File_subscription_proto protoreflect.FileDescriptor
 
-const file_subscription_subscription_proto_rawDesc = "" +
+const file_subscription_proto_rawDesc = "" +
 	"\n" +
-	"\x1fsubscription/subscription.proto\x12\fsubscription\"l\n" +
+	"\x12subscription.proto\x12\fsubscription\"l\n" +
 	"\x16ListByFrequencyRequest\x12\x1c\n" +
 	"\tfrequency\x18\x01 \x01(\tR\tfrequency\x12\x17\n" +
 	"\alast_id\x18\x02 \x01(\x05R\x06lastId\x12\x1b\n" +
-	"\tpage_size\x18\x03 \x01(\x05R\bpageSize\"z\n" +
+	"\tpage_size\x18\x03 \x01(\x05R\bpageSize\"t\n" +
 	"\x17ListByFrequencyResponse\x12@\n" +
-	"\rsubscriptions\x18\x01 \x03(\v2\x1a.subscription.SubscriptionR\rsubscriptions\x12\x1d\n" +
-	"\n" +
-	"last_index\x18\x02 \x01(\x05R\tlastIndex\"\x9a\x01\n" +
+	"\rsubscriptions\x18\x01 \x03(\v2\x1a.subscription.SubscriptionR\rsubscriptions\x12\x17\n" +
+	"\alast_id\x18\x02 \x01(\x05R\x06lastId\"\x9a\x01\n" +
 	"\fSubscription\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x05R\x02id\x12\x14\n" +
 	"\x05email\x18\x02 \x01(\tR\x05email\x12\x12\n" +
@@ -241,24 +240,24 @@ const file_subscription_subscription_proto_rawDesc = "" +
 	"\x0fListByFrequency\x12$.subscription.ListByFrequencyRequest\x1a%.subscription.ListByFrequencyResponseB\x14Z\x12proto/subscriptionb\x06proto3"
 
 var (
-	file_subscription_subscription_proto_rawDescOnce sync.Once
-	file_subscription_subscription_proto_rawDescData []byte
+	file_subscription_proto_rawDescOnce sync.Once
+	file_subscription_proto_rawDescData []byte
 )
 
-func file_subscription_subscription_proto_rawDescGZIP() []byte {
-	file_subscription_subscription_proto_rawDescOnce.Do(func() {
-		file_subscription_subscription_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_subscription_subscription_proto_rawDesc), len(file_subscription_subscription_proto_rawDesc)))
+func file_subscription_proto_rawDescGZIP() []byte {
+	file_subscription_proto_rawDescOnce.Do(func() {
+		file_subscription_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_subscription_proto_rawDesc), len(file_subscription_proto_rawDesc)))
 	})
-	return file_subscription_subscription_proto_rawDescData
+	return file_subscription_proto_rawDescData
 }
 
-var file_subscription_subscription_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
-var file_subscription_subscription_proto_goTypes = []any{
+var file_subscription_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
+var file_subscription_proto_goTypes = []any{
 	(*ListByFrequencyRequest)(nil),  // 0: subscription.ListByFrequencyRequest
 	(*ListByFrequencyResponse)(nil), // 1: subscription.ListByFrequencyResponse
 	(*Subscription)(nil),            // 2: subscription.Subscription
 }
-var file_subscription_subscription_proto_depIdxs = []int32{
+var file_subscription_proto_depIdxs = []int32{
 	2, // 0: subscription.ListByFrequencyResponse.subscriptions:type_name -> subscription.Subscription
 	0, // 1: subscription.SubscriptionService.ListByFrequency:input_type -> subscription.ListByFrequencyRequest
 	1, // 2: subscription.SubscriptionService.ListByFrequency:output_type -> subscription.ListByFrequencyResponse
@@ -269,26 +268,26 @@ var file_subscription_subscription_proto_depIdxs = []int32{
 	0, // [0:1] is the sub-list for field type_name
 }
 
-func init() { file_subscription_subscription_proto_init() }
-func file_subscription_subscription_proto_init() {
-	if File_subscription_subscription_proto != nil {
+func init() { file_subscription_proto_init() }
+func file_subscription_proto_init() {
+	if File_subscription_proto != nil {
 		return
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_subscription_subscription_proto_rawDesc), len(file_subscription_subscription_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_subscription_proto_rawDesc), len(file_subscription_proto_rawDesc)),
 			NumEnums:      0,
 			NumMessages:   3,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
-		GoTypes:           file_subscription_subscription_proto_goTypes,
-		DependencyIndexes: file_subscription_subscription_proto_depIdxs,
-		MessageInfos:      file_subscription_subscription_proto_msgTypes,
+		GoTypes:           file_subscription_proto_goTypes,
+		DependencyIndexes: file_subscription_proto_depIdxs,
+		MessageInfos:      file_subscription_proto_msgTypes,
 	}.Build()
-	File_subscription_subscription_proto = out.File
-	file_subscription_subscription_proto_goTypes = nil
-	file_subscription_subscription_proto_depIdxs = nil
+	File_subscription_proto = out.File
+	file_subscription_proto_goTypes = nil
+	file_subscription_proto_depIdxs = nil
 }

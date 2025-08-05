@@ -42,11 +42,6 @@ func (c *WeatherClient) GetWeatherByCity(ctx context.Context, city string) (*dom
 		return nil, fmt.Errorf("failed to get weather: %w", err)
 	}
 
-	if !resp.Success {
-		c.logger.Errorf("Weather service returned error: %s", resp.Error)
-		return nil, fmt.Errorf("weather service error: %s", resp.Error)
-	}
-
 	weather := &domain.Weather{
 		Temperature: resp.Weather.Temperature,
 		Humidity:    int(resp.Weather.Humidity),

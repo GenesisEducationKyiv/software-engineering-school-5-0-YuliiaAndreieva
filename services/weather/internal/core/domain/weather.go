@@ -16,8 +16,5 @@ type WeatherRequest struct {
 }
 
 type WeatherResponse struct {
-	Success bool    `json:"success"`
-	Weather Weather `json:"weather,omitempty"`
-	Message string  `json:"message"`
-	Error   string  `json:"error,omitempty"`
+	Weather Weather `json:"weather"`
 }

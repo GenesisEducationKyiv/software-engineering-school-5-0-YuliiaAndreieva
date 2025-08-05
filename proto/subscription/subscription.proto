@@ -16,7 +16,7 @@ message ListByFrequencyRequest {
 
 message ListByFrequencyResponse {
   repeated Subscription subscriptions = 1;
-  int32 last_index = 2;
+  int32 last_id = 2;
 }
 
 message Subscription {

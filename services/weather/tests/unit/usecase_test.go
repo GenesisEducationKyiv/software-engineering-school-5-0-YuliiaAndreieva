@@ -56,7 +56,6 @@ func TestGetWeatherUseCase_GetWeather_Success(t *testing.T) {
 
 	require.NoError(t, err)
 	assert.NotNil(t, result)
-	assert.True(t, result.Success)
 	assert.Equal(t, expectedWeather.City, result.Weather.City)
 	assert.Equal(t, expectedWeather.Temperature, result.Weather.Temperature)
 	assert.Equal(t, expectedWeather.Humidity, result.Weather.Humidity)
@@ -89,7 +88,6 @@ func TestGetWeatherUseCase_GetWeather_MultipleCities(t *testing.T) {
 
 			require.NoError(t, err)
 			assert.NotNil(t, result)
-			assert.True(t, result.Success)
 			assert.Equal(t, expectedWeather.City, result.Weather.City)
 			assert.Equal(t, expectedWeather.Temperature, result.Weather.Temperature)
 			assert.Equal(t, expectedWeather.Humidity, result.Weather.Humidity)
@@ -109,11 +107,9 @@ func TestGetWeatherUseCase_GetWeather_ProviderError(t *testing.T) {
 
 	result, err := ts.makeRequest("Kyiv")
 
-	assert.NoError(t, err)
-	assert.NotNil(t, result)
-	assert.False(t, result.Success)
-	assert.Contains(t, result.Message, "Failed to get weather data")
-	assert.Contains(t, result.Error, "assert.AnError general error for testing")
+	assert.Error(t, err)
+	assert.Nil(t, result)
+	assert.Contains(t, err.Error(), "assert.AnError general error for testing")
 }
 
 func TestGetWeatherUseCase_GetWeather_ContextCancellation(t *testing.T) {
@@ -145,9 +141,7 @@ func TestGetWeatherUseCase_GetWeather_ContextCancellation(t *testing.T) {
 
 	result, err := ts.useCase.GetWeather(ctx, request)
 
-	assert.NoError(t, err)
-	assert.NotNil(t, result)
-	assert.False(t, result.Success)
-	assert.Contains(t, result.Message, "Failed to get weather data")
-	assert.Contains(t, result.Error, "context canceled")
+	assert.Error(t, err)
+	assert.Nil(t, result)
+	assert.Contains(t, err.Error(), "context canceled")
 }

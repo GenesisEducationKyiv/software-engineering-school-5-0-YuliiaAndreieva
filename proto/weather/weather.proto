@@ -14,8 +14,6 @@ message WeatherRequest {
 
 message WeatherResponse {
   Weather weather = 1;
-  bool success = 2;
-  string error = 3;
 }
 
 message Weather {

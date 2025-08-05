@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.5.1
 // - protoc             v6.31.1
-// source: subscription/subscription.proto
+// source: subscription.proto
 
 package subscription
 
@@ -26,7 +26,6 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type SubscriptionServiceClient interface {
-	// Отримати підписки за частотою (для weather-broadcast сервісу)
 	ListByFrequency(ctx context.Context, in *ListByFrequencyRequest, opts ...grpc.CallOption) (*ListByFrequencyResponse, error)
 }
 
@@ -52,7 +51,6 @@ func (c *subscriptionServiceClient) ListByFrequency(ctx context.Context, in *Lis
 // All implementations must embed UnimplementedSubscriptionServiceServer
 // for forward compatibility.
 type SubscriptionServiceServer interface {
-	// Отримати підписки за частотою (для weather-broadcast сервісу)
 	ListByFrequency(context.Context, *ListByFrequencyRequest) (*ListByFrequencyResponse, error)
 	mustEmbedUnimplementedSubscriptionServiceServer()
 }
@@ -119,5 +117,5 @@ var SubscriptionService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "subscription/subscription.proto",
+	Metadata: "subscription.proto",
 }

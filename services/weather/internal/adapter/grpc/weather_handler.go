@@ -28,14 +28,10 @@ func (h *WeatherHandler) GetWeatherByCity(ctx context.Context, req *pb.WeatherRe
 
 	weatherResp, err := h.getWeatherUseCase.GetWeather(ctx, weatherReq)
 	if err != nil {
-		return &pb.WeatherResponse{
-			Success: false,
-			Error:   err.Error(),
-		}, status.Errorf(codes.Internal, "failed to get weather: %v", err)
+		return nil, status.Errorf(codes.Internal, "failed to get weather: %v", err)
 	}
 
 	return &pb.WeatherResponse{
-		Success: true,
 		Weather: &pb.Weather{
 			Temperature: weatherResp.Weather.Temperature,
 			Humidity:    int32(weatherResp.Weather.Humidity),
