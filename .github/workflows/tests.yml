@@ -59,8 +59,7 @@ jobs:
     
     - name: Run Email Service Tests
       run: |
-        cd services/email
-        docker build -f Dockerfile.test -t email-service-tests .
+        docker build -f services/email/Dockerfile.test -t email-service-tests .
         docker run --rm \
           --network email-test-network \
           -e MAILHOG_HOST=mailhog-email \
@@ -134,8 +133,7 @@ jobs:
     
     - name: Run Subscription Service Tests
       run: |
-        cd services/subscription
-        docker build -f Dockerfile.test -t subscription-service-tests .
+        docker build -f services/subscription/Dockerfile.test -t subscription-service-tests .
         docker run --rm \
           --network subscription-test-network \
           -e TEST_DB_HOST=postgres-subscription \
@@ -185,8 +183,7 @@ jobs:
     
     - name: Run Token Service Tests
       run: |
-        cd services/token
-        docker build -f Dockerfile.test -t token-service-tests .
+        docker build -f services/token/Dockerfile.test -t token-service-tests .
         docker run --rm token-service-tests
 
   weather-broadcast-service-tests:
@@ -251,8 +248,7 @@ jobs:
     
     - name: Run Weather Broadcast Service Tests
       run: |
-        cd services/weather-broadcast
-        docker build -f Dockerfile.test -t weather-broadcast-service-tests .
+        docker build -f services/weather-broadcast/Dockerfile.test -t weather-broadcast-service-tests .
         docker run --rm \
           --network weather-broadcast-test-network \
           -e TEST_DB_HOST=postgres-weather-broadcast \

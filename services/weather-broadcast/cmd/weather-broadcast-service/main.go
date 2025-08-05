@@ -6,16 +6,17 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	sharedlogger "shared/logger"
 	"syscall"
 	"time"
 	grpcclient "weather-broadcast/internal/adapter/grpc"
 	httphandler "weather-broadcast/internal/adapter/http"
-	"weather-broadcast/internal/adapter/logger"
 	"weather-broadcast/internal/config"
 	"weather-broadcast/internal/core/domain"
 	"weather-broadcast/internal/core/usecase"
 
 	"github.com/gin-gonic/gin"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/robfig/cron/v3"
 )
 
@@ -25,7 +26,7 @@ func main() {
 		panic(fmt.Sprintf("Failed to load config: %v", err))
 	}
 
-	loggerInstance := logger.NewLogrusLogger()
+	loggerInstance := sharedlogger.NewZapLoggerWithSampling(cfg.LogInitial, cfg.LogThereafter, cfg.LogTick)
 
 	subscriptionClient, err := grpcclient.NewSubscriptionClient(cfg.SubscriptionGRPCURL, loggerInstance)
 	if err != nil {
@@ -76,6 +77,8 @@ func main() {
 		c.JSON(http.StatusOK, gin.H{"status": "ok", "service": "weather-broadcast"})
 	})
 
+	r.GET("/metrics", gin.WrapH(promhttp.Handler()))
+
 	r.POST("/broadcast", broadcastHandler.Broadcast)
 
 	srv := &http.Server{
@@ -98,8 +101,9 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), cfg.ShutdownTimeout)
 	defer cancel()
 
-	c.Stop()
 	if err := srv.Shutdown(ctx); err != nil {
 		panic("Server forced to shutdown: " + err.Error())
 	}
+
+	loggerInstance.Infof("Server stopped")
 }

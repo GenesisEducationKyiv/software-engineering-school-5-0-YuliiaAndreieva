@@ -3,9 +3,9 @@ package http
 import (
 	"net/http"
 
+	sharedlogger "shared/logger"
 	"token/internal/core/domain"
 	"token/internal/core/ports/in"
-	"token/internal/core/ports/out"
 
 	"github.com/gin-gonic/gin"
 )
@@ -13,13 +13,13 @@ import (
 type TokenHandler struct {
 	generateTokenUseCase in.GenerateTokenUseCase
 	validateTokenUseCase in.ValidateTokenUseCase
-	logger               out.Logger
+	logger               sharedlogger.Logger
 }
 
 func NewTokenHandler(
 	generateTokenUseCase in.GenerateTokenUseCase,
 	validateTokenUseCase in.ValidateTokenUseCase,
-	logger out.Logger,
+	logger sharedlogger.Logger,
 ) *TokenHandler {
 	return &TokenHandler{
 		generateTokenUseCase: generateTokenUseCase,

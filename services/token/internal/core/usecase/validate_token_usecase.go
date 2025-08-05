@@ -2,19 +2,19 @@ package usecase
 
 import (
 	"context"
+	sharedlogger "shared/logger"
 	"token/internal/core/domain"
 	"token/internal/core/ports/in"
-	"token/internal/core/ports/out"
 
 	"github.com/golang-jwt/jwt/v5"
 )
 
 type ValidateTokenUseCase struct {
-	logger out.Logger
+	logger sharedlogger.Logger
 	secret []byte
 }
 
-func NewValidateTokenUseCase(logger out.Logger, secret string) in.ValidateTokenUseCase {
+func NewValidateTokenUseCase(logger sharedlogger.Logger, secret string) in.ValidateTokenUseCase {
 	return &ValidateTokenUseCase{
 		logger: logger,
 		secret: []byte(secret),

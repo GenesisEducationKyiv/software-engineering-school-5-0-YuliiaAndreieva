@@ -97,7 +97,7 @@ func (c *RabbitMQConsumer) Start(ctx context.Context) error {
 		for {
 			select {
 			case <-ctx.Done():
-				c.logger.Info("Stopping consumer due to context cancellation")
+				c.logger.Infof("Stopping consumer due to context cancellation")
 				return
 			case msg := <-msgs:
 				if err := c.handleMessage(ctx, msg); err != nil {
@@ -128,7 +128,8 @@ func (c *RabbitMQConsumer) handleMessage(ctx context.Context, msg amqp.Delivery)
 		ConfirmationLink: fmt.Sprintf("%s/confirm/%s", "http://localhost:8082", event.Token),
 	}
 
-	if err := c.useCase.SendConfirmationEmail(ctx, req); err != nil {
+	_, err := c.useCase.SendConfirmationEmail(ctx, req)
+	if err != nil {
 		return fmt.Errorf("failed to send confirmation email: %w", err)
 	}
 

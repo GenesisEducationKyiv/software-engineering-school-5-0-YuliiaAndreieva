@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	sharedlogger "shared/logger"
 	"weather-broadcast/internal/core/domain"
 	"weather-broadcast/internal/core/ports/out"
 )
@@ -13,10 +14,10 @@ import (
 type EmailClient struct {
 	baseURL string
 	client  *http.Client
-	logger  out.Logger
+	logger  sharedlogger.Logger
 }
 
-func NewEmailClient(baseURL string, client *http.Client, logger out.Logger) out.WeatherMailer {
+func NewEmailClient(baseURL string, client *http.Client, logger sharedlogger.Logger) out.WeatherMailer {
 	return &EmailClient{
 		baseURL: baseURL,
 		client:  client,

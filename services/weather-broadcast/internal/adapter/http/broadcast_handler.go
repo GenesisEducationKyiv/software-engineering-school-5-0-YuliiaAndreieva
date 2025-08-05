@@ -2,19 +2,19 @@ package http
 
 import (
 	"net/http"
+	sharedlogger "shared/logger"
 	"weather-broadcast/internal/core/domain"
 	"weather-broadcast/internal/core/ports/in"
-	"weather-broadcast/internal/core/ports/out"
 
 	"github.com/gin-gonic/gin"
 )
 
 type BroadcastHandler struct {
 	broadcastUseCase in.BroadcastUseCase
-	logger           out.Logger
+	logger           sharedlogger.Logger
 }
 
-func NewBroadcastHandler(broadcastUseCase in.BroadcastUseCase, logger out.Logger) *BroadcastHandler {
+func NewBroadcastHandler(broadcastUseCase in.BroadcastUseCase, logger sharedlogger.Logger) *BroadcastHandler {
 	return &BroadcastHandler{
 		broadcastUseCase: broadcastUseCase,
 		logger:           logger,

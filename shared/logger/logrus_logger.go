@@ -1,8 +1,6 @@
 package logger
 
 import (
-	"token/internal/core/ports/out"
-
 	"github.com/sirupsen/logrus"
 )
 
@@ -10,7 +8,7 @@ type LogrusLogger struct {
 	logger *logrus.Logger
 }
 
-func NewLogrusLogger() out.Logger {
+func NewLogrusLogger() Logger {
 	return &LogrusLogger{
 		logger: logrus.New(),
 	}

@@ -1,9 +1,7 @@
 //go:generate mockery --dir . --output ../../../../tests/mocks --outpkg mocks --filename logger_mock.go --structname Logger --name Logger
 package out
 
-type Logger interface {
-	Infof(format string, args ...interface{})
-	Errorf(format string, args ...interface{})
-	Warnf(format string, args ...interface{})
-	Debugf(format string, args ...interface{})
-}
+import sharedlogger "shared/logger"
+
+// Logger interface просто використовує shared logger
+type Logger = sharedlogger.Logger

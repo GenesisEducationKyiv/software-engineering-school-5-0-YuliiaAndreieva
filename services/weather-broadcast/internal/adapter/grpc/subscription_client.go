@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 	pb "proto/subscription"
+	sharedlogger "shared/logger"
 	"weather-broadcast/internal/core/domain"
-	"weather-broadcast/internal/core/ports/out"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -13,10 +13,10 @@ import (
 
 type SubscriptionClient struct {
 	client pb.SubscriptionServiceClient
-	logger out.Logger
+	logger sharedlogger.Logger
 }
 
-func NewSubscriptionClient(address string, logger out.Logger) (*SubscriptionClient, error) {
+func NewSubscriptionClient(address string, logger sharedlogger.Logger) (*SubscriptionClient, error) {
 	conn, err := grpc.Dial(address, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to subscription service: %w", err)

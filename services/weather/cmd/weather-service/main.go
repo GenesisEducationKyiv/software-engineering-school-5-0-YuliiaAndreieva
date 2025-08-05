@@ -15,17 +15,19 @@ import (
 	"weather/internal/adapter/cache/core/redis"
 	grpchandler "weather/internal/adapter/grpc"
 	"weather/internal/adapter/weather/openweathermap"
-	"weather/internal/utils/logger"
+	filelogger "weather/internal/utils/logger"
 
 	weathercache "weather/internal/adapter/cache/weather"
 	httphandler "weather/internal/adapter/http"
 
+	sharedlogger "shared/logger"
 	"weather/internal/adapter/weather"
 	"weather/internal/adapter/weather/weatherapi"
 	"weather/internal/config"
 	"weather/internal/core/usecase"
 
 	"github.com/gin-gonic/gin"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"google.golang.org/grpc"
 )
 
@@ -35,7 +37,7 @@ func main() {
 		panic(fmt.Sprintf("Failed to load config: %v", err))
 	}
 
-	fileLogger, err := logger.NewFileLogger("logs", "provider_responses.log")
+	fileLogger, err := filelogger.NewFileLogger("logs", "provider_responses.log")
 	if err != nil {
 		log.Fatalf("Unable to initialize file logger: %v", err)
 	}
@@ -45,7 +47,7 @@ func main() {
 		}
 	}()
 
-	appLogger := logger.NewLogger()
+	baseLogger := sharedlogger.NewZapLoggerWithSampling(cfg.LogInitial, cfg.LogThereafter, cfg.LogTick)
 
 	httpClient := &http.Client{Timeout: cfg.HTTPClientTimeout}
 
@@ -82,11 +84,11 @@ func main() {
 
 	cachedProvider := weather.NewCachedWeatherProvider(weatherCache, chainProvider)
 
-	getWeatherUseCase := usecase.NewGetWeatherUseCase(cachedProvider, appLogger)
+	getWeatherUseCase := usecase.NewGetWeatherUseCase(cachedProvider, baseLogger)
 
 	weatherHandler := httphandler.NewWeatherHandler(
 		getWeatherUseCase,
-		appLogger,
+		baseLogger,
 	)
 
 	grpcHandler := grpchandler.NewWeatherHandler(getWeatherUseCase)
@@ -96,6 +98,8 @@ func main() {
 	r.GET("/health", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"status": "ok", "service": "weather"})
 	})
+
+	r.GET("/metrics", gin.WrapH(promhttp.Handler()))
 
 	r.POST("/weather", weatherHandler.GetWeather)
 
@@ -110,7 +114,7 @@ func main() {
 	pb.RegisterWeatherServiceServer(grpcSrv, grpcHandler)
 
 	go func() {
-		appLogger.Infof("Starting HTTP server on port %d", cfg.Port)
+		baseLogger.Infof("Starting HTTP server on port %d", cfg.Port)
 		if err := httpSrv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			panic("Failed to start HTTP server: " + err.Error())
 		}
@@ -126,7 +130,7 @@ func main() {
 			panic(fmt.Sprintf("Failed to listen for gRPC: %v", err))
 		}
 
-		appLogger.Infof("Starting gRPC server on port %d", grpcPort)
+		baseLogger.Infof("Starting gRPC server on port %d", grpcPort)
 		if err := grpcSrv.Serve(lis); err != nil {
 			panic("Failed to start gRPC server: " + err.Error())
 		}
