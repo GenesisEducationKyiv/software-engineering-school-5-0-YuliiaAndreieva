@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 
+	"gateway/internal/adapter/validator"
 	"gateway/internal/core/ports/out"
 
 	"github.com/gin-gonic/gin"
@@ -16,6 +17,7 @@ type WeatherHandler struct {
 	weatherServiceURL string
 	httpClient        out.HTTPClient
 	logger            out.Logger
+	validator         *validator.RequestValidator
 }
 
 func NewWeatherHandler(weatherServiceURL string, httpClient out.HTTPClient, logger out.Logger) *WeatherHandler {
@@ -23,19 +25,20 @@ func NewWeatherHandler(weatherServiceURL string, httpClient out.HTTPClient, logg
 		weatherServiceURL: weatherServiceURL,
 		httpClient:        httpClient,
 		logger:            logger,
+		validator:         validator.NewRequestValidator(),
 	}
 }
 
 func (h *WeatherHandler) Get(c *gin.Context) {
 	h.logger.Infof("Proxying weather request to %s", h.weatherServiceURL)
 
-	city, err := h.validateCityParameter(c)
+	req, err := validator.ValidateAndBind[validator.WeatherRequest](h.validator, c)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	requestBody, err := h.createWeatherRequest(city)
+	requestBody, err := h.createWeatherRequest(req.City)
 	if err != nil {
 		h.logger.Errorf("Failed to create request body: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
@@ -50,14 +53,6 @@ func (h *WeatherHandler) Get(c *gin.Context) {
 	}
 
 	c.Data(statusCode, "application/json", responseBody)
-}
-
-func (h *WeatherHandler) validateCityParameter(c *gin.Context) (string, error) {
-	city := c.Query("city")
-	if city == "" {
-		return "", fmt.Errorf("City parameter is required")
-	}
-	return city, nil
 }
 
 func (h *WeatherHandler) createWeatherRequest(city string) ([]byte, error) {
