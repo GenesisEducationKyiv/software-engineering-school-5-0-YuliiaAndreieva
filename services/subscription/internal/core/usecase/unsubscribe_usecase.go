@@ -34,7 +34,7 @@ func (uc *UnsubscribeUseCase) Unsubscribe(ctx context.Context, req domain.Unsubs
 	}
 
 	if err := uc.validateTokenService(ctx, req.Token); err != nil {
-		return uc.createErrorResponse("Failed to validate token"), err
+		return uc.createErrorResponse("Invalid token"), nil
 	}
 
 	if err := uc.checkSubscriptionExists(ctx, req.Token); err != nil {

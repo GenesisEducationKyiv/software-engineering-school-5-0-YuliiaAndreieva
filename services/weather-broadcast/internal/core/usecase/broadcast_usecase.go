@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+	sharedlogger "shared/logger"
 	"sync"
 	"weather-broadcast/internal/core/domain"
 	"weather-broadcast/internal/core/ports/in"
@@ -17,14 +18,14 @@ type BroadcastUseCase struct {
 	subscriptionClient out.SubscriptionClient
 	weatherClient      out.WeatherClient
 	weatherMailer      out.WeatherMailer
-	logger             out.Logger
+	logger             sharedlogger.Logger
 }
 
 func NewBroadcastUseCase(
 	subscriptionClient out.SubscriptionClient,
 	weatherClient out.WeatherClient,
 	weatherMailer out.WeatherMailer,
-	logger out.Logger,
+	logger sharedlogger.Logger,
 ) in.BroadcastUseCase {
 	return &BroadcastUseCase{
 		subscriptionClient: subscriptionClient,

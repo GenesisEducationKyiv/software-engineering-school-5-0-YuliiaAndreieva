@@ -7,18 +7,19 @@ import (
 	"os/signal"
 	"syscall"
 
+	sharedlogger "shared/logger"
 	httphandler "token/internal/adapter/http"
-	"token/internal/adapter/logger"
 	"token/internal/config"
 	"token/internal/core/usecase"
 
 	"github.com/gin-gonic/gin"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 func main() {
 	cfg := config.LoadConfig()
 
-	loggerInstance := logger.NewLogrusLogger()
+	loggerInstance := sharedlogger.NewZapLoggerWithSampling(cfg.Logging.Initial, cfg.Logging.Thereafter, cfg.Logging.Tick)
 
 	generateTokenUseCase := usecase.NewGenerateTokenUseCase(loggerInstance, cfg.JWT.Secret)
 	validateTokenUseCase := usecase.NewValidateTokenUseCase(loggerInstance, cfg.JWT.Secret)
@@ -30,6 +31,8 @@ func main() {
 	r.GET("/health", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"status": "ok", "service": "token"})
 	})
+
+	r.GET("/metrics", gin.WrapH(promhttp.Handler()))
 
 	r.POST("/generate", tokenHandler.GenerateToken)
 	r.POST("/validate", tokenHandler.ValidateToken)

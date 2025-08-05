@@ -13,6 +13,7 @@ type SubscribeUseCase struct {
 	subscriptionRepo out.SubscriptionRepository
 	tokenService     out.TokenService
 	emailService     out.EmailService
+	eventPublisher   out.EventPublisher
 	logger           out.Logger
 	config           *config.Config
 }
@@ -21,6 +22,7 @@ func NewSubscribeUseCase(
 	subscriptionRepo out.SubscriptionRepository,
 	tokenService out.TokenService,
 	emailService out.EmailService,
+	eventPublisher out.EventPublisher,
 	logger out.Logger,
 	config *config.Config,
 ) in.SubscribeUseCase {
@@ -28,6 +30,7 @@ func NewSubscribeUseCase(
 		subscriptionRepo: subscriptionRepo,
 		tokenService:     tokenService,
 		emailService:     emailService,
+		eventPublisher:   eventPublisher,
 		logger:           logger,
 		config:           config,
 	}
@@ -45,6 +48,10 @@ func (uc *SubscribeUseCase) Subscribe(ctx context.Context, req domain.Subscripti
 
 	if err := uc.saveSubscription(ctx, subscription); err != nil {
 		return uc.handleSubscriptionSaveError(err)
+	}
+
+	if err := uc.publishSubscriptionCreated(ctx, subscription); err != nil {
+		uc.logger.Errorf("Failed to publish subscription created event: %v", err)
 	}
 
 	confirmationReq := uc.createConfirmationEmailRequest(req, token)
@@ -112,6 +119,13 @@ func (uc *SubscribeUseCase) sendConfirmationEmail(ctx context.Context, req domai
 		return err
 	}
 	uc.logger.Infof("Confirmation email sent successfully to: %s", req.To)
+	return nil
+}
+
+func (uc *SubscribeUseCase) publishSubscriptionCreated(ctx context.Context, subscription domain.Subscription) error {
+	if err := uc.eventPublisher.PublishSubscriptionCreated(ctx, subscription); err != nil {
+		return fmt.Errorf("failed to publish subscription created event: %w", err)
+	}
 	return nil
 }
 

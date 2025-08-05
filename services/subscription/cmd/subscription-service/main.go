@@ -11,14 +11,18 @@ import (
 	"time"
 
 	pb "proto/subscription"
+	sharedlogger "shared/logger"
 	"subscription/internal/adapter/database"
 	grpchandler "subscription/internal/adapter/grpc"
 	httphandler "subscription/internal/adapter/http"
-	"subscription/internal/adapter/logger"
+	"subscription/internal/adapter/messaging"
+	"subscription/internal/adapter/metrics"
 	"subscription/internal/config"
 	"subscription/internal/core/usecase"
 
+	"github.com/avast/retry-go/v4"
 	"github.com/gin-gonic/gin"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"google.golang.org/grpc"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -27,22 +31,12 @@ import (
 func main() {
 	cfg := config.LoadConfig()
 
-	loggerInstance := logger.NewLogrusLogger()
+	loggerInstance := sharedlogger.NewZapLoggerWithSampling(cfg.Logging.Initial, cfg.Logging.Thereafter, cfg.Logging.Tick)
 
-	var db *gorm.DB
-	var err error
-
-	for i := 0; i < cfg.Timeout.DatabaseMaxRetries; i++ {
-		db, err = gorm.Open(postgres.Open(cfg.Database.DSN), &gorm.Config{})
-		if err == nil {
-			break
-		}
-		loggerInstance.Warnf("Failed to connect to database, retrying in %v... (attempt %d/%d)", cfg.Timeout.DatabaseRetryDelay, i+1, cfg.Timeout.DatabaseMaxRetries)
-		time.Sleep(cfg.Timeout.DatabaseRetryDelay)
-	}
-
+	db, err := gorm.Open(postgres.Open(cfg.Database.DSN), &gorm.Config{})
 	if err != nil {
-		panic(fmt.Sprintf("Failed to connect to database after %d attempts: %v", cfg.Timeout.DatabaseMaxRetries, err))
+		loggerInstance.Errorf("Failed to connect to database: %v", err)
+		panic(fmt.Sprintf("Failed to connect to database: %v", err))
 	}
 
 	if err := db.AutoMigrate(&database.Subscription{}); err != nil {
@@ -52,19 +46,49 @@ func main() {
 
 	repo := database.NewSubscriptionRepo(db, loggerInstance)
 
+	metricsCollector := metrics.NewPrometheusCollector()
+
 	httpClient := &http.Client{Timeout: cfg.Timeout.HTTPClientTimeout}
 	emailClient := httphandler.NewEmailClient(cfg.Email.ServiceURL, httpClient, loggerInstance)
 	tokenClient := httphandler.NewTokenClient(cfg.Token.ServiceURL, httpClient, loggerInstance)
 
-	subscribeUseCase := usecase.NewSubscribeUseCase(repo, tokenClient, emailClient, loggerInstance, cfg)
+	var eventPublisher *messaging.RabbitMQPublisher
+	err = retry.Do(
+		func() error {
+			var err error
+			eventPublisher, err = messaging.NewRabbitMQPublisher(cfg.RabbitMQ.URL, cfg.RabbitMQ.Exchange, loggerInstance)
+			return err
+		},
+		retry.Attempts(10),
+		retry.Delay(3*time.Second),
+		retry.DelayType(retry.BackOffDelay),
+		retry.OnRetry(func(n uint, err error) {
+			loggerInstance.Errorf("Failed to connect to RabbitMQ (attempt %d): %v", n+1, err)
+		}),
+	)
+
+	if err != nil {
+		panic(fmt.Sprintf("Failed to create RabbitMQ publisher after retries: %v", err))
+	}
+	defer eventPublisher.Close()
+
+	loggerInstance.Infof("Successfully connected to RabbitMQ")
+
+	eventPublisherWithMetrics := messaging.NewRabbitMQMetricsPublisherDecorator(eventPublisher, metricsCollector)
+
+	subscribeUseCase := usecase.NewSubscribeUseCase(repo, tokenClient, emailClient, eventPublisherWithMetrics, loggerInstance, cfg)
 	confirmUseCase := usecase.NewConfirmSubscriptionUseCase(repo, tokenClient, loggerInstance)
 	unsubscribeUseCase := usecase.NewUnsubscribeUseCase(repo, tokenClient, loggerInstance)
 	listByFrequencyUseCase := usecase.NewListByFrequencyUseCase(repo, loggerInstance)
 
+	subscribeUseCaseWithMetrics := usecase.NewSubscribeMetricsDecorator(subscribeUseCase, metricsCollector)
+	confirmUseCaseWithMetrics := usecase.NewConfirmSubscriptionMetricsDecorator(confirmUseCase, metricsCollector)
+	unsubscribeUseCaseWithMetrics := usecase.NewUnsubscribeMetricsDecorator(unsubscribeUseCase, metricsCollector)
+
 	subscriptionHandler := httphandler.NewSubscriptionHandler(
-		subscribeUseCase,
-		confirmUseCase,
-		unsubscribeUseCase,
+		subscribeUseCaseWithMetrics,
+		confirmUseCaseWithMetrics,
+		unsubscribeUseCaseWithMetrics,
 		listByFrequencyUseCase,
 		loggerInstance,
 	)
@@ -73,6 +97,10 @@ func main() {
 
 	r := gin.Default()
 
+	metricsMiddleware := httphandler.NewMetricsMiddleware(metricsCollector)
+	r.Use(metricsMiddleware.MetricsMiddleware())
+
+	r.GET("/metrics", gin.WrapH(promhttp.Handler()))
 	r.GET("/health", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"status": "ok", "service": "subscription"})
 	})
@@ -100,7 +128,7 @@ func main() {
 	go func() {
 		grpcPort := cfg.Server.GRPCPort
 		if grpcPort == "" {
-			grpcPort = "9090"
+			grpcPort = "9093"
 		}
 		lis, err := net.Listen("tcp", ":"+grpcPort)
 		if err != nil {

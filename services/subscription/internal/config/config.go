@@ -12,6 +12,8 @@ type Config struct {
 	Token    TokenConfig
 	Database DatabaseConfig
 	Timeout  TimeoutConfig
+	RabbitMQ RabbitMQConfig
+	Logging  LoggingConfig
 }
 
 type ServerConfig struct {
@@ -39,27 +41,49 @@ type TimeoutConfig struct {
 	DatabaseMaxRetries int
 }
 
+type RabbitMQConfig struct {
+	URL      string
+	Exchange string
+	Queue    string
+}
+
+type LoggingConfig struct {
+	Initial    int
+	Thereafter int
+	Tick       time.Duration
+}
+
 func LoadConfig() *Config {
 	return &Config{
 		Server: ServerConfig{
 			Port:     getEnv("SERVER_PORT", "8082"),
-			GRPCPort: getEnv("GRPC_PORT", "9090"),
+			GRPCPort: getEnv("GRPC_PORT", "9093"),
 		},
 		Email: EmailConfig{
-			ServiceURL: getEnv("EMAIL_SERVICE_URL", "http://localhost:8081"),
+			ServiceURL: getEnv("EMAIL_SERVICE_URL", "http://email-service:8081"),
 		},
 		Token: TokenConfig{
-			ServiceURL: getEnv("TOKEN_SERVICE_URL", "http://localhost:8083"),
+			ServiceURL: getEnv("TOKEN_SERVICE_URL", "http://token-service:8083"),
 			Expiration: getEnv("TOKEN_EXPIRATION", "24h"),
 		},
 		Database: DatabaseConfig{
-			DSN: getEnv("DATABASE_DSN", "host=localhost user=postgres password=postgres dbname=subscriptions port=5432 sslmode=disable"),
+			DSN: getEnv("DATABASE_DSN", "host=postgres user=postgres password=postgres dbname=subscriptions port=5432 sslmode=disable"),
 		},
 		Timeout: TimeoutConfig{
 			HTTPClientTimeout:  getDurationEnv("HTTP_CLIENT_TIMEOUT", 10*time.Second),
 			ShutdownTimeout:    getDurationEnv("SHUTDOWN_TIMEOUT", 5*time.Second),
 			DatabaseRetryDelay: getDurationEnv("DATABASE_RETRY_DELAY", 2*time.Second),
 			DatabaseMaxRetries: getIntEnv("DATABASE_MAX_RETRIES", 30),
+		},
+		RabbitMQ: RabbitMQConfig{
+			URL:      getEnv("RABBITMQ_URL", "amqp://admin:password@rabbitmq:5672/"),
+			Exchange: getEnv("RABBITMQ_EXCHANGE", "subscription_events"),
+			Queue:    getEnv("RABBITMQ_QUEUE", "email_notifications"),
+		},
+		Logging: LoggingConfig{
+			Initial:    getIntEnv("LOG_INITIAL", 100),
+			Thereafter: getIntEnv("LOG_THEREAFTER", 100),
+			Tick:       getDurationEnv("LOG_TICK", 1*time.Second),
 		},
 	}
 }

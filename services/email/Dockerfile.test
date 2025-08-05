@@ -2,15 +2,21 @@ FROM golang:1.24-alpine
 
 WORKDIR /app
 
-# Copy go.mod and go.sum files
-COPY go.mod go.mod
-COPY go.sum go.sum
+# Copy shared and proto modules
+COPY proto/ ./proto/
+COPY shared/ ./shared/
+COPY services/email/go.mod services/email/go.sum ./
+
+# Fix replace directives for Docker context
+RUN awk '{gsub("../../proto", "./proto"); gsub("../../shared", "./shared"); print}' go.mod > go.mod.tmp && \
+    mv go.mod.tmp go.mod
+
+# Copy email service source code
+COPY services/email/ ./
 
 # Download dependencies
 RUN go mod download
-
-# Copy source code
-COPY . ./
+RUN go mod tidy
 
 # Run tests
 CMD ["go", "test", "-v", "./tests/..."] 

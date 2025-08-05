@@ -10,9 +10,11 @@ import (
 )
 
 type Config struct {
-	SMTP    SMTPConfig
-	Server  ServerConfig
-	Timeout TimeoutConfig
+	SMTP     SMTPConfig
+	Server   ServerConfig
+	Timeout  TimeoutConfig
+	RabbitMQ RabbitMQConfig
+	Logging  LoggingConfig
 }
 
 type SMTPConfig struct {
@@ -30,6 +32,18 @@ type ServerConfig struct {
 
 type TimeoutConfig struct {
 	ShutdownTimeout time.Duration
+}
+
+type RabbitMQConfig struct {
+	URL      string
+	Exchange string
+	Queue    string
+}
+
+type LoggingConfig struct {
+	Initial    int
+	Thereafter int
+	Tick       time.Duration
 }
 
 func LoadConfig() *Config {
@@ -52,6 +66,16 @@ func LoadConfig() *Config {
 		Timeout: TimeoutConfig{
 			ShutdownTimeout: getDurationEnv("SHUTDOWN_TIMEOUT", 5*time.Second),
 		},
+		RabbitMQ: RabbitMQConfig{
+			URL:      getEnv("RABBITMQ_URL", "amqp://admin:password@rabbitmq:5672/"),
+			Exchange: getEnv("RABBITMQ_EXCHANGE", "subscription_events"),
+			Queue:    getEnv("RABBITMQ_QUEUE", "email_notifications"),
+		},
+		Logging: LoggingConfig{
+			Initial:    getIntEnv("LOG_INITIAL", 100),
+			Thereafter: getIntEnv("LOG_THEREAFTER", 100),
+			Tick:       getDurationEnv("LOG_TICK", 1*time.Second),
+		},
 	}
 }
 
@@ -63,6 +87,15 @@ func getEnv(key, defaultValue string) string {
 }
 
 func getEnvAsInt(key string, defaultValue int) int {
+	if value := os.Getenv(key); value != "" {
+		if intValue, err := strconv.Atoi(value); err == nil {
+			return intValue
+		}
+	}
+	return defaultValue
+}
+
+func getIntEnv(key string, defaultValue int) int {
 	if value := os.Getenv(key); value != "" {
 		if intValue, err := strconv.Atoi(value); err == nil {
 			return intValue
