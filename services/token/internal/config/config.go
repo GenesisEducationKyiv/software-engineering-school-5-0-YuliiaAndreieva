@@ -1,9 +1,9 @@
 package config
 
 import (
-	"os"
-	"strconv"
 	"time"
+
+	"github.com/kelseyhightower/envconfig"
 )
 
 type Config struct {
@@ -14,63 +14,28 @@ type Config struct {
 }
 
 type ServerConfig struct {
-	Port string
+	Port string `envconfig:"SERVER_PORT" required:"true"`
 }
 
 type JWTConfig struct {
-	Secret string
+	Secret string `envconfig:"JWT_SECRET" required:"true"`
 }
 
 type TimeoutConfig struct {
-	ShutdownTimeout time.Duration
+	ShutdownTimeout time.Duration `envconfig:"SHUTDOWN_TIMEOUT" default:"5s"`
 }
 
 type LoggingConfig struct {
-	Initial    int
-	Thereafter int
-	Tick       time.Duration
+	Initial    int           `envconfig:"LOG_INITIAL" default:"100"`
+	Thereafter int           `envconfig:"LOG_THEREAFTER" default:"100"`
+	Tick       time.Duration `envconfig:"LOG_TICK" default:"1s"`
 }
 
-func LoadConfig() *Config {
-	return &Config{
-		Server: ServerConfig{
-			Port: getEnv("SERVER_PORT"),
-		},
-		JWT: JWTConfig{
-			Secret: getEnv("JWT_SECRET"),
-		},
-		Timeout: TimeoutConfig{
-			ShutdownTimeout: getDurationEnv("SHUTDOWN_TIMEOUT", 5*time.Second),
-		},
-		Logging: LoggingConfig{
-			Initial:    getIntEnv("LOG_INITIAL", 100),
-			Thereafter: getIntEnv("LOG_THEREAFTER", 100),
-			Tick:       getDurationEnv("LOG_TICK", 1*time.Second),
-		},
+func LoadConfig() (*Config, error) {
+	var cfg Config
+	err := envconfig.Process("", &cfg)
+	if err != nil {
+		return nil, err
 	}
-}
-
-func getEnv(key string) string {
-	if value := os.Getenv(key); value != "" {
-		return value
-	}
-	return "" // Changed from defaultValue to "" to indicate it's required
-}
-
-func getDurationEnv(key string, defaultValue time.Duration) time.Duration {
-	if value := os.Getenv(key); value != "" {
-		if duration, err := time.ParseDuration(value); err == nil {
-			return duration
-		}
-	}
-	return defaultValue
-}
-
-func getIntEnv(key string, defaultValue int) int {
-	if value := os.Getenv(key); value != "" {
-		if intValue, err := strconv.Atoi(value); err == nil {
-			return intValue
-		}
-	}
-	return defaultValue
+	return &cfg, nil
 }

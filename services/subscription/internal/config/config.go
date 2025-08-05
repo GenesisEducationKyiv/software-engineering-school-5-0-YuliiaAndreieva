@@ -1,9 +1,9 @@
 package config
 
 import (
-	"os"
-	"strconv"
 	"time"
+
+	"github.com/kelseyhightower/envconfig"
 )
 
 type Config struct {
@@ -16,100 +16,44 @@ type Config struct {
 }
 
 type ServerConfig struct {
-	Port     string
-	GRPCPort string
-	BaseURL  string
+	Port     string `envconfig:"SERVER_PORT" required:"true"`
+	GRPCPort string `envconfig:"GRPC_PORT" required:"true"`
+	BaseURL  string `envconfig:"BASE_URL" required:"true"`
 }
 
 type TokenConfig struct {
-	ServiceURL string
-	Expiration string
+	ServiceURL string `envconfig:"TOKEN_SERVICE_URL" required:"true"`
+	Expiration string `envconfig:"TOKEN_EXPIRATION" default:"24h"`
 }
 
 type DatabaseConfig struct {
-	DSN string
+	DSN string `envconfig:"DATABASE_DSN" default:"host=postgres user=postgres password=postgres dbname=subscriptions port=5432 sslmode=disable"`
 }
 
 type TimeoutConfig struct {
-	HTTPClientTimeout  time.Duration
-	ShutdownTimeout    time.Duration
-	DatabaseRetryDelay time.Duration
-	DatabaseMaxRetries int
+	HTTPClientTimeout  time.Duration `envconfig:"HTTP_CLIENT_TIMEOUT" default:"10s"`
+	ShutdownTimeout    time.Duration `envconfig:"SHUTDOWN_TIMEOUT" default:"5s"`
+	DatabaseRetryDelay time.Duration `envconfig:"DATABASE_RETRY_DELAY" default:"2s"`
+	DatabaseMaxRetries int           `envconfig:"DATABASE_MAX_RETRIES" default:"30"`
 }
 
 type RabbitMQConfig struct {
-	URL      string
-	Exchange string
-	Queue    string
+	URL      string `envconfig:"RABBITMQ_URL" default:"amqp://admin:password@rabbitmq:5672/"`
+	Exchange string `envconfig:"RABBITMQ_EXCHANGE" default:"subscription_events"`
+	Queue    string `envconfig:"RABBITMQ_QUEUE" default:"email_notifications"`
 }
 
 type LoggingConfig struct {
-	Initial    int
-	Thereafter int
-	Tick       time.Duration
+	Initial    int           `envconfig:"LOG_INITIAL" default:"100"`
+	Thereafter int           `envconfig:"LOG_THEREAFTER" default:"100"`
+	Tick       time.Duration `envconfig:"LOG_TICK" default:"1s"`
 }
 
-func LoadConfig() *Config {
-	return &Config{
-		Server: ServerConfig{
-			Port:     getRequiredEnv("SERVER_PORT"),
-			GRPCPort: getRequiredEnv("GRPC_PORT"),
-			BaseURL:  getRequiredEnv("BASE_URL"),
-		},
-		Token: TokenConfig{
-			ServiceURL: getRequiredEnv("TOKEN_SERVICE_URL"),
-			Expiration: getEnv("TOKEN_EXPIRATION", "24h"),
-		},
-		Database: DatabaseConfig{
-			DSN: getEnv("DATABASE_DSN", "host=postgres user=postgres password=postgres dbname=subscriptions port=5432 sslmode=disable"),
-		},
-		Timeout: TimeoutConfig{
-			HTTPClientTimeout:  getDurationEnv("HTTP_CLIENT_TIMEOUT", 10*time.Second),
-			ShutdownTimeout:    getDurationEnv("SHUTDOWN_TIMEOUT", 5*time.Second),
-			DatabaseRetryDelay: getDurationEnv("DATABASE_RETRY_DELAY", 2*time.Second),
-			DatabaseMaxRetries: getIntEnv("DATABASE_MAX_RETRIES", 30),
-		},
-		RabbitMQ: RabbitMQConfig{
-			URL:      getEnv("RABBITMQ_URL", "amqp://admin:password@rabbitmq:5672/"),
-			Exchange: getEnv("RABBITMQ_EXCHANGE", "subscription_events"),
-			Queue:    getEnv("RABBITMQ_QUEUE", "email_notifications"),
-		},
-		Logging: LoggingConfig{
-			Initial:    getIntEnv("LOG_INITIAL", 100),
-			Thereafter: getIntEnv("LOG_THEREAFTER", 100),
-			Tick:       getDurationEnv("LOG_TICK", 1*time.Second),
-		},
+func LoadConfig() (*Config, error) {
+	var cfg Config
+	err := envconfig.Process("", &cfg)
+	if err != nil {
+		return nil, err
 	}
-}
-
-func getRequiredEnv(key string) string {
-	if value := os.Getenv(key); value != "" {
-		return value
-	}
-	return ""
-}
-
-func getEnv(key, defaultValue string) string {
-	if value := os.Getenv(key); value != "" {
-		return value
-	}
-	return defaultValue
-}
-
-func getDurationEnv(key string, defaultValue time.Duration) time.Duration {
-	if value := os.Getenv(key); value != "" {
-		if duration, err := time.ParseDuration(value); err == nil {
-			return duration
-		}
-	}
-	return defaultValue
-}
-
-func getIntEnv(key string, defaultValue int) int {
-	if value := os.Getenv(key); value != "" {
-		if intValue, err := strconv.Atoi(value); err == nil {
-			return intValue
-		}
-	}
-	return defaultValue
+	return &cfg, nil
 }

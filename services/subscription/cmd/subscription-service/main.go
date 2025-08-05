@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"net"
 	"net/http"
 	"os"
@@ -28,11 +29,13 @@ import (
 )
 
 func main() {
-	cfg := config.LoadConfig()
+	cfg, err := config.LoadConfig()
+	if err != nil {
+		fmt.Printf("Failed to load config: %v\n", err)
+		os.Exit(1)
+	}
 
 	loggerInstance := sharedlogger.NewZapLoggerWithSampling(cfg.Logging.Initial, cfg.Logging.Thereafter, cfg.Logging.Tick)
-
-	validateConfig(cfg, loggerInstance)
 
 	db, err := gorm.Open(postgres.Open(cfg.Database.DSN), &gorm.Config{})
 	if err != nil {
@@ -145,20 +148,5 @@ func main() {
 	grpcSrv.GracefulStop()
 	if err := httpSrv.Shutdown(ctx); err != nil {
 		loggerInstance.Fatalf("HTTP server forced to shutdown: %v", err)
-	}
-}
-
-func validateConfig(cfg *config.Config, logger sharedlogger.Logger) {
-	if cfg.Server.BaseURL == "" {
-		logger.Fatalf("BASE_URL environment variable is required")
-	}
-	if cfg.Token.ServiceURL == "" {
-		logger.Fatalf("TOKEN_SERVICE_URL environment variable is required")
-	}
-	if cfg.Server.Port == "" {
-		logger.Fatalf("SERVER_PORT environment variable is required")
-	}
-	if cfg.Server.GRPCPort == "" {
-		logger.Fatalf("GRPC_PORT environment variable is required")
 	}
 }

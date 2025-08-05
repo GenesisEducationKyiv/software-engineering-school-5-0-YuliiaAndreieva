@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"net"
 	"net/http"
 	"os"
@@ -24,11 +25,13 @@ import (
 )
 
 func main() {
-	cfg := config.LoadConfig()
+	cfg, err := config.LoadConfig()
+	if err != nil {
+		fmt.Printf("Failed to load config: %v\n", err)
+		os.Exit(1)
+	}
 
 	loggerInstance := sharedlogger.NewZapLoggerWithSampling(cfg.Logging.Initial, cfg.Logging.Thereafter, cfg.Logging.Tick)
-
-	validateConfig(cfg, loggerInstance)
 
 	smtpConfig := email.SMTPConfig{
 		Host: cfg.SMTP.Host,
@@ -44,7 +47,7 @@ func main() {
 	grpcHandler := grpchandler.NewEmailHandler(sendEmailUseCase)
 
 	var consumer *messaging.RabbitMQConsumer
-	err := retry.Do(
+	err = retry.Do(
 		func() error {
 			var err error
 			consumer, err = messaging.NewRabbitMQConsumer(cfg.RabbitMQ.URL, cfg.RabbitMQ.Exchange, cfg.RabbitMQ.Queue, sendEmailUseCase, loggerInstance, cfg.Server.SubscriptionServiceURL)
@@ -114,24 +117,5 @@ func main() {
 	grpcSrv.GracefulStop()
 	if err := httpSrv.Shutdown(ctx); err != nil {
 		loggerInstance.Fatalf("HTTP server forced to shutdown: %v", err)
-	}
-}
-
-func validateConfig(cfg *config.Config, logger sharedlogger.Logger) {
-	if cfg.SMTP.User == "" || cfg.SMTP.Pass == "" {
-		logger.Fatalf("SMTP_USER and SMTP_PASS environment variables are required")
-	}
-
-	if cfg.Server.BaseURL == "" {
-		logger.Fatalf("BASE_URL environment variable is required")
-	}
-	if cfg.Server.SubscriptionServiceURL == "" {
-		logger.Fatalf("SUBSCRIPTION_SERVICE_URL environment variable is required")
-	}
-	if cfg.Server.Port == "" {
-		logger.Fatalf("SERVER_PORT environment variable is required")
-	}
-	if cfg.Server.GRPCPort == "" {
-		logger.Fatalf("GRPC_PORT environment variable is required")
 	}
 }

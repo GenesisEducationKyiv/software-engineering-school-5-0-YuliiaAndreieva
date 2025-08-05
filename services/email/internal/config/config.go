@@ -1,12 +1,9 @@
 package config
 
 import (
-	"log"
-	"os"
-	"strconv"
 	"time"
 
-	"github.com/joho/godotenv"
+	"github.com/kelseyhightower/envconfig"
 )
 
 type Config struct {
@@ -18,106 +15,40 @@ type Config struct {
 }
 
 type SMTPConfig struct {
-	Host string
-	Port int
-	User string
-	Pass string
+	Host string `envconfig:"SMTP_HOST" default:"smtp.gmail.com"`
+	Port int    `envconfig:"SMTP_PORT" default:"587"`
+	User string `envconfig:"SMTP_USER" required:"true"`
+	Pass string `envconfig:"SMTP_PASS" required:"true"`
 }
 
 type ServerConfig struct {
-	Port                   string
-	GRPCPort               string
-	BaseURL                string
-	SubscriptionServiceURL string
+	Port                   string `envconfig:"SERVER_PORT" required:"true"`
+	GRPCPort               string `envconfig:"GRPC_PORT" required:"true"`
+	BaseURL                string `envconfig:"BASE_URL" required:"true"`
+	SubscriptionServiceURL string `envconfig:"SUBSCRIPTION_SERVICE_URL" required:"true"`
 }
 
 type TimeoutConfig struct {
-	ShutdownTimeout time.Duration
+	ShutdownTimeout time.Duration `envconfig:"SHUTDOWN_TIMEOUT" default:"5s"`
 }
 
 type RabbitMQConfig struct {
-	URL      string
-	Exchange string
-	Queue    string
+	URL      string `envconfig:"RABBITMQ_URL" default:"amqp://admin:password@rabbitmq:5672/"`
+	Exchange string `envconfig:"RABBITMQ_EXCHANGE" default:"subscription_events"`
+	Queue    string `envconfig:"RABBITMQ_QUEUE" default:"email_notifications"`
 }
 
 type LoggingConfig struct {
-	Initial    int
-	Thereafter int
-	Tick       time.Duration
+	Initial    int           `envconfig:"LOG_INITIAL" default:"100"`
+	Thereafter int           `envconfig:"LOG_THEREAFTER" default:"100"`
+	Tick       time.Duration `envconfig:"LOG_TICK" default:"1s"`
 }
 
-func LoadConfig() *Config {
-	if err := godotenv.Load(); err != nil {
-		log.Printf("Warning: .env file not found: %v", err)
+func LoadConfig() (*Config, error) {
+	var cfg Config
+	err := envconfig.Process("", &cfg)
+	if err != nil {
+		return nil, err
 	}
-
-	return &Config{
-		SMTP: SMTPConfig{
-			Host: getEnv("SMTP_HOST", "smtp.gmail.com"),
-			Port: getEnvAsInt("SMTP_PORT", 587),
-			User: getEnv("SMTP_USER", ""),
-			Pass: getEnv("SMTP_PASS", ""),
-		},
-		Server: ServerConfig{
-			Port:                   getRequiredEnv("SERVER_PORT"),
-			GRPCPort:               getRequiredEnv("GRPC_PORT"),
-			BaseURL:                getRequiredEnv("BASE_URL"),
-			SubscriptionServiceURL: getRequiredEnv("SUBSCRIPTION_SERVICE_URL"),
-		},
-		Timeout: TimeoutConfig{
-			ShutdownTimeout: getDurationEnv("SHUTDOWN_TIMEOUT", 5*time.Second),
-		},
-		RabbitMQ: RabbitMQConfig{
-			URL:      getEnv("RABBITMQ_URL", "amqp://admin:password@rabbitmq:5672/"),
-			Exchange: getEnv("RABBITMQ_EXCHANGE", "subscription_events"),
-			Queue:    getEnv("RABBITMQ_QUEUE", "email_notifications"),
-		},
-		Logging: LoggingConfig{
-			Initial:    getIntEnv("LOG_INITIAL", 100),
-			Thereafter: getIntEnv("LOG_THEREAFTER", 100),
-			Tick:       getDurationEnv("LOG_TICK", 1*time.Second),
-		},
-	}
-}
-
-func getRequiredEnv(key string) string {
-	if value := os.Getenv(key); value != "" {
-		return value
-	}
-	return ""
-}
-
-func getEnv(key, defaultValue string) string {
-	if value := os.Getenv(key); value != "" {
-		return value
-	}
-	return defaultValue
-}
-
-func getEnvAsInt(key string, defaultValue int) int {
-	if value := os.Getenv(key); value != "" {
-		if intValue, err := strconv.Atoi(value); err == nil {
-			return intValue
-		}
-	}
-	return defaultValue
-}
-
-func getIntEnv(key string, defaultValue int) int {
-	if value := os.Getenv(key); value != "" {
-		if intValue, err := strconv.Atoi(value); err == nil {
-			return intValue
-		}
-	}
-	return defaultValue
-}
-
-func getDurationEnv(key string, defaultValue time.Duration) time.Duration {
-	if value := os.Getenv(key); value != "" {
-		if duration, err := time.ParseDuration(value); err == nil {
-			return duration
-		}
-	}
-	return defaultValue
+	return &cfg, nil
 }
