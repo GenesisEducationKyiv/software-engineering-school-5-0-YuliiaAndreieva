@@ -34,7 +34,8 @@ import (
 func main() {
 	cfg, err := config.LoadConfig()
 	if err != nil {
-		panic(fmt.Sprintf("Failed to load config: %v", err))
+		fmt.Printf("Failed to load config: %v\n", err)
+		os.Exit(1)
 	}
 
 	fileLogger, err := filelogger.NewFileLogger("logs", "provider_responses.log")
@@ -116,7 +117,7 @@ func main() {
 	go func() {
 		baseLogger.Infof("Starting HTTP server on port %d", cfg.Port)
 		if err := httpSrv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			panic("Failed to start HTTP server: " + err.Error())
+			baseLogger.Fatalf("Failed to start HTTP server: %v", err)
 		}
 	}()
 
@@ -127,12 +128,12 @@ func main() {
 		}
 		lis, err := net.Listen("tcp", fmt.Sprintf(":%d", grpcPort))
 		if err != nil {
-			panic(fmt.Sprintf("Failed to listen for gRPC: %v", err))
+			baseLogger.Fatalf("Failed to listen for gRPC: %v", err)
 		}
 
 		baseLogger.Infof("Starting gRPC server on port %d", grpcPort)
 		if err := grpcSrv.Serve(lis); err != nil {
-			panic("Failed to start gRPC server: " + err.Error())
+			baseLogger.Fatalf("Failed to start gRPC server: %v", err)
 		}
 	}()
 
@@ -145,6 +146,6 @@ func main() {
 
 	grpcSrv.GracefulStop()
 	if err := httpSrv.Shutdown(ctx); err != nil {
-		panic("HTTP server forced to shutdown: " + err.Error())
+		baseLogger.Fatalf("HTTP server forced to shutdown: %v", err)
 	}
 }

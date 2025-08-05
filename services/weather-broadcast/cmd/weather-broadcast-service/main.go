@@ -23,24 +23,25 @@ import (
 func main() {
 	cfg, err := config.LoadConfig()
 	if err != nil {
-		panic(fmt.Sprintf("Failed to load config: %v", err))
+		fmt.Printf("Failed to load config: %v\n", err)
+		os.Exit(1)
 	}
 
 	loggerInstance := sharedlogger.NewZapLoggerWithSampling(cfg.LogInitial, cfg.LogThereafter, cfg.LogTick)
 
 	subscriptionClient, err := grpcclient.NewSubscriptionClient(cfg.SubscriptionGRPCURL, loggerInstance)
 	if err != nil {
-		panic(fmt.Sprintf("Failed to create subscription gRPC client: %v", err))
+		loggerInstance.Fatalf("Failed to create subscription gRPC client: %v", err)
 	}
 
 	emailClient, err := grpcclient.NewEmailClient(cfg.EmailGRPCURL, loggerInstance)
 	if err != nil {
-		panic(fmt.Sprintf("Failed to create email gRPC client: %v", err))
+		loggerInstance.Fatalf("Failed to create email gRPC client: %v", err)
 	}
 
 	weatherClient, err := grpcclient.NewWeatherClient(cfg.WeatherGRPCURL, loggerInstance)
 	if err != nil {
-		panic(fmt.Sprintf("Failed to create weather gRPC client: %v", err))
+		loggerInstance.Fatalf("Failed to create weather gRPC client: %v", err)
 	}
 
 	broadcastUseCase := usecase.NewBroadcastUseCase(
@@ -90,7 +91,7 @@ func main() {
 
 	go func() {
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			panic("Failed to start server: " + err.Error())
+			loggerInstance.Fatalf("Failed to start server: %v", err)
 		}
 	}()
 
@@ -102,7 +103,7 @@ func main() {
 	defer cancel()
 
 	if err := srv.Shutdown(ctx); err != nil {
-		panic("Server forced to shutdown: " + err.Error())
+		loggerInstance.Fatalf("Server forced to shutdown: %v", err)
 	}
 
 	loggerInstance.Infof("Server stopped")
