@@ -2,14 +2,10 @@ package email
 
 import (
 	"context"
-	"net/smtp"
-	"strconv"
 	"time"
 
 	"email/internal/core/domain"
 	"email/internal/core/ports/out"
-
-	"github.com/jordan-wright/email"
 )
 
 type SMTPConfig struct {
@@ -20,12 +16,16 @@ type SMTPConfig struct {
 }
 
 type SMTPSender struct {
+	client *SMTPClient
 	config SMTPConfig
 	logger out.Logger
 }
 
 func NewSMTPSender(config SMTPConfig, logger out.Logger) out.EmailSender {
+	client := NewSMTPClient(config.Host, config.Port, config.User, config.Pass)
+
 	return &SMTPSender{
+		client: client,
 		config: config,
 		logger: logger,
 	}
@@ -36,14 +36,7 @@ func (s *SMTPSender) SendEmail(ctx context.Context, req domain.EmailRequest) (*d
 
 	sentAt := time.Now().Unix()
 
-	msg := email.NewEmail()
-	msg.From = s.config.User
-	msg.To = []string{req.To}
-	msg.Subject = req.Subject
-	msg.HTML = []byte(req.Body)
-
-	addr := s.config.Host + ":" + strconv.Itoa(s.config.Port)
-	err := msg.Send(addr, smtp.PlainAuth("", s.config.User, s.config.Pass, s.config.Host))
+	err := s.client.Send(s.config.User, req.To, req.Subject, []byte(req.Body))
 	if err != nil {
 		s.logger.Errorf("Failed to send email to %s: %v", req.To, err)
 		return &domain.EmailDeliveryResult{
