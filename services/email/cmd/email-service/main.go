@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"net"
 	"net/http"
 	"os"
@@ -27,12 +26,9 @@ import (
 func main() {
 	cfg := config.LoadConfig()
 
-	if cfg.SMTP.User == "" || cfg.SMTP.Pass == "" {
-		fmt.Printf("SMTP_USER and SMTP_PASS environment variables are required\n")
-		os.Exit(1)
-	}
-
 	loggerInstance := sharedlogger.NewZapLoggerWithSampling(cfg.Logging.Initial, cfg.Logging.Thereafter, cfg.Logging.Tick)
+
+	validateConfig(cfg, loggerInstance)
 
 	smtpConfig := email.SMTPConfig{
 		Host: cfg.SMTP.Host,
@@ -41,7 +37,7 @@ func main() {
 		Pass: cfg.SMTP.Pass,
 	}
 	emailSender := email.NewSMTPSender(smtpConfig, loggerInstance)
-	templateBuilder := email.NewTemplateBuilder(loggerInstance, cfg.Server.BaseURL)
+	templateBuilder := email.NewTemplateBuilder(loggerInstance, cfg.Server.BaseURL, cfg.Server.SubscriptionServiceURL)
 
 	sendEmailUseCase := usecase.NewSendEmailUseCase(emailSender, templateBuilder, loggerInstance, cfg.Server.BaseURL)
 
@@ -51,7 +47,7 @@ func main() {
 	err := retry.Do(
 		func() error {
 			var err error
-			consumer, err = messaging.NewRabbitMQConsumer(cfg.RabbitMQ.URL, cfg.RabbitMQ.Exchange, cfg.RabbitMQ.Queue, sendEmailUseCase, loggerInstance, cfg.Server.BaseURL)
+			consumer, err = messaging.NewRabbitMQConsumer(cfg.RabbitMQ.URL, cfg.RabbitMQ.Exchange, cfg.RabbitMQ.Queue, sendEmailUseCase, loggerInstance, cfg.Server.SubscriptionServiceURL)
 			return err
 		},
 		retry.Attempts(10),
@@ -97,16 +93,12 @@ func main() {
 	}()
 
 	go func() {
-		grpcPort := cfg.Server.GRPCPort
-		if grpcPort == "" {
-			grpcPort = "9091"
-		}
-		lis, err := net.Listen("tcp", ":"+grpcPort)
+		lis, err := net.Listen("tcp", ":"+cfg.Server.GRPCPort)
 		if err != nil {
 			loggerInstance.Fatalf("Failed to listen for gRPC: %v", err)
 		}
 
-		loggerInstance.Infof("Starting gRPC server on port %s", grpcPort)
+		loggerInstance.Infof("Starting gRPC server on port %s", cfg.Server.GRPCPort)
 		if err := grpcSrv.Serve(lis); err != nil {
 			loggerInstance.Fatalf("Failed to start gRPC server: %v", err)
 		}
@@ -122,5 +114,24 @@ func main() {
 	grpcSrv.GracefulStop()
 	if err := httpSrv.Shutdown(ctx); err != nil {
 		loggerInstance.Fatalf("HTTP server forced to shutdown: %v", err)
+	}
+}
+
+func validateConfig(cfg *config.Config, logger sharedlogger.Logger) {
+	if cfg.SMTP.User == "" || cfg.SMTP.Pass == "" {
+		logger.Fatalf("SMTP_USER and SMTP_PASS environment variables are required")
+	}
+
+	if cfg.Server.BaseURL == "" {
+		logger.Fatalf("BASE_URL environment variable is required")
+	}
+	if cfg.Server.SubscriptionServiceURL == "" {
+		logger.Fatalf("SUBSCRIPTION_SERVICE_URL environment variable is required")
+	}
+	if cfg.Server.Port == "" {
+		logger.Fatalf("SERVER_PORT environment variable is required")
+	}
+	if cfg.Server.GRPCPort == "" {
+		logger.Fatalf("GRPC_PORT environment variable is required")
 	}
 }

@@ -10,10 +10,10 @@ type Config struct {
 	SubscriptionServiceURL string        `envconfig:"SUBSCRIPTION_SERVICE_URL" required:"true"`
 	WeatherServiceURL      string        `envconfig:"WEATHER_SERVICE_URL" required:"true"`
 	EmailServiceURL        string        `envconfig:"EMAIL_SERVICE_URL" required:"true"`
-	SubscriptionGRPCURL    string        `envconfig:"SUBSCRIPTION_GRPC_URL" default:"subscription-service:9090"`
-	EmailGRPCURL           string        `envconfig:"EMAIL_GRPC_URL" default:"email-service:9091"`
-	WeatherGRPCURL         string        `envconfig:"WEATHER_GRPC_URL" default:"weather-service:9092"`
-	Port                   int           `envconfig:"PORT" default:"8085"`
+	SubscriptionGRPCURL    string        `envconfig:"SUBSCRIPTION_GRPC_URL" required:"true"`
+	EmailGRPCURL           string        `envconfig:"EMAIL_GRPC_URL" required:"true"`
+	WeatherGRPCURL         string        `envconfig:"WEATHER_GRPC_URL" required:"true"`
+	Port                   int           `envconfig:"PORT" required:"true"`
 	WorkerAmount           int           `envconfig:"WORKER_AMOUNT" default:"10"`
 	PageSize               int           `envconfig:"PAGE_SIZE" default:"100"`
 	HTTPClientTimeout      time.Duration `envconfig:"HTTP_CLIENT_TIMEOUT" default:"10s"`

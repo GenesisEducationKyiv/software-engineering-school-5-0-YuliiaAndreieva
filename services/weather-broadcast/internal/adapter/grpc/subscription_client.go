@@ -59,6 +59,6 @@ func (c *SubscriptionClient) ListByFrequency(ctx context.Context, query domain.L
 	c.logger.Infof("Successfully retrieved %d subscriptions for frequency: %s", len(subscriptions), query.Frequency)
 	return &domain.SubscriptionList{
 		Subscriptions: subscriptions,
-		LastIndex:     int(resp.LastIndex),
+		LastIndex:     int(resp.LastId),
 	}, nil
 }

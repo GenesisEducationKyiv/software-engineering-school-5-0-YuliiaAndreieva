@@ -34,10 +34,10 @@ type LoggingConfig struct {
 func LoadConfig() *Config {
 	return &Config{
 		Server: ServerConfig{
-			Port: getEnv("SERVER_PORT", "8083"),
+			Port: getEnv("SERVER_PORT"),
 		},
 		JWT: JWTConfig{
-			Secret: getEnv("JWT_SECRET", "your-secret-key"),
+			Secret: getEnv("JWT_SECRET"),
 		},
 		Timeout: TimeoutConfig{
 			ShutdownTimeout: getDurationEnv("SHUTDOWN_TIMEOUT", 5*time.Second),
@@ -50,11 +50,11 @@ func LoadConfig() *Config {
 	}
 }
 
-func getEnv(key, defaultValue string) string {
+func getEnv(key string) string {
 	if value := os.Getenv(key); value != "" {
 		return value
 	}
-	return defaultValue
+	return "" // Changed from defaultValue to "" to indicate it's required
 }
 
 func getDurationEnv(key string, defaultValue time.Duration) time.Duration {

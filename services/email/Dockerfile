@@ -6,13 +6,9 @@ COPY proto/ ./proto/
 COPY shared/ ./shared/
 COPY services/email/go.mod services/email/go.sum ./
 
-# Змінюємо replace директиви для Docker контексту
-RUN echo "Before awk:" && cat go.mod && \
-    echo "Checking for replace directives:" && grep "replace" go.mod && \
-    awk '{gsub("../../proto", "./proto"); gsub("../../shared", "./shared"); print}' go.mod > go.mod.tmp && \
-    mv go.mod.tmp go.mod && \
-    echo "After awk:" && cat go.mod && \
-    echo "Checking for replace directives after:" && grep "replace" go.mod
+# Створюємо правильну структуру для shared та proto модулів
+RUN mkdir -p ../../shared && cp -r ./shared/* ../../shared/ && \
+    mkdir -p ../../proto && cp -r ./proto/* ../../proto/
 
 COPY services/email/ ./
 

@@ -21,6 +21,8 @@ func main() {
 
 	loggerInstance := sharedlogger.NewZapLoggerWithSampling(cfg.Logging.Initial, cfg.Logging.Thereafter, cfg.Logging.Tick)
 
+	validateConfig(cfg, loggerInstance)
+
 	generateTokenUseCase := usecase.NewGenerateTokenUseCase(loggerInstance, cfg.JWT.Secret)
 	validateTokenUseCase := usecase.NewValidateTokenUseCase(loggerInstance, cfg.JWT.Secret)
 
@@ -56,5 +58,14 @@ func main() {
 	defer cancel()
 	if err := srv.Shutdown(ctx); err != nil {
 		loggerInstance.Fatalf("Server forced to shutdown: %v", err)
+	}
+}
+
+func validateConfig(cfg *config.Config, logger sharedlogger.Logger) {
+	if cfg.JWT.Secret == "" {
+		logger.Fatalf("JWT_SECRET environment variable is required")
+	}
+	if cfg.Server.Port == "" {
+		logger.Fatalf("SERVER_PORT environment variable is required")
 	}
 }

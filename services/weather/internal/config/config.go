@@ -11,9 +11,9 @@ type Config struct {
 	WeatherAPIBaseURL     string        `envconfig:"WEATHER_API_BASE_URL" default:"http://api.weatherapi.com/v1"`
 	OpenWeatherMapAPIKey  string        `envconfig:"OPENWEATHERMAP_API_KEY"`
 	OpenWeatherMapBaseURL string        `envconfig:"OPENWEATHERMAP_BASE_URL" default:"https://api.openweathermap.org/data/2.5"`
-	Port                  int           `envconfig:"PORT" default:"8084"`
-	GRPCPort              int           `envconfig:"GRPC_PORT" default:"9092"`
-	BaseURL               string        `envconfig:"BASE_URL" default:"http://localhost:8084"`
+	Port                  int           `envconfig:"PORT" required:"true"`
+	GRPCPort              int           `envconfig:"GRPC_PORT" required:"true"`
+	BaseURL               string        `envconfig:"BASE_URL" required:"true"`
 	HTTPReadTimeout       time.Duration `envconfig:"HTTP_READ_TIMEOUT" default:"10s"`
 	HTTPWriteTimeout      time.Duration `envconfig:"HTTP_WRITE_TIMEOUT" default:"10s"`
 	ShutdownTimeout       time.Duration `envconfig:"SHUTDOWN_TIMEOUT" default:"5s"`
@@ -42,7 +42,7 @@ func LoadConfig() (*Config, error) {
 func GetBaseURL() string {
 	var cfg Config
 	if err := envconfig.Process("", &cfg); err != nil {
-		return "http://localhost:8084"
+		return ""
 	}
 	return cfg.BaseURL
 }

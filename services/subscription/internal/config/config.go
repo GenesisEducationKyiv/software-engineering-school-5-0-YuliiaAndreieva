@@ -52,12 +52,12 @@ type LoggingConfig struct {
 func LoadConfig() *Config {
 	return &Config{
 		Server: ServerConfig{
-			Port:     getEnv("SERVER_PORT", "8082"),
-			GRPCPort: getEnv("GRPC_PORT", "9093"),
-			BaseURL:  getEnv("BASE_URL", "http://localhost:8082"),
+			Port:     getRequiredEnv("SERVER_PORT"),
+			GRPCPort: getRequiredEnv("GRPC_PORT"),
+			BaseURL:  getRequiredEnv("BASE_URL"),
 		},
 		Token: TokenConfig{
-			ServiceURL: getEnv("TOKEN_SERVICE_URL", "http://token-service:8083"),
+			ServiceURL: getRequiredEnv("TOKEN_SERVICE_URL"),
 			Expiration: getEnv("TOKEN_EXPIRATION", "24h"),
 		},
 		Database: DatabaseConfig{
@@ -80,6 +80,13 @@ func LoadConfig() *Config {
 			Tick:       getDurationEnv("LOG_TICK", 1*time.Second),
 		},
 	}
+}
+
+func getRequiredEnv(key string) string {
+	if value := os.Getenv(key); value != "" {
+		return value
+	}
+	return ""
 }
 
 func getEnv(key, defaultValue string) string {

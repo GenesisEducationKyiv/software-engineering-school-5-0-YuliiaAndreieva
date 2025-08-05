@@ -27,9 +27,9 @@ type LoggingConfig struct {
 
 func LoadConfig() *Config {
 	return &Config{
-		Port:                   getEnv("PORT", "8080"),
-		WeatherServiceURL:      getEnv("WEATHER_SERVICE_URL", "http://localhost:8081"),
-		SubscriptionServiceURL: getEnv("SUBSCRIPTION_SERVICE_URL", "http://localhost:8082"),
+		Port:                   getEnv("PORT"),
+		WeatherServiceURL:      getEnv("WEATHER_SERVICE_URL"),
+		SubscriptionServiceURL: getEnv("SUBSCRIPTION_SERVICE_URL"),
 		Timeout: TimeoutConfig{
 			HTTPClientTimeout: getDurationEnv("HTTP_CLIENT_TIMEOUT", 30*time.Second),
 			ShutdownTimeout:   getDurationEnv("SHUTDOWN_TIMEOUT", 5*time.Second),
@@ -42,11 +42,11 @@ func LoadConfig() *Config {
 	}
 }
 
-func getEnv(key, defaultValue string) string {
+func getEnv(key string) string {
 	if value := os.Getenv(key); value != "" {
 		return value
 	}
-	return defaultValue
+	return "" // Changed from defaultValue to "" to indicate it's required
 }
 
 func getDurationEnv(key string, defaultValue time.Duration) time.Duration {

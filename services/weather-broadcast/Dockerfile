@@ -6,9 +6,9 @@ COPY proto/ ./proto/
 COPY shared/ ./shared/
 COPY services/weather-broadcast/go.mod services/weather-broadcast/go.sum ./
 
-# Змінюємо replace директиви для Docker контексту
-RUN sed -i 's|../../proto|./proto|g' go.mod && \
-    sed -i 's|../../shared|./shared|g' go.mod
+# Створюємо правильну структуру для shared та proto модулів
+RUN mkdir -p ../../shared && cp -r ./shared/* ../../shared/ && \
+    mkdir -p ../../proto && cp -r ./proto/* ../../proto/
 
 COPY services/weather-broadcast/ ./
 

@@ -49,6 +49,6 @@ func (h *SubscriptionHandler) ListByFrequency(ctx context.Context, req *pb.ListB
 
 	return &pb.ListByFrequencyResponse{
 		Subscriptions: subscriptions,
-		LastIndex:     int32(result.LastIndex),
+		LastId:        int32(result.LastIndex),
 	}, nil
 }

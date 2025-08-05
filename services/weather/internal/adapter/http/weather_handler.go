@@ -66,36 +66,28 @@ func (h *WeatherHandler) validateRequest(req domain.WeatherRequest) error {
 
 func (h *WeatherHandler) handleBindingError(c *gin.Context, err error) {
 	h.logger.Errorf("Failed to bind JSON for weather request: %v", err)
-	c.JSON(http.StatusBadRequest, domain.WeatherResponse{
-		Success: false,
-		Message: "Invalid request: " + err.Error(),
+	c.JSON(http.StatusBadRequest, gin.H{
+		"error": "Invalid request: " + err.Error(),
 	})
 }
 
 func (h *WeatherHandler) handleValidationError(c *gin.Context, err error) {
 	h.logger.Warnf("Validation error: %v", err)
-	c.JSON(http.StatusBadRequest, domain.WeatherResponse{
-		Success: false,
-		Message: err.Error(),
+	c.JSON(http.StatusBadRequest, gin.H{
+		"error": err.Error(),
 	})
 }
 
 func (h *WeatherHandler) handleUseCaseError(c *gin.Context, err error, city string) {
 	h.logger.Errorf("Failed to get weather data for city %s: %v", city, err)
-	c.JSON(http.StatusInternalServerError, domain.WeatherResponse{
-		Success: false,
-		Message: "Failed to get weather data: " + err.Error(),
+	c.JSON(http.StatusInternalServerError, gin.H{
+		"error": "Failed to get weather data: " + err.Error(),
 	})
 }
 
 func (h *WeatherHandler) handleSuccess(c *gin.Context, result *domain.WeatherResponse, city string) {
-	if result.Success {
-		h.logger.Infof("Weather data retrieved successfully for city: %s", city)
-		c.JSON(http.StatusOK, result)
-	} else {
-		h.logger.Warnf("Weather request failed for city %s: %s", city, result.Message)
-		c.JSON(http.StatusBadRequest, result)
-	}
+	h.logger.Infof("Weather data retrieved successfully for city: %s", city)
+	c.JSON(http.StatusOK, result)
 }
 
 type ValidationError struct {

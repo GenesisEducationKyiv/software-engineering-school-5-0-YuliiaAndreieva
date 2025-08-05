@@ -32,6 +32,8 @@ func main() {
 
 	loggerInstance := sharedlogger.NewZapLoggerWithSampling(cfg.Logging.Initial, cfg.Logging.Thereafter, cfg.Logging.Tick)
 
+	validateConfig(cfg, loggerInstance)
+
 	db, err := gorm.Open(postgres.Open(cfg.Database.DSN), &gorm.Config{})
 	if err != nil {
 		loggerInstance.Fatalf("Failed to connect to database: %v", err)
@@ -122,16 +124,12 @@ func main() {
 	}()
 
 	go func() {
-		grpcPort := cfg.Server.GRPCPort
-		if grpcPort == "" {
-			grpcPort = "9093"
-		}
-		lis, err := net.Listen("tcp", ":"+grpcPort)
+		lis, err := net.Listen("tcp", ":"+cfg.Server.GRPCPort)
 		if err != nil {
 			loggerInstance.Fatalf("Failed to listen for gRPC: %v", err)
 		}
 
-		loggerInstance.Infof("Starting gRPC server on port %s", grpcPort)
+		loggerInstance.Infof("Starting gRPC server on port %s", cfg.Server.GRPCPort)
 		if err := grpcSrv.Serve(lis); err != nil {
 			loggerInstance.Fatalf("Failed to start gRPC server: %v", err)
 		}
@@ -147,5 +145,20 @@ func main() {
 	grpcSrv.GracefulStop()
 	if err := httpSrv.Shutdown(ctx); err != nil {
 		loggerInstance.Fatalf("HTTP server forced to shutdown: %v", err)
+	}
+}
+
+func validateConfig(cfg *config.Config, logger sharedlogger.Logger) {
+	if cfg.Server.BaseURL == "" {
+		logger.Fatalf("BASE_URL environment variable is required")
+	}
+	if cfg.Token.ServiceURL == "" {
+		logger.Fatalf("TOKEN_SERVICE_URL environment variable is required")
+	}
+	if cfg.Server.Port == "" {
+		logger.Fatalf("SERVER_PORT environment variable is required")
+	}
+	if cfg.Server.GRPCPort == "" {
+		logger.Fatalf("GRPC_PORT environment variable is required")
 	}
 }

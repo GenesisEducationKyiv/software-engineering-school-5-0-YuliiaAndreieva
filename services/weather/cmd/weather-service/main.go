@@ -50,6 +50,8 @@ func main() {
 
 	baseLogger := sharedlogger.NewZapLoggerWithSampling(cfg.LogInitial, cfg.LogThereafter, cfg.LogTick)
 
+	validateConfig(cfg, baseLogger)
+
 	httpClient := &http.Client{Timeout: cfg.HTTPClientTimeout}
 
 	weatherAPIProvider := weatherapi.NewClient(weatherapi.ClientOptions{
@@ -122,16 +124,12 @@ func main() {
 	}()
 
 	go func() {
-		grpcPort := cfg.GRPCPort
-		if grpcPort == 0 {
-			grpcPort = 9092
-		}
-		lis, err := net.Listen("tcp", fmt.Sprintf(":%d", grpcPort))
+		lis, err := net.Listen("tcp", fmt.Sprintf(":%d", cfg.GRPCPort))
 		if err != nil {
 			baseLogger.Fatalf("Failed to listen for gRPC: %v", err)
 		}
 
-		baseLogger.Infof("Starting gRPC server on port %d", grpcPort)
+		baseLogger.Infof("Starting gRPC server on port %d", cfg.GRPCPort)
 		if err := grpcSrv.Serve(lis); err != nil {
 			baseLogger.Fatalf("Failed to start gRPC server: %v", err)
 		}
@@ -147,5 +145,17 @@ func main() {
 	grpcSrv.GracefulStop()
 	if err := httpSrv.Shutdown(ctx); err != nil {
 		baseLogger.Fatalf("HTTP server forced to shutdown: %v", err)
+	}
+}
+
+func validateConfig(cfg *config.Config, logger sharedlogger.Logger) {
+	if cfg.BaseURL == "" {
+		logger.Fatalf("BASE_URL environment variable is required")
+	}
+	if cfg.Port == 0 {
+		logger.Fatalf("PORT environment variable is required")
+	}
+	if cfg.GRPCPort == 0 {
+		logger.Fatalf("GRPC_PORT environment variable is required")
 	}
 }

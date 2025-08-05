@@ -29,6 +29,8 @@ func main() {
 
 	loggerInstance := sharedlogger.NewZapLoggerWithSampling(cfg.LogInitial, cfg.LogThereafter, cfg.LogTick)
 
+	validateConfig(cfg, loggerInstance)
+
 	subscriptionClient, err := grpcclient.NewSubscriptionClient(cfg.SubscriptionGRPCURL, loggerInstance)
 	if err != nil {
 		loggerInstance.Fatalf("Failed to create subscription gRPC client: %v", err)
@@ -107,4 +109,28 @@ func main() {
 	}
 
 	loggerInstance.Infof("Server stopped")
+}
+
+func validateConfig(cfg *config.Config, logger sharedlogger.Logger) {
+	if cfg.SubscriptionServiceURL == "" {
+		logger.Fatalf("SUBSCRIPTION_SERVICE_URL environment variable is required")
+	}
+	if cfg.WeatherServiceURL == "" {
+		logger.Fatalf("WEATHER_SERVICE_URL environment variable is required")
+	}
+	if cfg.EmailServiceURL == "" {
+		logger.Fatalf("EMAIL_SERVICE_URL environment variable is required")
+	}
+	if cfg.SubscriptionGRPCURL == "" {
+		logger.Fatalf("SUBSCRIPTION_GRPC_URL environment variable is required")
+	}
+	if cfg.EmailGRPCURL == "" {
+		logger.Fatalf("EMAIL_GRPC_URL environment variable is required")
+	}
+	if cfg.WeatherGRPCURL == "" {
+		logger.Fatalf("WEATHER_GRPC_URL environment variable is required")
+	}
+	if cfg.Port == 0 {
+		logger.Fatalf("PORT environment variable is required")
+	}
 }

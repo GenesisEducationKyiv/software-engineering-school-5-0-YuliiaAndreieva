@@ -11,16 +11,16 @@ import (
 )
 
 type RabbitMQConsumer struct {
-	conn     *amqp.Connection
-	channel  *amqp.Channel
-	exchange string
-	queue    string
-	useCase  in.SendEmailUseCase
-	logger   out.Logger
-	baseURL  string
+	conn                   *amqp.Connection
+	channel                *amqp.Channel
+	exchange               string
+	queue                  string
+	useCase                in.SendEmailUseCase
+	logger                 out.Logger
+	subscriptionServiceURL string
 }
 
-func NewRabbitMQConsumer(url, exchange, queue string, useCase in.SendEmailUseCase, logger out.Logger, baseURL string) (*RabbitMQConsumer, error) {
+func NewRabbitMQConsumer(url, exchange, queue string, useCase in.SendEmailUseCase, logger out.Logger, subscriptionServiceURL string) (*RabbitMQConsumer, error) {
 	conn, err := amqp.Dial(url)
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to RabbitMQ at %s: %w", url, err)
@@ -77,13 +77,13 @@ func NewRabbitMQConsumer(url, exchange, queue string, useCase in.SendEmailUseCas
 	logger.Infof("Successfully connected to RabbitMQ: exchange=%s, queue=%s", exchange, queue)
 
 	return &RabbitMQConsumer{
-		conn:     conn,
-		channel:  ch,
-		exchange: exchange,
-		queue:    queue,
-		useCase:  useCase,
-		logger:   logger,
-		baseURL:  baseURL,
+		conn:                   conn,
+		channel:                ch,
+		exchange:               exchange,
+		queue:                  queue,
+		useCase:                useCase,
+		logger:                 logger,
+		subscriptionServiceURL: subscriptionServiceURL,
 	}, nil
 }
 
@@ -152,7 +152,7 @@ func (c *RabbitMQConsumer) handleMessage(ctx context.Context, msg amqp.Delivery)
 		To:               event.Email,
 		Subject:          "Confirm your weather subscription",
 		City:             event.City,
-		ConfirmationLink: fmt.Sprintf("%s/confirm/%s", c.baseURL, event.Token),
+		ConfirmationLink: fmt.Sprintf("%s/confirm/%s", c.subscriptionServiceURL, event.Token),
 	}
 
 	result, err := c.useCase.SendConfirmationEmail(ctx, req)

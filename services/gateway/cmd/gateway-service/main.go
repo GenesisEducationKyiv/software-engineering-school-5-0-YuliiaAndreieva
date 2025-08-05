@@ -19,6 +19,8 @@ func main() {
 
 	loggerInstance := sharedlogger.NewZapLoggerWithSampling(cfg.Logging.Initial, cfg.Logging.Thereafter, cfg.Logging.Tick)
 
+	validateConfig(cfg, loggerInstance)
+
 	httpClient := &http.Client{Timeout: cfg.Timeout.HTTPClientTimeout}
 
 	weatherHandler := httphandler.NewWeatherHandler(cfg.WeatherServiceURL, httpClient, loggerInstance)
@@ -57,5 +59,17 @@ func main() {
 	defer cancel()
 	if err := srv.Shutdown(ctx); err != nil {
 		loggerInstance.Fatalf("Server forced to shutdown: %v", err)
+	}
+}
+
+func validateConfig(cfg *config.Config, logger sharedlogger.Logger) {
+	if cfg.WeatherServiceURL == "" {
+		logger.Fatalf("WEATHER_SERVICE_URL environment variable is required")
+	}
+	if cfg.SubscriptionServiceURL == "" {
+		logger.Fatalf("SUBSCRIPTION_SERVICE_URL environment variable is required")
+	}
+	if cfg.Port == "" {
+		logger.Fatalf("PORT environment variable is required")
 	}
 }

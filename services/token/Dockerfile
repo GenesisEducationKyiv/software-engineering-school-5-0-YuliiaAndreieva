@@ -2,11 +2,12 @@ FROM golang:1.24-alpine AS builder
 
 WORKDIR /app
 
+# Копіюємо shared модуль в правильне місце
 COPY shared/ ./shared/
 COPY services/token/go.mod services/token/go.sum ./
 
-# Змінюємо replace директиви для Docker контексту
-RUN sed -i 's|../../shared|./shared|g' go.mod
+# Створюємо правильну структуру для shared модуля
+RUN mkdir -p ../../shared && cp -r ./shared/* ../../shared/
 
 COPY services/token/ ./
 
