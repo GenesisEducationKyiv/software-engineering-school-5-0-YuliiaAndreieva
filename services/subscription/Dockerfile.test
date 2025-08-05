@@ -2,17 +2,17 @@ FROM golang:1.24-alpine
 
 WORKDIR /app
 
-# Copy shared and proto modules
-COPY proto/ ./proto/
-COPY shared/ ./shared/
-COPY services/subscription/go.mod services/subscription/go.sum ./
+# Copy shared and proto modules from parent directory
+COPY ../proto/ ./proto/
+COPY ../shared/ ./shared/
+COPY go.mod go.sum ./
 
 # Fix replace directives for Docker context
 RUN awk '{gsub("../../proto", "./proto"); gsub("../../shared", "./shared"); print}' go.mod > go.mod.tmp && \
     mv go.mod.tmp go.mod
 
 # Copy subscription service source code
-COPY services/subscription/ ./
+COPY . ./
 
 # Download dependencies
 RUN go mod tidy
