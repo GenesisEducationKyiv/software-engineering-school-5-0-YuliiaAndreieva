@@ -24,6 +24,8 @@ import (
 	"weather/internal/adapter/weather"
 	"weather/internal/adapter/weather/weatherapi"
 	"weather/internal/config"
+	"weather/internal/core/ports/in"
+	"weather/internal/core/ports/out"
 	"weather/internal/core/usecase"
 
 	"github.com/gin-gonic/gin"
@@ -31,29 +33,15 @@ import (
 	"google.golang.org/grpc"
 )
 
-func main() {
-	cfg, err := config.LoadConfig()
-	if err != nil {
-		fmt.Printf("Failed to load config: %v\n", err)
-		os.Exit(1)
-	}
-
+func setupFileLogger() out.ProviderLogger {
 	fileLogger, err := filelogger.NewFileLogger("logs", "provider_responses.log")
 	if err != nil {
 		log.Fatalf("Unable to initialize file logger: %v", err)
 	}
-	defer func() {
-		if closeErr := fileLogger.Close(); closeErr != nil {
-			log.Printf("Error closing file logger: %v", closeErr)
-		}
-	}()
+	return fileLogger
+}
 
-	baseLogger := sharedlogger.NewZapLoggerWithSampling(cfg.LogInitial, cfg.LogThereafter, cfg.LogTick)
-
-	validateConfig(cfg, baseLogger)
-
-	httpClient := &http.Client{Timeout: cfg.HTTPClientTimeout}
-
+func setupWeatherProviders(cfg *config.Config, httpClient *http.Client, fileLogger out.ProviderLogger) weather.Provider {
 	weatherAPIProvider := weatherapi.NewClient(weatherapi.ClientOptions{
 		APIKey:     cfg.WeatherAPIKey,
 		BaseURL:    cfg.WeatherAPIBaseURL,
@@ -68,8 +56,10 @@ func main() {
 		Logger:     fileLogger,
 	})
 
-	chainProvider := weather.NewChainWeatherProvider(weatherAPIProvider, openWeatherMapProvider)
+	return weather.NewChainWeatherProvider(weatherAPIProvider, openWeatherMapProvider)
+}
 
+func setupCache(cfg *config.Config) *weathercache.Cache {
 	redisCache := redis.NewCache(redis.CacheOptions{
 		Address:      cfg.RedisAddress,
 		TTL:          cfg.RedisTTL,
@@ -83,19 +73,21 @@ func main() {
 	promRegistry := prometheus.NewRegistry()
 	cacheMetrics := weathercache.NewCacheMetrics(promRegistry)
 	cacheWithMetrics := metrics.NewCacheWithMetrics(redisCache, cacheMetrics)
-	weatherCache := weathercache.NewCache(cacheWithMetrics)
+	return weathercache.NewCache(cacheWithMetrics)
+}
 
+func setupUseCases(chainProvider weather.Provider, weatherCache *weathercache.Cache, logger sharedlogger.Logger) in.GetWeatherUseCase {
 	cachedProvider := weather.NewCachedWeatherProvider(weatherCache, chainProvider)
+	return usecase.NewGetWeatherUseCase(cachedProvider, logger)
+}
 
-	getWeatherUseCase := usecase.NewGetWeatherUseCase(cachedProvider, baseLogger)
-
-	weatherHandler := httphandler.NewWeatherHandler(
-		getWeatherUseCase,
-		baseLogger,
-	)
-
+func setupHandlers(getWeatherUseCase in.GetWeatherUseCase, logger sharedlogger.Logger) (*httphandler.WeatherHandler, *grpchandler.WeatherHandler) {
+	weatherHandler := httphandler.NewWeatherHandler(getWeatherUseCase, logger)
 	grpcHandler := grpchandler.NewWeatherHandler(getWeatherUseCase)
+	return weatherHandler, grpcHandler
+}
 
+func setupHTTPServer(cfg *config.Config, weatherHandler *httphandler.WeatherHandler) *http.Server {
 	r := gin.Default()
 
 	r.GET("/health", func(c *gin.Context) {
@@ -106,35 +98,42 @@ func main() {
 
 	r.POST("/weather", weatherHandler.GetWeather)
 
-	httpSrv := &http.Server{
+	return &http.Server{
 		Addr:         fmt.Sprintf(":%d", cfg.Port),
 		Handler:      r,
 		ReadTimeout:  cfg.HTTPReadTimeout,
 		WriteTimeout: cfg.HTTPWriteTimeout,
 	}
+}
 
+func setupGRPCServer(grpcHandler *grpchandler.WeatherHandler) *grpc.Server {
 	grpcSrv := grpc.NewServer()
 	pb.RegisterWeatherServiceServer(grpcSrv, grpcHandler)
+	return grpcSrv
+}
 
+func startServers(httpSrv *http.Server, grpcSrv *grpc.Server, cfg *config.Config, logger sharedlogger.Logger) {
 	go func() {
-		baseLogger.Infof("Starting HTTP server on port %d", cfg.Port)
+		logger.Infof("Starting HTTP server on port %d", cfg.Port)
 		if err := httpSrv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			baseLogger.Fatalf("Failed to start HTTP server: %v", err)
+			logger.Fatalf("Failed to start HTTP server: %v", err)
 		}
 	}()
 
 	go func() {
 		lis, err := net.Listen("tcp", fmt.Sprintf(":%d", cfg.GRPCPort))
 		if err != nil {
-			baseLogger.Fatalf("Failed to listen for gRPC: %v", err)
+			logger.Fatalf("Failed to listen for gRPC: %v", err)
 		}
 
-		baseLogger.Infof("Starting gRPC server on port %d", cfg.GRPCPort)
+		logger.Infof("Starting gRPC server on port %d", cfg.GRPCPort)
 		if err := grpcSrv.Serve(lis); err != nil {
-			baseLogger.Fatalf("Failed to start gRPC server: %v", err)
+			logger.Fatalf("Failed to start gRPC server: %v", err)
 		}
 	}()
+}
 
+func gracefulShutdown(httpSrv *http.Server, grpcSrv *grpc.Server, cfg *config.Config, logger sharedlogger.Logger) {
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
@@ -144,7 +143,7 @@ func main() {
 
 	grpcSrv.GracefulStop()
 	if err := httpSrv.Shutdown(ctx); err != nil {
-		baseLogger.Fatalf("HTTP server forced to shutdown: %v", err)
+		logger.Fatalf("HTTP server forced to shutdown: %v", err)
 	}
 }
 
@@ -158,4 +157,38 @@ func validateConfig(cfg *config.Config, logger sharedlogger.Logger) {
 	if cfg.GRPCPort == 0 {
 		logger.Fatalf("GRPC_PORT environment variable is required")
 	}
+}
+
+func main() {
+	cfg, err := config.LoadConfig()
+	if err != nil {
+		fmt.Printf("Failed to load config: %v\n", err)
+		os.Exit(1)
+	}
+
+	fileLogger := setupFileLogger()
+	defer func() {
+		if closeErr := fileLogger.Close(); closeErr != nil {
+			log.Printf("Error closing file logger: %v", closeErr)
+		}
+	}()
+
+	baseLogger := sharedlogger.NewZapLoggerWithSampling(cfg.LogInitial, cfg.LogThereafter, cfg.LogTick)
+
+	validateConfig(cfg, baseLogger)
+
+	httpClient := &http.Client{Timeout: cfg.HTTPClientTimeout}
+
+	chainProvider := setupWeatherProviders(cfg, httpClient, fileLogger)
+	weatherCache := setupCache(cfg)
+	getWeatherUseCase := setupUseCases(chainProvider, weatherCache, baseLogger)
+
+	weatherHandler, grpcHandler := setupHandlers(getWeatherUseCase, baseLogger)
+
+	httpSrv := setupHTTPServer(cfg, weatherHandler)
+	grpcSrv := setupGRPCServer(grpcHandler)
+
+	startServers(httpSrv, grpcSrv, cfg, baseLogger)
+
+	gracefulShutdown(httpSrv, grpcSrv, cfg, baseLogger)
 }

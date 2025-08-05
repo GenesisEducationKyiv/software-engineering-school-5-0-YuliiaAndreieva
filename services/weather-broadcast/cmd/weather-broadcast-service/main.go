@@ -13,6 +13,7 @@ import (
 	httphandler "weather-broadcast/internal/adapter/http"
 	"weather-broadcast/internal/config"
 	"weather-broadcast/internal/core/domain"
+	"weather-broadcast/internal/core/ports/in"
 	"weather-broadcast/internal/core/usecase"
 
 	"github.com/gin-gonic/gin"
@@ -20,60 +21,56 @@ import (
 	"github.com/robfig/cron/v3"
 )
 
-func main() {
-	cfg, err := config.LoadConfig()
+func setupGRPCClients(cfg *config.Config, logger sharedlogger.Logger) (*grpcclient.SubscriptionClient, *grpcclient.EmailClient, *grpcclient.WeatherClient) {
+	subscriptionClient, err := grpcclient.NewSubscriptionClient(cfg.SubscriptionGRPCURL, logger)
 	if err != nil {
-		fmt.Printf("Failed to load config: %v\n", err)
-		os.Exit(1)
+		logger.Fatalf("Failed to create subscription gRPC client: %v", err)
 	}
 
-	loggerInstance := sharedlogger.NewZapLoggerWithSampling(cfg.LogInitial, cfg.LogThereafter, cfg.LogTick)
-
-	validateConfig(cfg, loggerInstance)
-
-	subscriptionClient, err := grpcclient.NewSubscriptionClient(cfg.SubscriptionGRPCURL, loggerInstance)
+	emailClient, err := grpcclient.NewEmailClient(cfg.EmailGRPCURL, logger)
 	if err != nil {
-		loggerInstance.Fatalf("Failed to create subscription gRPC client: %v", err)
+		logger.Fatalf("Failed to create email gRPC client: %v", err)
 	}
 
-	emailClient, err := grpcclient.NewEmailClient(cfg.EmailGRPCURL, loggerInstance)
+	weatherClient, err := grpcclient.NewWeatherClient(cfg.WeatherGRPCURL, logger)
 	if err != nil {
-		loggerInstance.Fatalf("Failed to create email gRPC client: %v", err)
+		logger.Fatalf("Failed to create weather gRPC client: %v", err)
 	}
 
-	weatherClient, err := grpcclient.NewWeatherClient(cfg.WeatherGRPCURL, loggerInstance)
-	if err != nil {
-		loggerInstance.Fatalf("Failed to create weather gRPC client: %v", err)
-	}
+	return subscriptionClient, emailClient, weatherClient
+}
 
-	broadcastUseCase := usecase.NewBroadcastUseCase(
-		subscriptionClient,
-		weatherClient,
-		emailClient,
-		loggerInstance,
-	)
+func setupUseCase(subscriptionClient *grpcclient.SubscriptionClient, weatherClient *grpcclient.WeatherClient, emailClient *grpcclient.EmailClient, logger sharedlogger.Logger) in.BroadcastUseCase {
+	return usecase.NewBroadcastUseCase(subscriptionClient, weatherClient, emailClient, logger)
+}
 
-	broadcastHandler := httphandler.NewBroadcastHandler(broadcastUseCase, loggerInstance)
+func setupHandler(broadcastUseCase in.BroadcastUseCase, logger sharedlogger.Logger) *httphandler.BroadcastHandler {
+	return httphandler.NewBroadcastHandler(broadcastUseCase, logger)
+}
 
+func setupCronJobs(broadcastUseCase in.BroadcastUseCase, logger sharedlogger.Logger) *cron.Cron {
 	c := cron.New(cron.WithLocation(time.UTC))
 
 	c.AddFunc("* * * * *", func() {
-		loggerInstance.Infof("Starting hourly weather broadcast")
+		logger.Infof("Starting hourly weather broadcast")
 		if err := broadcastUseCase.Broadcast(context.Background(), domain.Daily); err != nil {
-			loggerInstance.Errorf("Hourly broadcast failed: %v", err)
+			logger.Errorf("Hourly broadcast failed: %v", err)
 		}
 	})
 
 	c.AddFunc("0 8 * * *", func() {
-		loggerInstance.Infof("Starting daily weather broadcast")
+		logger.Infof("Starting daily weather broadcast")
 		if err := broadcastUseCase.Broadcast(context.Background(), domain.Daily); err != nil {
-			loggerInstance.Errorf("Daily broadcast failed: %v", err)
+			logger.Errorf("Daily broadcast failed: %v", err)
 		}
 	})
 
 	c.Start()
-	loggerInstance.Infof("Cron jobs started")
+	logger.Infof("Cron jobs started")
+	return c
+}
 
+func setupHTTPServer(cfg *config.Config, broadcastHandler *httphandler.BroadcastHandler) *http.Server {
 	r := gin.Default()
 
 	r.GET("/health", func(c *gin.Context) {
@@ -84,19 +81,23 @@ func main() {
 
 	r.POST("/broadcast", broadcastHandler.Broadcast)
 
-	srv := &http.Server{
+	return &http.Server{
 		Addr:         fmt.Sprintf(":%d", cfg.Port),
 		Handler:      r,
 		ReadTimeout:  cfg.HTTPReadTimeout,
 		WriteTimeout: cfg.HTTPWriteTimeout,
 	}
+}
 
+func startServer(srv *http.Server, logger sharedlogger.Logger) {
 	go func() {
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			loggerInstance.Fatalf("Failed to start server: %v", err)
+			logger.Fatalf("Failed to start server: %v", err)
 		}
 	}()
+}
 
+func gracefulShutdown(srv *http.Server, cfg *config.Config, logger sharedlogger.Logger) {
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
@@ -105,10 +106,10 @@ func main() {
 	defer cancel()
 
 	if err := srv.Shutdown(ctx); err != nil {
-		loggerInstance.Fatalf("Server forced to shutdown: %v", err)
+		logger.Fatalf("Server forced to shutdown: %v", err)
 	}
 
-	loggerInstance.Infof("Server stopped")
+	logger.Infof("Server stopped")
 }
 
 func validateConfig(cfg *config.Config, logger sharedlogger.Logger) {
@@ -133,4 +134,29 @@ func validateConfig(cfg *config.Config, logger sharedlogger.Logger) {
 	if cfg.Port == 0 {
 		logger.Fatalf("PORT environment variable is required")
 	}
+}
+
+func main() {
+	cfg, err := config.LoadConfig()
+	if err != nil {
+		fmt.Printf("Failed to load config: %v\n", err)
+		os.Exit(1)
+	}
+
+	loggerInstance := sharedlogger.NewZapLoggerWithSampling(cfg.LogInitial, cfg.LogThereafter, cfg.LogTick)
+
+	validateConfig(cfg, loggerInstance)
+
+	subscriptionClient, emailClient, weatherClient := setupGRPCClients(cfg, loggerInstance)
+
+	broadcastUseCase := setupUseCase(subscriptionClient, weatherClient, emailClient, loggerInstance)
+	broadcastHandler := setupHandler(broadcastUseCase, loggerInstance)
+
+	setupCronJobs(broadcastUseCase, loggerInstance)
+
+	srv := setupHTTPServer(cfg, broadcastHandler)
+
+	startServer(srv, loggerInstance)
+
+	gracefulShutdown(srv, cfg, loggerInstance)
 }

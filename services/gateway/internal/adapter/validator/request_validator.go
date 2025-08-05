@@ -22,9 +22,9 @@ type WeatherRequest struct {
 }
 
 type SubscriptionRequest struct {
-	Email     string `form:"email" validate:"required,email"`
-	City      string `form:"city" validate:"required"`
-	Frequency string `form:"frequency"`
+	Email     string `json:"email" validate:"required,email"`
+	City      string `json:"city" validate:"required"`
+	Frequency string `json:"frequency"`
 }
 
 type TokenRequest struct {
@@ -35,6 +35,19 @@ func ValidateAndBind[T any](v *RequestValidator, c *gin.Context) (*T, error) {
 	var req T
 	if err := c.ShouldBindQuery(&req); err != nil {
 		return nil, fmt.Errorf("invalid request parameters: %w", err)
+	}
+
+	if err := v.validate.Struct(req); err != nil {
+		return nil, fmt.Errorf("validation failed: %w", err)
+	}
+
+	return &req, nil
+}
+
+func ValidateAndBindJSON[T any](v *RequestValidator, c *gin.Context) (*T, error) {
+	var req T
+	if err := c.ShouldBindJSON(&req); err != nil {
+		return nil, fmt.Errorf("invalid JSON request: %w", err)
 	}
 
 	if err := v.validate.Struct(req); err != nil {
