@@ -11,10 +11,10 @@ import (
 	"time"
 
 	pb "proto/subscription"
+	sharedlogger "shared/logger"
 	"subscription/internal/adapter/database"
 	grpchandler "subscription/internal/adapter/grpc"
 	httphandler "subscription/internal/adapter/http"
-	"subscription/internal/adapter/logger"
 	"subscription/internal/adapter/messaging"
 	"subscription/internal/adapter/metrics"
 	"subscription/internal/config"
@@ -31,7 +31,7 @@ import (
 func main() {
 	cfg := config.LoadConfig()
 
-	loggerInstance := logger.NewLogrusLogger()
+	loggerInstance := sharedlogger.NewZapLoggerWithSampling(cfg.Logging.Initial, cfg.Logging.Thereafter, cfg.Logging.Tick)
 
 	db, err := gorm.Open(postgres.Open(cfg.Database.DSN), &gorm.Config{})
 	if err != nil {
@@ -52,7 +52,6 @@ func main() {
 	emailClient := httphandler.NewEmailClient(cfg.Email.ServiceURL, httpClient, loggerInstance)
 	tokenClient := httphandler.NewTokenClient(cfg.Token.ServiceURL, httpClient, loggerInstance)
 
-	// Retry logic for RabbitMQ publisher connection
 	var eventPublisher *messaging.RabbitMQPublisher
 	err = retry.Do(
 		func() error {

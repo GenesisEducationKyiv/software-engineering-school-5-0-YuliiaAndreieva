@@ -7,8 +7,8 @@ import (
 	"os/signal"
 	"syscall"
 
+	sharedlogger "shared/logger"
 	httphandler "token/internal/adapter/http"
-	"token/internal/adapter/logger"
 	"token/internal/config"
 	"token/internal/core/usecase"
 
@@ -19,7 +19,7 @@ import (
 func main() {
 	cfg := config.LoadConfig()
 
-	loggerInstance := logger.NewLogrusLogger()
+	loggerInstance := sharedlogger.NewZapLoggerWithSampling(cfg.Logging.Initial, cfg.Logging.Thereafter, cfg.Logging.Tick)
 
 	generateTokenUseCase := usecase.NewGenerateTokenUseCase(loggerInstance, cfg.JWT.Secret)
 	validateTokenUseCase := usecase.NewValidateTokenUseCase(loggerInstance, cfg.JWT.Secret)

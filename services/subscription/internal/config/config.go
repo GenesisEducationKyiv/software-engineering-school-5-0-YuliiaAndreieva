@@ -13,6 +13,7 @@ type Config struct {
 	Database DatabaseConfig
 	Timeout  TimeoutConfig
 	RabbitMQ RabbitMQConfig
+	Logging  LoggingConfig
 }
 
 type ServerConfig struct {
@@ -46,6 +47,12 @@ type RabbitMQConfig struct {
 	Queue    string
 }
 
+type LoggingConfig struct {
+	Initial    int
+	Thereafter int
+	Tick       time.Duration
+}
+
 func LoadConfig() *Config {
 	return &Config{
 		Server: ServerConfig{
@@ -72,6 +79,11 @@ func LoadConfig() *Config {
 			URL:      getEnv("RABBITMQ_URL", "amqp://admin:password@rabbitmq:5672/"),
 			Exchange: getEnv("RABBITMQ_EXCHANGE", "subscription_events"),
 			Queue:    getEnv("RABBITMQ_QUEUE", "email_notifications"),
+		},
+		Logging: LoggingConfig{
+			Initial:    getIntEnv("LOG_INITIAL", 100),
+			Thereafter: getIntEnv("LOG_THEREAFTER", 100),
+			Tick:       getDurationEnv("LOG_TICK", 1*time.Second),
 		},
 	}
 }

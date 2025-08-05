@@ -3,11 +3,11 @@ package main
 import (
 	"context"
 	httphandler "gateway/internal/adapter/http"
-	"gateway/internal/adapter/logger"
 	"gateway/internal/config"
 	"net/http"
 	"os"
 	"os/signal"
+	sharedlogger "shared/logger"
 	"syscall"
 
 	"github.com/gin-gonic/gin"
@@ -17,7 +17,7 @@ import (
 func main() {
 	cfg := config.LoadConfig()
 
-	loggerInstance := logger.NewLogger()
+	loggerInstance := sharedlogger.NewZapLoggerWithSampling(cfg.Logging.Initial, cfg.Logging.Thereafter, cfg.Logging.Tick)
 
 	httpClient := &http.Client{Timeout: cfg.Timeout.HTTPClientTimeout}
 
@@ -26,7 +26,6 @@ func main() {
 
 	router := gin.Default()
 
-	// Health check
 	router.GET("/health", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"status": "ok", "service": "gateway"})
 	})

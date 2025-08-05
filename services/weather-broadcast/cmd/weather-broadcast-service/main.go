@@ -6,11 +6,11 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	sharedlogger "shared/logger"
 	"syscall"
 	"time"
 	grpcclient "weather-broadcast/internal/adapter/grpc"
 	httphandler "weather-broadcast/internal/adapter/http"
-	"weather-broadcast/internal/adapter/logger"
 	"weather-broadcast/internal/config"
 	"weather-broadcast/internal/core/domain"
 	"weather-broadcast/internal/core/usecase"
@@ -26,7 +26,7 @@ func main() {
 		panic(fmt.Sprintf("Failed to load config: %v", err))
 	}
 
-	loggerInstance := logger.NewLogrusLogger()
+	loggerInstance := sharedlogger.NewZapLoggerWithSampling(cfg.LogInitial, cfg.LogThereafter, cfg.LogTick)
 
 	subscriptionClient, err := grpcclient.NewSubscriptionClient(cfg.SubscriptionGRPCURL, loggerInstance)
 	if err != nil {

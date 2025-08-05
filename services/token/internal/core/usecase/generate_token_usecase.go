@@ -4,20 +4,20 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/base64"
+	sharedlogger "shared/logger"
 	"time"
 	"token/internal/core/domain"
 	"token/internal/core/ports/in"
-	"token/internal/core/ports/out"
 
 	"github.com/golang-jwt/jwt/v5"
 )
 
 type GenerateTokenUseCase struct {
-	logger out.Logger
+	logger sharedlogger.Logger
 	secret []byte
 }
 
-func NewGenerateTokenUseCase(logger out.Logger, secret string) in.GenerateTokenUseCase {
+func NewGenerateTokenUseCase(logger sharedlogger.Logger, secret string) in.GenerateTokenUseCase {
 	return &GenerateTokenUseCase{
 		logger: logger,
 		secret: []byte(secret),

@@ -15,9 +15,11 @@ require (
 	gorm.io/driver/postgres v1.5.2
 	gorm.io/gorm v1.25.4
 	proto v0.0.0-00010101000000-000000000000
+	shared v0.0.0-00010101000000-000000000000
 )
 
-replace proto => ./proto
+replace proto => ../../proto
+replace shared => ../../shared
 
 require (
 	github.com/beorn7/perks v1.0.1 // indirect

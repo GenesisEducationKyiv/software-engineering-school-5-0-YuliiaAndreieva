@@ -25,6 +25,9 @@ type Config struct {
 	RedisPoolSize         int           `envconfig:"REDIS_POOL_SIZE" default:"10"`
 	RedisMinIdleConns     int           `envconfig:"REDIS_MIN_IDLE_CONNS" default:"5"`
 	HTTPClientTimeout     time.Duration `envconfig:"HTTP_CLIENT_TIMEOUT" default:"10s"`
+	LogInitial            int           `envconfig:"LOG_INITIAL" default:"100"`
+	LogThereafter         int           `envconfig:"LOG_THEREAFTER" default:"100"`
+	LogTick               time.Duration `envconfig:"LOG_TICK" default:"1s"`
 }
 
 func LoadConfig() (*Config, error) {

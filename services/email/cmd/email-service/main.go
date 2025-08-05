@@ -13,16 +13,16 @@ import (
 	"email/internal/adapter/email"
 	grpchandler "email/internal/adapter/grpc"
 	httphandler "email/internal/adapter/http"
-	"email/internal/adapter/logger"
 	"email/internal/adapter/messaging"
 	"email/internal/config"
 	"email/internal/core/usecase"
 	pb "proto/email"
+	sharedlogger "shared/logger"
 
 	"github.com/avast/retry-go/v4"
 	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	
+	"google.golang.org/grpc"
 )
 
 func main() {
@@ -32,7 +32,7 @@ func main() {
 		panic("SMTP_USER and SMTP_PASS environment variables are required")
 	}
 
-	loggerInstance := logger.NewLogrusLogger()
+	loggerInstance := sharedlogger.NewZapLoggerWithSampling(cfg.Logging.Initial, cfg.Logging.Thereafter, cfg.Logging.Tick)
 
 	smtpConfig := email.SMTPConfig{
 		Host: cfg.SMTP.Host,
@@ -49,7 +49,6 @@ func main() {
 
 	grpcHandler := grpchandler.NewEmailHandler(sendEmailUseCase)
 
-	// Retry logic for RabbitMQ connection using retry-go library
 	var consumer *messaging.RabbitMQConsumer
 	err := retry.Do(
 		func() error {

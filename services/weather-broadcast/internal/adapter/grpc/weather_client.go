@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 	pb "proto/weather"
+	sharedlogger "shared/logger"
 	"weather-broadcast/internal/core/domain"
-	"weather-broadcast/internal/core/ports/out"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -13,10 +13,10 @@ import (
 
 type WeatherClient struct {
 	client pb.WeatherServiceClient
-	logger out.Logger
+	logger sharedlogger.Logger
 }
 
-func NewWeatherClient(address string, logger out.Logger) (*WeatherClient, error) {
+func NewWeatherClient(address string, logger sharedlogger.Logger) (*WeatherClient, error) {
 	conn, err := grpc.Dial(address, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to weather service: %w", err)
