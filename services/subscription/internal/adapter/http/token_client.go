@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"subscription/internal/adapter/http/dto"
 	"subscription/internal/core/ports/out"
 )
 
@@ -149,9 +150,7 @@ func (c *TokenClient) validateResponse(resp *http.Response) error {
 func (c *TokenClient) decodeTokenResponse(resp *http.Response) (string, error) {
 	defer c.closeResponseBody(resp)
 
-	var response struct {
-		Token string `json:"token"`
-	}
+	var response dto.TokenGenerationResponse
 
 	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
 		c.logger.Errorf("Failed to decode token generation response: %v", err)
@@ -164,9 +163,7 @@ func (c *TokenClient) decodeTokenResponse(resp *http.Response) (string, error) {
 func (c *TokenClient) decodeValidationResponse(resp *http.Response) (bool, error) {
 	defer c.closeResponseBody(resp)
 
-	var response struct {
-		Valid bool `json:"valid"`
-	}
+	var response dto.TokenValidationResponse
 
 	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
 		c.logger.Errorf("Failed to decode token validation response: %v", err)
