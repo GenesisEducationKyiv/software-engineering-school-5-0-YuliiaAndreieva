@@ -15,8 +15,8 @@ RUN awk '{gsub("../../proto", "./proto"); gsub("../../shared", "./shared"); prin
 COPY services/email/ ./
 
 # Download dependencies
-RUN go mod tidy
 RUN go mod download
+RUN go mod tidy
 
 # Run tests
 CMD ["go", "test", "-v", "./tests/..."] 
