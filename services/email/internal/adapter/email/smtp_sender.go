@@ -39,12 +39,7 @@ func (s *SMTPSender) SendEmail(ctx context.Context, req domain.EmailRequest) (*d
 	err := s.client.Send(s.config.User, req.To, req.Subject, []byte(req.Body))
 	if err != nil {
 		s.logger.Errorf("Failed to send email to %s: %v", req.To, err)
-		return &domain.EmailDeliveryResult{
-			To:     req.To,
-			Status: domain.StatusFailed,
-			Error:  err.Error(),
-			SentAt: sentAt,
-		}, err
+		return nil, err
 	}
 
 	s.logger.Infof("Email sent successfully to %s", req.To)

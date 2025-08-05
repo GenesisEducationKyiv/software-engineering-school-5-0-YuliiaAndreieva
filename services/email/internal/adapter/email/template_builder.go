@@ -1,8 +1,9 @@
 package email
 
 import (
+	"bytes"
 	"context"
-	"fmt"
+	"html/template"
 	"strconv"
 
 	"email/internal/core/ports/out"
@@ -25,51 +26,56 @@ func NewTemplateBuilder(logger out.Logger, baseURL string, subscriptionServiceUR
 func (tb *TemplateBuilder) BuildConfirmationEmail(ctx context.Context, email, city, confirmationLink string) (string, error) {
 	tb.logger.Infof("Building confirmation email template for email: %s, city: %s", email, city)
 
-	template := fmt.Sprintf(`
-		<html>
-		<body>
-			<h2>Welcome!</h2>
-			<p>Thank you for subscribing to weather updates for %s. Please click the link below to confirm your email:</p>
-			<a href="%s">Confirm Email</a>
-			<p>If you didn't create this subscription, please ignore this email.</p>
-		</body>
-		</html>
-	`, city, confirmationLink)
+	tmpl, err := template.New("confirmation").Parse(ConfirmationEmailTemplate)
+	if err != nil {
+		tb.logger.Errorf("Failed to parse confirmation template: %v", err)
+		return "", err
+	}
+
+	data := ConfirmationEmailData{
+		City:             city,
+		ConfirmationLink: confirmationLink,
+	}
+
+	var buf bytes.Buffer
+	if err := tmpl.Execute(&buf, data); err != nil {
+		tb.logger.Errorf("Failed to execute confirmation template: %v", err)
+		return "", err
+	}
 
 	tb.logger.Infof("Confirmation email template built successfully for email: %s, city: %s", email, city)
-	return template, nil
+	return buf.String(), nil
 }
 
 func (tb *TemplateBuilder) BuildWeatherUpdateEmail(ctx context.Context, email, city, description string, humidity int, windSpeed int, temperature int, unsubscribeToken string) (string, error) {
 	tb.logger.Infof("Building weather update email template for email: %s, city: %s", email, city)
 
-	temperatureStr := strconv.Itoa(temperature)
-	humidityStr := strconv.Itoa(humidity)
-	windSpeedStr := strconv.Itoa(windSpeed)
+	tmpl, err := template.New("weather").Parse(WeatherUpdateEmailTemplate)
+	if err != nil {
+		tb.logger.Errorf("Failed to parse weather template: %v", err)
+		return "", err
+	}
 
 	unsubscribeLink := ""
 	if unsubscribeToken != "" {
-		unsubscribeLink = fmt.Sprintf(`<p><a href="%s/unsubscribe/%s">Unsubscribe from weather updates</a></p>`, tb.subscriptionServiceURL, unsubscribeToken)
+		unsubscribeLink = BuildUnsubscribeLink(tb.subscriptionServiceURL, unsubscribeToken)
 	}
 
-	template := fmt.Sprintf(`
-		<html>
-		<body>
-			<h2>Weather Update for %s</h2>
-			<p>Hello,</p>
-			<p>Here's your weather update for %s:</p>
-			<ul>
-				<li>Temperature: %s°C</li>
-				<li>Description: %s</li>
-				<li>Humidity: %s%%</li>
-				<li>Wind Speed: %s km/h</li>
-			</ul>
-			<p>Stay safe and enjoy your day!</p>
-			%s
-		</body>
-		</html>
-	`, city, city, temperatureStr, description, humidityStr, windSpeedStr, unsubscribeLink)
+	data := WeatherUpdateEmailData{
+		City:            city,
+		Temperature:     strconv.Itoa(temperature),
+		Description:     description,
+		Humidity:        strconv.Itoa(humidity),
+		WindSpeed:       strconv.Itoa(windSpeed),
+		UnsubscribeLink: template.HTML(unsubscribeLink),
+	}
+
+	var buf bytes.Buffer
+	if err := tmpl.Execute(&buf, data); err != nil {
+		tb.logger.Errorf("Failed to execute weather template: %v", err)
+		return "", err
+	}
 
 	tb.logger.Infof("Weather update email template built successfully for email: %s, city: %s", email, city)
-	return template, nil
+	return buf.String(), nil
 }
