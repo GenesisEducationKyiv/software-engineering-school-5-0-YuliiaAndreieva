@@ -12,7 +12,6 @@ import (
 type SubscribeUseCase struct {
 	subscriptionRepo out.SubscriptionRepository
 	tokenService     out.TokenService
-	emailService     out.EmailService
 	eventPublisher   out.EventPublisher
 	logger           out.Logger
 	config           *config.Config
@@ -21,7 +20,6 @@ type SubscribeUseCase struct {
 func NewSubscribeUseCase(
 	subscriptionRepo out.SubscriptionRepository,
 	tokenService out.TokenService,
-	emailService out.EmailService,
 	eventPublisher out.EventPublisher,
 	logger out.Logger,
 	config *config.Config,
@@ -29,7 +27,6 @@ func NewSubscribeUseCase(
 	return &SubscribeUseCase{
 		subscriptionRepo: subscriptionRepo,
 		tokenService:     tokenService,
-		emailService:     emailService,
 		eventPublisher:   eventPublisher,
 		logger:           logger,
 		config:           config,
@@ -37,7 +34,7 @@ func NewSubscribeUseCase(
 }
 
 func (uc *SubscribeUseCase) Subscribe(ctx context.Context, req domain.SubscriptionRequest) (*domain.SubscriptionResponse, error) {
-	uc.logger.Infof("Starting subscription process for email: %s, city: %s, frequency: %s", req.Email, req.City, req.Frequency)
+	uc.logger.Infof("Processing subscription request for email: %s, city: %s", req.Email, req.City)
 
 	token, err := uc.generateToken(ctx, req.Email)
 	if err != nil {
@@ -54,10 +51,7 @@ func (uc *SubscribeUseCase) Subscribe(ctx context.Context, req domain.Subscripti
 		uc.logger.Errorf("Failed to publish subscription created event: %v", err)
 	}
 
-	confirmationReq := uc.createConfirmationEmailRequest(req, token)
-	emailErr := uc.sendConfirmationEmail(ctx, confirmationReq)
-
-	return uc.createResponse(token, emailErr)
+	return uc.createResponse(token)
 }
 
 func (uc *SubscribeUseCase) generateToken(ctx context.Context, email string) (string, error) {
@@ -101,27 +95,6 @@ func (uc *SubscribeUseCase) handleSubscriptionSaveError(err error) (*domain.Subs
 	return nil, err
 }
 
-func (uc *SubscribeUseCase) createConfirmationEmailRequest(req domain.SubscriptionRequest, token string) domain.ConfirmationEmailRequest {
-	return domain.ConfirmationEmailRequest{
-		To:               req.Email,
-		Subject:          "Confirm your weather subscription",
-		City:             req.City,
-		ConfirmationLink: fmt.Sprintf("%s/confirm/%s", uc.config.Server.BaseURL, token),
-	}
-}
-
-func (uc *SubscribeUseCase) sendConfirmationEmail(ctx context.Context, req domain.ConfirmationEmailRequest) error {
-	uc.logger.Debugf("Sending confirmation email to: %s for city: %s", req.To, req.City)
-	err := uc.emailService.SendConfirmationEmail(ctx, req)
-	if err != nil {
-		uc.logger.Errorf("Failed to send confirmation email: %v", err)
-		uc.logger.Warnf("Subscription created but email delivery failed for email: %s", req.To)
-		return err
-	}
-	uc.logger.Infof("Confirmation email sent successfully to: %s", req.To)
-	return nil
-}
-
 func (uc *SubscribeUseCase) publishSubscriptionCreated(ctx context.Context, subscription domain.Subscription) error {
 	if err := uc.eventPublisher.PublishSubscriptionCreated(ctx, subscription); err != nil {
 		return fmt.Errorf("failed to publish subscription created event: %w", err)
@@ -129,18 +102,10 @@ func (uc *SubscribeUseCase) publishSubscriptionCreated(ctx context.Context, subs
 	return nil
 }
 
-func (uc *SubscribeUseCase) createResponse(token string, emailErr error) (*domain.SubscriptionResponse, error) {
-	if emailErr != nil {
-		return &domain.SubscriptionResponse{
-			Success: true,
-			Message: "Subscription created but confirmation email failed to send",
-			Token:   token,
-		}, nil
-	}
-
+func (uc *SubscribeUseCase) createResponse(token string) (*domain.SubscriptionResponse, error) {
 	return &domain.SubscriptionResponse{
 		Success: true,
-		Message: "Subscription successful. Confirmation email sent.",
+		Message: "Subscription successful. Confirmation email will be sent shortly.",
 		Token:   token,
 	}, nil
 }

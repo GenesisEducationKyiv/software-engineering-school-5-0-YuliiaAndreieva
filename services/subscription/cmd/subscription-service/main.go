@@ -46,7 +46,6 @@ func main() {
 	metricsCollector := metrics.NewPrometheusCollector()
 
 	httpClient := &http.Client{Timeout: cfg.Timeout.HTTPClientTimeout}
-	emailClient := httphandler.NewEmailClient(cfg.Email.ServiceURL, httpClient, loggerInstance)
 	tokenClient := httphandler.NewTokenClient(cfg.Token.ServiceURL, httpClient, loggerInstance)
 
 	var eventPublisher *messaging.RabbitMQPublisher
@@ -73,7 +72,7 @@ func main() {
 
 	eventPublisherWithMetrics := messaging.NewWithMetrics(eventPublisher, metricsCollector)
 
-	subscribeUseCase := usecase.NewSubscribeUseCase(repo, tokenClient, emailClient, eventPublisherWithMetrics, loggerInstance, cfg)
+	subscribeUseCase := usecase.NewSubscribeUseCase(repo, tokenClient, eventPublisherWithMetrics, loggerInstance, cfg)
 	confirmUseCase := usecase.NewConfirmSubscriptionUseCase(repo, tokenClient, loggerInstance)
 	unsubscribeUseCase := usecase.NewUnsubscribeUseCase(repo, tokenClient, loggerInstance)
 	listByFrequencyUseCase := usecase.NewListByFrequencyUseCase(repo, loggerInstance)

@@ -34,6 +34,8 @@ func NewSMTPSender(config SMTPConfig, logger out.Logger) out.EmailSender {
 func (s *SMTPSender) SendEmail(ctx context.Context, req domain.EmailRequest) (*domain.EmailDeliveryResult, error) {
 	s.logger.Infof("Sending email to %s via SMTP", req.To)
 
+	sentAt := time.Now().Unix()
+
 	msg := email.NewEmail()
 	msg.From = s.config.User
 	msg.To = []string{req.To}
@@ -48,7 +50,7 @@ func (s *SMTPSender) SendEmail(ctx context.Context, req domain.EmailRequest) (*d
 			To:     req.To,
 			Status: domain.StatusFailed,
 			Error:  err.Error(),
-			SentAt: time.Now().Unix(),
+			SentAt: sentAt,
 		}, err
 	}
 
@@ -56,6 +58,6 @@ func (s *SMTPSender) SendEmail(ctx context.Context, req domain.EmailRequest) (*d
 	return &domain.EmailDeliveryResult{
 		To:     req.To,
 		Status: domain.StatusDelivered,
-		SentAt: time.Now().Unix(),
+		SentAt: sentAt,
 	}, nil
 }

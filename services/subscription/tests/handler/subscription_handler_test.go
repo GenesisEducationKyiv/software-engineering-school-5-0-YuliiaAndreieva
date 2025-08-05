@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	httphandler "subscription/internal/adapter/http"
+	"subscription/internal/config"
 	"subscription/internal/core/domain"
 	"subscription/internal/core/usecase"
 	"subscription/tests/mocks"
@@ -19,21 +20,30 @@ import (
 )
 
 type subscriptionHandlerTestSetup struct {
-	handler          *httphandler.SubscriptionHandler
-	router           *gin.Engine
-	mockRepo         *mocks.SubscriptionRepository
-	mockTokenService *mocks.TokenService
-	mockEmailService *mocks.EmailService
-	mockLogger       *mocks.Logger
+	handler            *httphandler.SubscriptionHandler
+	router             *gin.Engine
+	mockRepo           *mocks.SubscriptionRepository
+	mockTokenService   *mocks.TokenService
+	mockEventPublisher *mocks.EventPublisher
+	mockLogger         *mocks.Logger
 }
 
 func setupSubscriptionHandlerTest() *subscriptionHandlerTestSetup {
 	mockRepo := &mocks.SubscriptionRepository{}
 	mockTokenService := &mocks.TokenService{}
-	mockEmailService := &mocks.EmailService{}
+	mockEventPublisher := &mocks.EventPublisher{}
 	mockLogger := &mocks.Logger{}
 
-	subscribeUseCase := usecase.NewSubscribeUseCase(mockRepo, mockTokenService, mockEmailService, mockLogger)
+	config := &config.Config{
+		Token: config.TokenConfig{
+			Expiration: "24h",
+		},
+		Server: config.ServerConfig{
+			BaseURL: "http://localhost:8082",
+		},
+	}
+
+	subscribeUseCase := usecase.NewSubscribeUseCase(mockRepo, mockTokenService, mockEventPublisher, mockLogger, config)
 	confirmUseCase := usecase.NewConfirmSubscriptionUseCase(mockRepo, mockTokenService, mockLogger)
 	unsubscribeUseCase := usecase.NewUnsubscribeUseCase(mockRepo, mockTokenService, mockLogger)
 	listByFrequencyUseCase := usecase.NewListByFrequencyUseCase(mockRepo, mockLogger)
@@ -54,19 +64,19 @@ func setupSubscriptionHandlerTest() *subscriptionHandlerTestSetup {
 	router.GET("/list", handler.ListByFrequency)
 
 	return &subscriptionHandlerTestSetup{
-		handler:          handler,
-		router:           router,
-		mockRepo:         mockRepo,
-		mockTokenService: mockTokenService,
-		mockEmailService: mockEmailService,
-		mockLogger:       mockLogger,
+		handler:            handler,
+		router:             router,
+		mockRepo:           mockRepo,
+		mockTokenService:   mockTokenService,
+		mockEventPublisher: mockEventPublisher,
+		mockLogger:         mockLogger,
 	}
 }
 
 func (ts *subscriptionHandlerTestSetup) setupSuccessMocks(request domain.SubscriptionRequest) {
 	ts.mockTokenService.On("GenerateToken", mock.Anything, request.Email, "24h").Return("test-token", nil)
 	ts.mockRepo.On("Create", mock.Anything, mock.AnythingOfType("domain.Subscription")).Return(nil)
-	ts.mockEmailService.On("SendConfirmationEmail", mock.Anything, mock.AnythingOfType("domain.ConfirmationEmailRequest")).Return(nil)
+	ts.mockEventPublisher.On("PublishSubscriptionCreated", mock.Anything, mock.AnythingOfType("domain.Subscription")).Return(nil)
 	ts.mockLogger.On("Infof", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return()
 	ts.mockLogger.On("Debugf", mock.Anything, mock.Anything, mock.Anything).Return()
 }
@@ -157,7 +167,7 @@ func TestSubscriptionHandler_Subscribe_Success(t *testing.T) {
 
 		ts.mockRepo.AssertExpectations(t)
 		ts.mockTokenService.AssertExpectations(t)
-		ts.mockEmailService.AssertExpectations(t)
+		ts.mockEventPublisher.AssertExpectations(t)
 		ts.mockLogger.AssertExpectations(t)
 	})
 }

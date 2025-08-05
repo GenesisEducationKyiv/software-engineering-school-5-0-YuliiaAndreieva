@@ -50,11 +50,12 @@ func (c *EmailClient) SendWeather(ctx context.Context, info *domain.WeatherMailS
 		return fmt.Errorf("failed to send weather update email: %w", err)
 	}
 
-	if !resp.Success {
-		c.logger.Errorf("Email service returned error: %s", resp.Error)
-		return fmt.Errorf("email service error: %s", resp.Error)
+	// Validate that email was sent to the correct address
+	if resp.To != info.Email {
+		c.logger.Warnf("Email sent to different address: expected %s, got %s", info.Email, resp.To)
 	}
 
-	c.logger.Infof("Successfully sent weather update email to: %s for city: %s", info.Email, info.City)
+	c.logger.Infof("Successfully sent weather update email to: %s for city: %s (sent at: %d)",
+		info.Email, info.City, resp.SentAt)
 	return nil
 }

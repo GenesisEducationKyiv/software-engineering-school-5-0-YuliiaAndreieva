@@ -12,7 +12,6 @@ import (
 
 	"email/internal/adapter/email"
 	grpchandler "email/internal/adapter/grpc"
-	httphandler "email/internal/adapter/http"
 	"email/internal/adapter/messaging"
 	"email/internal/config"
 	"email/internal/core/usecase"
@@ -45,8 +44,6 @@ func main() {
 	templateBuilder := email.NewTemplateBuilder(loggerInstance, cfg.Server.BaseURL)
 
 	sendEmailUseCase := usecase.NewSendEmailUseCase(emailSender, templateBuilder, loggerInstance, cfg.Server.BaseURL)
-
-	emailHandler := httphandler.NewEmailHandler(sendEmailUseCase, loggerInstance)
 
 	grpcHandler := grpchandler.NewEmailHandler(sendEmailUseCase)
 
@@ -83,9 +80,6 @@ func main() {
 	})
 
 	r.GET("/metrics", gin.WrapH(promhttp.Handler()))
-
-	r.POST("/send/confirmation", emailHandler.SendConfirmationEmail)
-	r.POST("/send/weather-update", emailHandler.SendWeatherUpdateEmail)
 
 	httpSrv := &http.Server{
 		Addr:    ":" + cfg.Server.Port,

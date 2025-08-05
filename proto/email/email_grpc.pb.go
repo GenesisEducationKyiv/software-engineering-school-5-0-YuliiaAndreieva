@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.5.1
 // - protoc             v6.31.1
-// source: email/email.proto
+// source: email.proto
 
 package email
 
@@ -26,7 +26,6 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type EmailServiceClient interface {
-	// Надіслати погодний оновлення (для weather-broadcast сервісу)
 	SendWeatherUpdate(ctx context.Context, in *WeatherUpdateRequest, opts ...grpc.CallOption) (*EmailResponse, error)
 }
 
@@ -52,7 +51,6 @@ func (c *emailServiceClient) SendWeatherUpdate(ctx context.Context, in *WeatherU
 // All implementations must embed UnimplementedEmailServiceServer
 // for forward compatibility.
 type EmailServiceServer interface {
-	// Надіслати погодний оновлення (для weather-broadcast сервісу)
 	SendWeatherUpdate(context.Context, *WeatherUpdateRequest) (*EmailResponse, error)
 	mustEmbedUnimplementedEmailServiceServer()
 }
@@ -119,5 +117,5 @@ var EmailService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "email/email.proto",
+	Metadata: "email.proto",
 }

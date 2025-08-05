@@ -21,7 +21,6 @@ message WeatherUpdateRequest {
 }
 
 message EmailResponse {
-  bool success = 1;
-  string message = 2;
-  string error = 3;
+  string to = 1;
+  int64 sent_at = 2;
 } 

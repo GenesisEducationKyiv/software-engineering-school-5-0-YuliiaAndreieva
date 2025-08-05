@@ -2,7 +2,7 @@
 // versions:
 // 	protoc-gen-go v1.36.6
 // 	protoc        v6.31.1
-// source: email/email.proto
+// source: email.proto
 
 package email
 
@@ -38,7 +38,7 @@ type WeatherUpdateRequest struct {
 
 func (x *WeatherUpdateRequest) Reset() {
 	*x = WeatherUpdateRequest{}
-	mi := &file_email_email_proto_msgTypes[0]
+	mi := &file_email_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -50,7 +50,7 @@ func (x *WeatherUpdateRequest) String() string {
 func (*WeatherUpdateRequest) ProtoMessage() {}
 
 func (x *WeatherUpdateRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_email_email_proto_msgTypes[0]
+	mi := &file_email_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -63,7 +63,7 @@ func (x *WeatherUpdateRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WeatherUpdateRequest.ProtoReflect.Descriptor instead.
 func (*WeatherUpdateRequest) Descriptor() ([]byte, []int) {
-	return file_email_email_proto_rawDescGZIP(), []int{0}
+	return file_email_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *WeatherUpdateRequest) GetTo() string {
@@ -131,16 +131,15 @@ func (x *WeatherUpdateRequest) GetUnsubscribeToken() string {
 
 type EmailResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
-	Message       string                 `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
-	Error         string                 `protobuf:"bytes,3,opt,name=error,proto3" json:"error,omitempty"`
+	To            string                 `protobuf:"bytes,1,opt,name=to,proto3" json:"to,omitempty"`
+	SentAt        int64                  `protobuf:"varint,2,opt,name=sent_at,json=sentAt,proto3" json:"sent_at,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *EmailResponse) Reset() {
 	*x = EmailResponse{}
-	mi := &file_email_email_proto_msgTypes[1]
+	mi := &file_email_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -152,7 +151,7 @@ func (x *EmailResponse) String() string {
 func (*EmailResponse) ProtoMessage() {}
 
 func (x *EmailResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_email_email_proto_msgTypes[1]
+	mi := &file_email_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -165,35 +164,28 @@ func (x *EmailResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EmailResponse.ProtoReflect.Descriptor instead.
 func (*EmailResponse) Descriptor() ([]byte, []int) {
-	return file_email_email_proto_rawDescGZIP(), []int{1}
+	return file_email_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *EmailResponse) GetSuccess() bool {
+func (x *EmailResponse) GetTo() string {
 	if x != nil {
-		return x.Success
-	}
-	return false
-}
-
-func (x *EmailResponse) GetMessage() string {
-	if x != nil {
-		return x.Message
+		return x.To
 	}
 	return ""
 }
 
-func (x *EmailResponse) GetError() string {
+func (x *EmailResponse) GetSentAt() int64 {
 	if x != nil {
-		return x.Error
+		return x.SentAt
 	}
-	return ""
+	return 0
 }
 
-var File_email_email_proto protoreflect.FileDescriptor
+var File_email_proto protoreflect.FileDescriptor
 
-const file_email_email_proto_rawDesc = "" +
+const file_email_proto_rawDesc = "" +
 	"\n" +
-	"\x11email/email.proto\x12\x05email\"\x94\x02\n" +
+	"\vemail.proto\x12\x05email\"\x94\x02\n" +
 	"\x14WeatherUpdateRequest\x12\x0e\n" +
 	"\x02to\x18\x01 \x01(\tR\x02to\x12\x18\n" +
 	"\asubject\x18\x02 \x01(\tR\asubject\x12\x12\n" +
@@ -204,32 +196,31 @@ const file_email_email_proto_rawDesc = "" +
 	"\bhumidity\x18\a \x01(\x05R\bhumidity\x12\x1d\n" +
 	"\n" +
 	"wind_speed\x18\b \x01(\x05R\twindSpeed\x12+\n" +
-	"\x11unsubscribe_token\x18\t \x01(\tR\x10unsubscribeToken\"Y\n" +
-	"\rEmailResponse\x12\x18\n" +
-	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x18\n" +
-	"\amessage\x18\x02 \x01(\tR\amessage\x12\x14\n" +
-	"\x05error\x18\x03 \x01(\tR\x05error2V\n" +
+	"\x11unsubscribe_token\x18\t \x01(\tR\x10unsubscribeToken\"8\n" +
+	"\rEmailResponse\x12\x0e\n" +
+	"\x02to\x18\x01 \x01(\tR\x02to\x12\x17\n" +
+	"\asent_at\x18\x02 \x01(\x03R\x06sentAt2V\n" +
 	"\fEmailService\x12F\n" +
 	"\x11SendWeatherUpdate\x12\x1b.email.WeatherUpdateRequest\x1a\x14.email.EmailResponseB\rZ\vproto/emailb\x06proto3"
 
 var (
-	file_email_email_proto_rawDescOnce sync.Once
-	file_email_email_proto_rawDescData []byte
+	file_email_proto_rawDescOnce sync.Once
+	file_email_proto_rawDescData []byte
 )
 
-func file_email_email_proto_rawDescGZIP() []byte {
-	file_email_email_proto_rawDescOnce.Do(func() {
-		file_email_email_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_email_email_proto_rawDesc), len(file_email_email_proto_rawDesc)))
+func file_email_proto_rawDescGZIP() []byte {
+	file_email_proto_rawDescOnce.Do(func() {
+		file_email_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_email_proto_rawDesc), len(file_email_proto_rawDesc)))
 	})
-	return file_email_email_proto_rawDescData
+	return file_email_proto_rawDescData
 }
 
-var file_email_email_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
-var file_email_email_proto_goTypes = []any{
+var file_email_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_email_proto_goTypes = []any{
 	(*WeatherUpdateRequest)(nil), // 0: email.WeatherUpdateRequest
 	(*EmailResponse)(nil),        // 1: email.EmailResponse
 }
-var file_email_email_proto_depIdxs = []int32{
+var file_email_proto_depIdxs = []int32{
 	0, // 0: email.EmailService.SendWeatherUpdate:input_type -> email.WeatherUpdateRequest
 	1, // 1: email.EmailService.SendWeatherUpdate:output_type -> email.EmailResponse
 	1, // [1:2] is the sub-list for method output_type
@@ -239,26 +230,26 @@ var file_email_email_proto_depIdxs = []int32{
 	0, // [0:0] is the sub-list for field type_name
 }
 
-func init() { file_email_email_proto_init() }
-func file_email_email_proto_init() {
-	if File_email_email_proto != nil {
+func init() { file_email_proto_init() }
+func file_email_proto_init() {
+	if File_email_proto != nil {
 		return
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_email_email_proto_rawDesc), len(file_email_email_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_email_proto_rawDesc), len(file_email_proto_rawDesc)),
 			NumEnums:      0,
 			NumMessages:   2,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
-		GoTypes:           file_email_email_proto_goTypes,
-		DependencyIndexes: file_email_email_proto_depIdxs,
-		MessageInfos:      file_email_email_proto_msgTypes,
+		GoTypes:           file_email_proto_goTypes,
+		DependencyIndexes: file_email_proto_depIdxs,
+		MessageInfos:      file_email_proto_msgTypes,
 	}.Build()
-	File_email_email_proto = out.File
-	file_email_email_proto_goTypes = nil
-	file_email_email_proto_depIdxs = nil
+	File_email_proto = out.File
+	file_email_proto_goTypes = nil
+	file_email_proto_depIdxs = nil
 }

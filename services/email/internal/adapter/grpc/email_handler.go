@@ -34,16 +34,13 @@ func (h *EmailHandler) SendWeatherUpdate(ctx context.Context, req *pb.WeatherUpd
 		UnsubscribeToken: req.UnsubscribeToken,
 	}
 
-	_, err := h.sendEmailUseCase.SendWeatherUpdateEmail(ctx, request)
+	result, err := h.sendEmailUseCase.SendWeatherUpdateEmail(ctx, request)
 	if err != nil {
-		return &pb.EmailResponse{
-			Success: false,
-			Error:   err.Error(),
-		}, status.Errorf(codes.Internal, "failed to send weather update email: %v", err)
+		return nil, status.Errorf(codes.Internal, "failed to send weather update email: %v", err)
 	}
 
 	return &pb.EmailResponse{
-		Success: true,
-		Message: "Weather update email sent successfully",
+		To:     result.To,
+		SentAt: result.SentAt,
 	}, nil
 }

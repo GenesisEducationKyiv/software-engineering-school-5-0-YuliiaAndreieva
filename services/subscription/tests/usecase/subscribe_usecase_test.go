@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"subscription/internal/config"
 	"subscription/internal/core/domain"
 	"subscription/internal/core/usecase"
 	"subscription/tests/mocks"
@@ -13,34 +14,45 @@ import (
 )
 
 type subscribeUseCaseTestSetup struct {
-	useCase          *usecase.SubscribeUseCase
-	mockRepo         *mocks.SubscriptionRepository
-	mockTokenService *mocks.TokenService
-	mockEmailService *mocks.EmailService
-	mockLogger       *mocks.Logger
+	useCase            *usecase.SubscribeUseCase
+	mockRepo           *mocks.SubscriptionRepository
+	mockTokenService   *mocks.TokenService
+	mockEventPublisher *mocks.EventPublisher
+	mockLogger         *mocks.Logger
+	config             *config.Config
 }
 
 func setupSubscribeUseCaseTest() *subscribeUseCaseTestSetup {
 	mockRepo := &mocks.SubscriptionRepository{}
 	mockTokenService := &mocks.TokenService{}
-	mockEmailService := &mocks.EmailService{}
+	mockEventPublisher := &mocks.EventPublisher{}
 	mockLogger := &mocks.Logger{}
 
-	useCase := usecase.NewSubscribeUseCase(mockRepo, mockTokenService, mockEmailService, mockLogger).(*usecase.SubscribeUseCase)
+	config := &config.Config{
+		Token: config.TokenConfig{
+			Expiration: "24h",
+		},
+		Server: config.ServerConfig{
+			BaseURL: "http://localhost:8082",
+		},
+	}
+
+	useCase := usecase.NewSubscribeUseCase(mockRepo, mockTokenService, mockEventPublisher, mockLogger, config).(*usecase.SubscribeUseCase)
 
 	return &subscribeUseCaseTestSetup{
-		useCase:          useCase,
-		mockRepo:         mockRepo,
-		mockTokenService: mockTokenService,
-		mockEmailService: mockEmailService,
-		mockLogger:       mockLogger,
+		useCase:            useCase,
+		mockRepo:           mockRepo,
+		mockTokenService:   mockTokenService,
+		mockEventPublisher: mockEventPublisher,
+		mockLogger:         mockLogger,
+		config:             config,
 	}
 }
 
 func (ts *subscribeUseCaseTestSetup) setupSuccessMocks(request domain.SubscriptionRequest) {
 	ts.mockTokenService.On("GenerateToken", mock.Anything, request.Email, "24h").Return("test-token", nil)
 	ts.mockRepo.On("Create", mock.Anything, mock.AnythingOfType("domain.Subscription")).Return(nil)
-	ts.mockEmailService.On("SendConfirmationEmail", mock.Anything, mock.AnythingOfType("domain.ConfirmationEmailRequest")).Return(nil)
+	ts.mockEventPublisher.On("PublishSubscriptionCreated", mock.Anything, mock.AnythingOfType("domain.Subscription")).Return(nil)
 	ts.mockLogger.On("Infof", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return()
 	ts.mockLogger.On("Debugf", mock.Anything, mock.Anything, mock.Anything).Return()
 }
@@ -78,16 +90,6 @@ func (ts *subscribeUseCaseTestSetup) setupCreateErrorMocks(request domain.Subscr
 	ts.mockLogger.On("Infof", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return()
 }
 
-func (ts *subscribeUseCaseTestSetup) setupEmailErrorMocks(request domain.SubscriptionRequest) {
-	ts.mockTokenService.On("GenerateToken", mock.Anything, request.Email, "24h").Return("test-token", nil)
-	ts.mockRepo.On("Create", mock.Anything, mock.AnythingOfType("domain.Subscription")).Return(nil)
-	ts.mockEmailService.On("SendConfirmationEmail", mock.Anything, mock.AnythingOfType("domain.ConfirmationEmailRequest")).Return(assert.AnError)
-	ts.mockLogger.On("Errorf", mock.Anything, mock.Anything).Return()
-	ts.mockLogger.On("Debugf", mock.Anything, mock.Anything, mock.Anything).Return()
-	ts.mockLogger.On("Infof", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return()
-	ts.mockLogger.On("Warnf", mock.Anything, mock.Anything).Return()
-}
-
 func TestSubscribeUseCase_Success(t *testing.T) {
 	ts := setupSubscribeUseCaseTest()
 
@@ -103,13 +105,14 @@ func TestSubscribeUseCase_Success(t *testing.T) {
 		result, err := ts.useCase.Subscribe(context.Background(), request)
 
 		assert.NoError(t, err)
+		assert.NotNil(t, result)
 		assert.True(t, result.Success)
-		assert.NotEmpty(t, result.Token)
+		assert.Equal(t, "test-token", result.Token)
 		assert.Contains(t, result.Message, "Subscription successful")
 
 		ts.mockRepo.AssertExpectations(t)
 		ts.mockTokenService.AssertExpectations(t)
-		ts.mockEmailService.AssertExpectations(t)
+		ts.mockEventPublisher.AssertExpectations(t)
 		ts.mockLogger.AssertExpectations(t)
 	})
 }
@@ -129,10 +132,12 @@ func TestSubscribeUseCase_DuplicateSubscription(t *testing.T) {
 		result, err := ts.useCase.Subscribe(context.Background(), request)
 
 		assert.NoError(t, err)
+		assert.NotNil(t, result)
 		assert.False(t, result.Success)
-		assert.Contains(t, result.Message, "already exists")
+		assert.Contains(t, result.Message, "Subscription already exists")
 
 		ts.mockRepo.AssertExpectations(t)
+		ts.mockTokenService.AssertExpectations(t)
 		ts.mockLogger.AssertExpectations(t)
 	})
 }
@@ -201,32 +206,6 @@ func TestSubscribeUseCase_CreateSubscriptionError(t *testing.T) {
 
 		ts.mockRepo.AssertExpectations(t)
 		ts.mockTokenService.AssertExpectations(t)
-		ts.mockLogger.AssertExpectations(t)
-	})
-}
-
-func TestSubscribeUseCase_EmailServiceError(t *testing.T) {
-	ts := setupSubscribeUseCaseTest()
-
-	t.Run("Email service error", func(t *testing.T) {
-		request := domain.SubscriptionRequest{
-			Email:     "test@example.com",
-			City:      "Kyiv",
-			Frequency: "daily",
-		}
-
-		ts.setupEmailErrorMocks(request)
-
-		result, err := ts.useCase.Subscribe(context.Background(), request)
-
-		assert.NoError(t, err)
-		assert.True(t, result.Success)
-		assert.NotEmpty(t, result.Token)
-		assert.Contains(t, result.Message, "Subscription created but confirmation email failed to send")
-
-		ts.mockRepo.AssertExpectations(t)
-		ts.mockTokenService.AssertExpectations(t)
-		ts.mockEmailService.AssertExpectations(t)
 		ts.mockLogger.AssertExpectations(t)
 	})
 }

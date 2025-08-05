@@ -8,7 +8,6 @@ import (
 
 type Config struct {
 	Server   ServerConfig
-	Email    EmailConfig
 	Token    TokenConfig
 	Database DatabaseConfig
 	Timeout  TimeoutConfig
@@ -20,10 +19,6 @@ type ServerConfig struct {
 	Port     string
 	GRPCPort string
 	BaseURL  string
-}
-
-type EmailConfig struct {
-	ServiceURL string
 }
 
 type TokenConfig struct {
@@ -60,9 +55,6 @@ func LoadConfig() *Config {
 			Port:     getEnv("SERVER_PORT", "8082"),
 			GRPCPort: getEnv("GRPC_PORT", "9093"),
 			BaseURL:  getEnv("BASE_URL", "http://localhost:8082"),
-		},
-		Email: EmailConfig{
-			ServiceURL: getEnv("EMAIL_SERVICE_URL", "http://email-service:8081"),
 		},
 		Token: TokenConfig{
 			ServiceURL: getEnv("TOKEN_SERVICE_URL", "http://token-service:8083"),
