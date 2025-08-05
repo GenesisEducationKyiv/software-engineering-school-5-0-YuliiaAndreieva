@@ -29,7 +29,8 @@ func main() {
 	cfg := config.LoadConfig()
 
 	if cfg.SMTP.User == "" || cfg.SMTP.Pass == "" {
-		panic("SMTP_USER and SMTP_PASS environment variables are required")
+		fmt.Printf("SMTP_USER and SMTP_PASS environment variables are required\n")
+		os.Exit(1)
 	}
 
 	loggerInstance := sharedlogger.NewZapLoggerWithSampling(cfg.Logging.Initial, cfg.Logging.Thereafter, cfg.Logging.Tick)
@@ -41,7 +42,7 @@ func main() {
 		Pass: cfg.SMTP.Pass,
 	}
 	emailSender := email.NewSMTPSender(smtpConfig, loggerInstance)
-	templateBuilder := email.NewTemplateBuilder(loggerInstance)
+	templateBuilder := email.NewTemplateBuilder(loggerInstance, cfg.Server.BaseURL)
 
 	sendEmailUseCase := usecase.NewSendEmailUseCase(emailSender, templateBuilder, loggerInstance, cfg.Server.BaseURL)
 
@@ -53,7 +54,7 @@ func main() {
 	err := retry.Do(
 		func() error {
 			var err error
-			consumer, err = messaging.NewRabbitMQConsumer(cfg.RabbitMQ.URL, cfg.RabbitMQ.Exchange, cfg.RabbitMQ.Queue, sendEmailUseCase, loggerInstance)
+			consumer, err = messaging.NewRabbitMQConsumer(cfg.RabbitMQ.URL, cfg.RabbitMQ.Exchange, cfg.RabbitMQ.Queue, sendEmailUseCase, loggerInstance, cfg.Server.BaseURL)
 			return err
 		},
 		retry.Attempts(10),
@@ -65,14 +66,14 @@ func main() {
 	)
 
 	if err != nil {
-		panic(fmt.Sprintf("Failed to create RabbitMQ consumer after retries: %v", err))
+		loggerInstance.Fatalf("Failed to create RabbitMQ consumer after retries: %v", err)
 	}
 	defer consumer.Close()
 
 	loggerInstance.Infof("Successfully connected to RabbitMQ")
 
 	if err := consumer.Start(context.Background()); err != nil {
-		panic(fmt.Sprintf("Failed to start RabbitMQ consumer: %v", err))
+		loggerInstance.Fatalf("Failed to start RabbitMQ consumer: %v", err)
 	}
 
 	r := gin.Default()
@@ -97,7 +98,7 @@ func main() {
 	go func() {
 		loggerInstance.Infof("Starting HTTP server on port %s", cfg.Server.Port)
 		if err := httpSrv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			panic("Failed to start HTTP server: " + err.Error())
+			loggerInstance.Fatalf("Failed to start HTTP server: %v", err)
 		}
 	}()
 
@@ -108,12 +109,12 @@ func main() {
 		}
 		lis, err := net.Listen("tcp", ":"+grpcPort)
 		if err != nil {
-			panic(fmt.Sprintf("Failed to listen for gRPC: %v", err))
+			loggerInstance.Fatalf("Failed to listen for gRPC: %v", err)
 		}
 
 		loggerInstance.Infof("Starting gRPC server on port %s", grpcPort)
 		if err := grpcSrv.Serve(lis); err != nil {
-			panic("Failed to start gRPC server: " + err.Error())
+			loggerInstance.Fatalf("Failed to start gRPC server: %v", err)
 		}
 	}()
 
@@ -126,6 +127,6 @@ func main() {
 
 	grpcSrv.GracefulStop()
 	if err := httpSrv.Shutdown(ctx); err != nil {
-		panic("HTTP server forced to shutdown: " + err.Error())
+		loggerInstance.Fatalf("HTTP server forced to shutdown: %v", err)
 	}
 }

@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"net"
 	"net/http"
 	"os"
@@ -35,13 +34,11 @@ func main() {
 
 	db, err := gorm.Open(postgres.Open(cfg.Database.DSN), &gorm.Config{})
 	if err != nil {
-		loggerInstance.Errorf("Failed to connect to database: %v", err)
-		panic(fmt.Sprintf("Failed to connect to database: %v", err))
+		loggerInstance.Fatalf("Failed to connect to database: %v", err)
 	}
 
 	if err := db.AutoMigrate(&database.Subscription{}); err != nil {
-		loggerInstance.Errorf("Failed to auto-migrate database: %v", err)
-		panic(fmt.Sprintf("Failed to auto-migrate database: %v", err))
+		loggerInstance.Fatalf("Failed to auto-migrate database: %v", err)
 	}
 
 	repo := database.NewSubscriptionRepo(db, loggerInstance)
@@ -68,22 +65,22 @@ func main() {
 	)
 
 	if err != nil {
-		panic(fmt.Sprintf("Failed to create RabbitMQ publisher after retries: %v", err))
+		loggerInstance.Fatalf("Failed to create RabbitMQ publisher after retries: %v", err)
 	}
 	defer eventPublisher.Close()
 
 	loggerInstance.Infof("Successfully connected to RabbitMQ")
 
-	eventPublisherWithMetrics := messaging.NewRabbitMQMetricsPublisherDecorator(eventPublisher, metricsCollector)
+	eventPublisherWithMetrics := messaging.NewWithMetrics(eventPublisher, metricsCollector)
 
 	subscribeUseCase := usecase.NewSubscribeUseCase(repo, tokenClient, emailClient, eventPublisherWithMetrics, loggerInstance, cfg)
 	confirmUseCase := usecase.NewConfirmSubscriptionUseCase(repo, tokenClient, loggerInstance)
 	unsubscribeUseCase := usecase.NewUnsubscribeUseCase(repo, tokenClient, loggerInstance)
 	listByFrequencyUseCase := usecase.NewListByFrequencyUseCase(repo, loggerInstance)
 
-	subscribeUseCaseWithMetrics := usecase.NewSubscribeMetricsDecorator(subscribeUseCase, metricsCollector)
-	confirmUseCaseWithMetrics := usecase.NewConfirmSubscriptionMetricsDecorator(confirmUseCase, metricsCollector)
-	unsubscribeUseCaseWithMetrics := usecase.NewUnsubscribeMetricsDecorator(unsubscribeUseCase, metricsCollector)
+	subscribeUseCaseWithMetrics := usecase.NewSubscribeWithMetrics(subscribeUseCase, metricsCollector)
+	confirmUseCaseWithMetrics := usecase.NewConfirmSubscriptionWithMetrics(confirmUseCase, metricsCollector)
+	unsubscribeUseCaseWithMetrics := usecase.NewUnsubscribeWithMetrics(unsubscribeUseCase, metricsCollector)
 
 	subscriptionHandler := httphandler.NewSubscriptionHandler(
 		subscribeUseCaseWithMetrics,
@@ -121,7 +118,7 @@ func main() {
 	go func() {
 		loggerInstance.Infof("Starting HTTP server on port %s", cfg.Server.Port)
 		if err := httpSrv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			panic("Failed to start HTTP server: " + err.Error())
+			loggerInstance.Fatalf("Failed to start HTTP server: %v", err)
 		}
 	}()
 
@@ -132,12 +129,12 @@ func main() {
 		}
 		lis, err := net.Listen("tcp", ":"+grpcPort)
 		if err != nil {
-			panic(fmt.Sprintf("Failed to listen for gRPC: %v", err))
+			loggerInstance.Fatalf("Failed to listen for gRPC: %v", err)
 		}
 
 		loggerInstance.Infof("Starting gRPC server on port %s", grpcPort)
 		if err := grpcSrv.Serve(lis); err != nil {
-			panic("Failed to start gRPC server: " + err.Error())
+			loggerInstance.Fatalf("Failed to start gRPC server: %v", err)
 		}
 	}()
 
@@ -150,6 +147,6 @@ func main() {
 
 	grpcSrv.GracefulStop()
 	if err := httpSrv.Shutdown(ctx); err != nil {
-		panic("HTTP server forced to shutdown: " + err.Error())
+		loggerInstance.Fatalf("HTTP server forced to shutdown: %v", err)
 	}
 }

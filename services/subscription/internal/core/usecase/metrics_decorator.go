@@ -9,19 +9,19 @@ import (
 	"subscription/internal/core/ports/out"
 )
 
-type SubscribeMetricsDecorator struct {
+type SubscribeWithMetrics struct {
 	base    in.SubscribeUseCase
 	metrics out.MetricsCollector
 }
 
-func NewSubscribeMetricsDecorator(base in.SubscribeUseCase, metrics out.MetricsCollector) in.SubscribeUseCase {
-	return &SubscribeMetricsDecorator{
+func NewSubscribeWithMetrics(base in.SubscribeUseCase, metrics out.MetricsCollector) in.SubscribeUseCase {
+	return &SubscribeWithMetrics{
 		base:    base,
 		metrics: metrics,
 	}
 }
 
-func (d *SubscribeMetricsDecorator) Subscribe(ctx context.Context, req domain.SubscriptionRequest) (*domain.SubscriptionResponse, error) {
+func (d *SubscribeWithMetrics) Subscribe(ctx context.Context, req domain.SubscriptionRequest) (*domain.SubscriptionResponse, error) {
 	start := time.Now()
 
 	result, err := d.base.Subscribe(ctx, req)
@@ -42,19 +42,19 @@ func (d *SubscribeMetricsDecorator) Subscribe(ctx context.Context, req domain.Su
 	return result, err
 }
 
-type ConfirmSubscriptionMetricsDecorator struct {
+type ConfirmSubscriptionWithMetrics struct {
 	base    in.ConfirmSubscriptionUseCase
 	metrics out.MetricsCollector
 }
 
-func NewConfirmSubscriptionMetricsDecorator(base in.ConfirmSubscriptionUseCase, metrics out.MetricsCollector) in.ConfirmSubscriptionUseCase {
-	return &ConfirmSubscriptionMetricsDecorator{
+func NewConfirmSubscriptionWithMetrics(base in.ConfirmSubscriptionUseCase, metrics out.MetricsCollector) in.ConfirmSubscriptionUseCase {
+	return &ConfirmSubscriptionWithMetrics{
 		base:    base,
 		metrics: metrics,
 	}
 }
 
-func (d *ConfirmSubscriptionMetricsDecorator) ConfirmSubscription(ctx context.Context, token string) (*domain.ConfirmResponse, error) {
+func (d *ConfirmSubscriptionWithMetrics) ConfirmSubscription(ctx context.Context, token string) (*domain.ConfirmResponse, error) {
 	start := time.Now()
 
 	result, err := d.base.ConfirmSubscription(ctx, token)
@@ -75,19 +75,19 @@ func (d *ConfirmSubscriptionMetricsDecorator) ConfirmSubscription(ctx context.Co
 	return result, err
 }
 
-type UnsubscribeMetricsDecorator struct {
+type UnsubscribeWithMetrics struct {
 	base    in.UnsubscribeUseCase
 	metrics out.MetricsCollector
 }
 
-func NewUnsubscribeMetricsDecorator(base in.UnsubscribeUseCase, metrics out.MetricsCollector) in.UnsubscribeUseCase {
-	return &UnsubscribeMetricsDecorator{
+func NewUnsubscribeWithMetrics(base in.UnsubscribeUseCase, metrics out.MetricsCollector) in.UnsubscribeUseCase {
+	return &UnsubscribeWithMetrics{
 		base:    base,
 		metrics: metrics,
 	}
 }
 
-func (d *UnsubscribeMetricsDecorator) Unsubscribe(ctx context.Context, req domain.UnsubscribeRequest) (*domain.UnsubscribeResponse, error) {
+func (d *UnsubscribeWithMetrics) Unsubscribe(ctx context.Context, req domain.UnsubscribeRequest) (*domain.UnsubscribeResponse, error) {
 	start := time.Now()
 
 	result, err := d.base.Unsubscribe(ctx, req)

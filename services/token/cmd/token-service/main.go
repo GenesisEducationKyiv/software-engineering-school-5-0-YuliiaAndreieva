@@ -44,7 +44,7 @@ func main() {
 
 	go func() {
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			panic("Failed to start server: " + err.Error())
+			loggerInstance.Fatalf("Failed to start server: %v", err)
 		}
 	}()
 
@@ -55,6 +55,6 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), cfg.Timeout.ShutdownTimeout)
 	defer cancel()
 	if err := srv.Shutdown(ctx); err != nil {
-		panic("Server forced to shutdown: " + err.Error())
+		loggerInstance.Fatalf("Server forced to shutdown: %v", err)
 	}
 }

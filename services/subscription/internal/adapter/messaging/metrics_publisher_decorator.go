@@ -8,19 +8,19 @@ import (
 	"subscription/internal/core/ports/out"
 )
 
-type RabbitMQMetricsPublisherDecorator struct {
+type WithMetrics struct {
 	base    out.EventPublisher
 	metrics out.MetricsCollector
 }
 
-func NewRabbitMQMetricsPublisherDecorator(base out.EventPublisher, metrics out.MetricsCollector) out.EventPublisher {
-	return &RabbitMQMetricsPublisherDecorator{
+func NewWithMetrics(base out.EventPublisher, metrics out.MetricsCollector) out.EventPublisher {
+	return &WithMetrics{
 		base:    base,
 		metrics: metrics,
 	}
 }
 
-func (d *RabbitMQMetricsPublisherDecorator) PublishSubscriptionCreated(ctx context.Context, subscription domain.Subscription) error {
+func (d *WithMetrics) PublishSubscriptionCreated(ctx context.Context, subscription domain.Subscription) error {
 	start := time.Now()
 
 	err := d.base.PublishSubscriptionCreated(ctx, subscription)
