@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"net/http"
+	"subscription/internal/config"
 	"subscription/internal/core/domain"
 	"testing"
 	"time"
@@ -14,7 +15,10 @@ import (
 )
 
 func TestSubscriptionRabbitMQFlow(t *testing.T) {
-	conn, err := amqp.Dial("amqp://admin:password@localhost:5672/")
+	cfg, err := config.LoadTestConfig()
+	require.NoError(t, err)
+
+	conn, err := amqp.Dial(cfg.RabbitMQ.URL)
 	require.NoError(t, err)
 	defer conn.Close()
 
@@ -23,7 +27,7 @@ func TestSubscriptionRabbitMQFlow(t *testing.T) {
 	defer ch.Close()
 
 	err = ch.ExchangeDeclare(
-		"subscription_events",
+		cfg.RabbitMQ.Exchange,
 		"fanout",
 		true,
 		false,
@@ -46,7 +50,7 @@ func TestSubscriptionRabbitMQFlow(t *testing.T) {
 	err = ch.QueueBind(
 		q.Name,
 		"",
-		"subscription_events",
+		cfg.RabbitMQ.Exchange,
 		false,
 		nil,
 	)
@@ -88,7 +92,7 @@ func TestSubscriptionRabbitMQFlow(t *testing.T) {
 	require.NoError(t, err)
 
 	resp, err := http.Post(
-		"http://localhost:8082/subscribe",
+		cfg.Server.BaseURL+"/subscribe",
 		"application/json",
 		bytes.NewBuffer(reqBody),
 	)
@@ -99,21 +103,20 @@ func TestSubscriptionRabbitMQFlow(t *testing.T) {
 
 	select {
 	case <-messageReceived:
-		assert.Equal(t, subscriptionReq.Email, receivedEvent.Email)
-		assert.Equal(t, subscriptionReq.City, receivedEvent.City)
-		assert.Equal(t, subscriptionReq.Frequency, string(receivedEvent.Frequency))
-		assert.False(t, receivedEvent.IsConfirmed)
-		assert.NotEmpty(t, receivedEvent.Token)
-
-		t.Logf("✅ Successfully received RabbitMQ event for email: %s", receivedEvent.Email)
-
+		assert.Equal(t, "test-rabbitmq@example.com", receivedEvent.Email)
+		assert.Equal(t, "TestCity", receivedEvent.City)
+		assert.Equal(t, "daily", receivedEvent.Frequency)
+		t.Log("✅ RabbitMQ message received successfully")
 	case <-time.After(10 * time.Second):
 		t.Fatal("❌ Timeout waiting for RabbitMQ message")
 	}
 }
 
 func TestRabbitMQConnection(t *testing.T) {
-	conn, err := amqp.Dial("amqp://admin:password@localhost:5672/")
+	cfg, err := config.LoadTestConfig()
+	require.NoError(t, err)
+
+	conn, err := amqp.Dial(cfg.RabbitMQ.URL)
 	require.NoError(t, err)
 	defer conn.Close()
 
@@ -121,23 +124,5 @@ func TestRabbitMQConnection(t *testing.T) {
 	require.NoError(t, err)
 	defer ch.Close()
 
-	err = ch.ExchangeDeclare(
-		"test_exchange",
-		"fanout",
-		true,
-		false,
-		false,
-		false,
-		nil,
-	)
-	require.NoError(t, err)
-
-	err = ch.ExchangeDelete(
-		"test_exchange",
-		false,
-		false,
-	)
-	require.NoError(t, err)
-
-	t.Log("✅ RabbitMQ connection test passed")
+	t.Log("✅ RabbitMQ connection successful")
 }

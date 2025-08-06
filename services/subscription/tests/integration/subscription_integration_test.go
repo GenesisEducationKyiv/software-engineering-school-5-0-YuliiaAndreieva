@@ -70,7 +70,7 @@ func setupSubscriptionIntegrationTest(t *testing.T) *subscriptionIntegrationTest
 			Expiration: "24h",
 		},
 		Server: config.ServerConfig{
-			BaseURL: "http://localhost:8082",
+			BaseURL: "http://subscription-service:8082",
 		},
 	}
 
