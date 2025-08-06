@@ -1,0 +1,187 @@
+package main
+
+import (
+	"context"
+	"database/sql"
+	"errors"
+	"log"
+	"net/http"
+	"strconv"
+	"weather-api/internal/core/usecase"
+
+	"github.com/gin-gonic/gin"
+	"github.com/golang-migrate/migrate/v4"
+	_ "github.com/golang-migrate/migrate/v4/database/postgres"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/robfig/cron/v3"
+
+	"weather-api/internal/adapter/cache/core/metrics"
+	"weather-api/internal/adapter/cache/core/redis"
+	weathercache "weather-api/internal/adapter/cache/weather"
+	"weather-api/internal/adapter/email"
+	httphandler "weather-api/internal/adapter/handler/http"
+	"weather-api/internal/adapter/repository/postgres"
+	"weather-api/internal/adapter/weather"
+	"weather-api/internal/adapter/weather/openweathermap"
+	"weather-api/internal/adapter/weather/weatherapi"
+	"weather-api/internal/core/domain"
+	"weather-api/internal/core/service"
+	"weather-api/internal/util/configutil"
+	"weather-api/internal/util/logger"
+)
+
+func main() {
+	cfg, err := configutil.LoadConfig()
+	if err != nil {
+		log.Fatalf("Unable to load config: %v", err)
+	}
+
+	db, err := sql.Open("postgres", cfg.DBConnStr)
+	if err != nil {
+		log.Fatalf("Unable to connect to DB: %v", err)
+	}
+	defer func() {
+		if err := db.Close(); err != nil {
+			log.Printf("Error closing database connection: %v", err)
+		}
+	}()
+
+	m, err := migrate.New("file://migrations", cfg.DBConnStr)
+	if err != nil {
+		log.Fatalf("Unable to initialize migration: %v", err)
+	}
+	if err := m.Up(); err != nil && !errors.Is(err, migrate.ErrNoChange) {
+		log.Fatalf("Unable to apply migrations: %v", err)
+	}
+
+	fileLogger, err := logger.NewFileLogger("logs", "provider_responses.log")
+	if err != nil {
+		log.Fatalf("Unable to initialize file logger: %v", err)
+	}
+	defer func() {
+		if closeErr := fileLogger.Close(); closeErr != nil {
+			log.Printf("Error closing file logger: %v", closeErr)
+		}
+	}()
+
+	emailAdapter := email.NewSender(email.SenderOptions{
+		Host: cfg.SMTPHost,
+		Port: cfg.SMTPPort,
+		User: cfg.SMTPUser,
+		Pass: cfg.SMTPPass,
+	})
+
+	httpClient := &http.Client{Timeout: cfg.HTTPClientTimeout}
+
+	weatherAPIProvider := weatherapi.NewClient(weatherapi.ClientOptions{
+		APIKey:     cfg.WeatherAPIKey,
+		BaseURL:    cfg.WeatherAPIBaseURL,
+		HTTPClient: httpClient,
+		Logger:     fileLogger,
+	})
+
+	openWeatherMapProvider := openweathermap.NewClient(openweathermap.ClientOptions{
+		APIKey:     cfg.OpenWeatherMapAPIKey,
+		BaseURL:    cfg.OpenWeatherMapBaseURL,
+		HTTPClient: httpClient,
+		Logger:     fileLogger,
+	})
+
+	chainProvider := weather.NewChainWeatherProvider(openWeatherMapProvider, weatherAPIProvider)
+
+	subscriptionRepo := postgres.NewSubscriptionRepo(db)
+	cityRepo := postgres.NewCityRepository(db)
+
+	redisCache := redis.NewCache(redis.CacheOptions{
+		Address:      cfg.RedisAddress,
+		TTL:          cfg.RedisTTL,
+		DialTimeout:  cfg.RedisDialTimeout,
+		ReadTimeout:  cfg.RedisReadTimeout,
+		WriteTimeout: cfg.RedisWriteTimeout,
+		PoolSize:     cfg.RedisPoolSize,
+		MinIdleConns: cfg.RedisMinIdleConns,
+	})
+
+	promRegistry := prometheus.NewRegistry()
+	cacheMetrics := weathercache.NewCacheMetrics(promRegistry)
+	cacheWithMetrics := metrics.NewCacheWithMetrics(redisCache, cacheMetrics)
+	weatherCache := weathercache.NewCache(cacheWithMetrics)
+
+	cachedProvider := weather.NewCachedWeatherProvider(weatherCache, chainProvider)
+	weatherService := service.NewWeatherService(cachedProvider)
+	tokenService := service.NewTokenService(subscriptionRepo)
+	emailService := service.NewEmailService(emailAdapter)
+	cityService := service.NewCityService(cityRepo, cachedProvider)
+
+	weatherUseCase := usecase.NewWeatherUseCase(cachedProvider)
+	subscriptionService := service.NewSubscriptionService(subscriptionRepo, cityRepo, chainProvider, tokenService, emailService)
+	subscribeUseCase := usecase.NewSubscribeUseCase(subscriptionRepo, subscriptionService, cityService, emailService)
+	confirmUseCase := usecase.NewConfirmSubscriptionUseCase(subscriptionRepo, tokenService, emailService)
+	unsubscribeUseCase := usecase.NewUnsubscribeUseCase(subscriptionRepo, tokenService)
+
+	weatherUpdateService := service.NewWeatherUpdateService(subscriptionService, weatherService)
+
+	weatherHandler := httphandler.NewWeatherHandler(weatherUseCase)
+	subscriptionHandler := httphandler.NewSubscriptionHandler(subscribeUseCase, confirmUseCase, unsubscribeUseCase)
+
+	r := gin.Default()
+
+	r.Static("/web", "./web")
+
+	api := r.Group("/api")
+	{
+		api.GET("/weather", weatherHandler.GetWeather)
+		api.POST("/subscribe", subscriptionHandler.Subscribe)
+		api.GET("/confirm/:token", subscriptionHandler.Confirm)
+		api.GET("/unsubscribe/:token", subscriptionHandler.Unsubscribe)
+		api.GET("/metrics", gin.WrapH(promhttp.HandlerFor(promRegistry, promhttp.HandlerOpts{})))
+	}
+
+	r.GET("/metrics", gin.WrapH(promhttp.Handler()))
+
+	r.NoRoute(func(c *gin.Context) {
+		c.File("./web/index.html")
+	})
+
+	schedulerService := service.NewSchedulerService(weatherUpdateService, emailService)
+	cron := cron.New()
+	_, err = cron.AddFunc("* * * * *", func() {
+		updateErr := schedulerService.SendWeatherUpdates(context.Background(), domain.FrequencyHourly)
+		if updateErr != nil {
+			log.Printf("Unable to send hourly weather updates: %v", updateErr)
+		}
+	})
+	if err != nil {
+		log.Printf("Unable to add hourly cron job: %v", err)
+		return
+	}
+
+	_, err = cron.AddFunc("0 0 * * *", func() {
+		updateErr := schedulerService.SendWeatherUpdates(context.Background(), domain.FrequencyDaily)
+		if updateErr != nil {
+			log.Printf("Unable to send daily weather updates: %v", updateErr)
+		}
+	})
+	if err != nil {
+		log.Printf("Unable to add daily cron job: %v", err)
+		return
+	}
+
+	cron.Start()
+
+	port := strconv.Itoa(cfg.Port)
+
+	srv := &http.Server{
+		Addr:         ":" + port,
+		Handler:      r,
+		ReadTimeout:  cfg.HTTPReadTimeout,
+		WriteTimeout: cfg.HTTPWriteTimeout,
+	}
+
+	log.Printf("Server running on %s", srv.Addr)
+	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		log.Fatalf("Server error: %v", err)
+	}
+}

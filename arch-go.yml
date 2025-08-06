@@ -1,0 +1,188 @@
+dependenciesRules:
+  # Domain - innermost layer, doesn't depend on anything
+  - package: "**.core.domain"
+    shouldNotDependsOn:
+      internal:
+        - "**.core.port"
+        - "**.core.service"
+        - "**.core.usecase"
+        - "**.adapter"
+        - "**.cmd"
+        - "**.tests"
+
+  # Port - depends only on domain
+  - package: "**.core.port"
+    shouldNotDependsOn:
+      internal:
+        - "**.core.service"
+        - "**.core.usecase"
+        - "**.adapter"
+        - "**.cmd"
+        - "**.tests"
+
+  # UseCase - depends only on port and domain
+  - package: "**.core.usecase"
+    shouldNotDependsOn:
+      internal:
+        - "**.adapter"
+        - "**.cmd"
+        - "**.tests"
+
+  # Service - depends only on port and domain
+  - package: "**.core.service"
+    shouldNotDependsOn:
+      internal:
+        - "**.core.usecase"
+        - "**.adapter"
+        - "**.cmd"
+        - "**.tests"
+
+  # Adapter - depends only on port and domain
+  - package: "**.adapter"
+    shouldNotDependsOn:
+      internal:
+        - "**.core.service"
+        - "**.core.usecase"
+        - "**.cmd"
+        - "**.tests"
+
+  # Handler - depends only on port and domain (but can depend on its subpackages)
+  - package: "**.adapter.handler.http"
+    shouldNotDependsOn:
+      internal:
+        - "**.core.service"
+        - "**.adapter.repository"
+        - "**.adapter.email"
+        - "**.adapter.weather"
+        - "**.adapter.cache"
+        - "**.cmd"
+        - "**.tests"
+
+  # Util - doesn't depend on business logic
+  - package: "**.util"
+    shouldNotDependsOn:
+      internal:
+        - "**.core.service"
+        - "**.core.usecase"
+        - "**.adapter"
+        - "**.handler"
+        - "**.cmd"
+        - "**.tests"
+
+  # Tests - don't depend on production code
+  - package: "**.tests"
+    shouldNotDependsOn:
+      internal:
+        - "**.cmd"
+
+  # Repository adapters don't depend on other adapters
+  - package: "**.adapter.repository"
+    shouldNotDependsOn:
+      internal:
+        - "**.adapter.email"
+        - "**.adapter.weather"
+        - "**.adapter.cache"
+        - "**.adapter.handler"
+
+  # Email adapters don't depend on other adapters
+  - package: "**.adapter.email"
+    shouldNotDependsOn:
+      internal:
+        - "**.adapter.repository"
+        - "**.adapter.weather"
+        - "**.adapter.cache"
+        - "**.adapter.handler"
+
+  # Weather providers (clients) don't depend on other adapters
+  - package: "**.adapter.weather"
+    shouldNotDependsOn:
+      internal:
+        - "**.adapter.repository"
+        - "**.adapter.email"
+        - "**.adapter.handler"
+        - "**.adapter.cache"
+
+  # Cache adapters don't depend on other adapters
+  - package: "**.adapter.cache"
+    shouldNotDependsOn:
+      internal:
+        - "**.adapter.repository"
+        - "**.adapter.email"
+        - "**.adapter.weather"
+        - "**.adapter.handler"
+
+  # Mocks - depend only on interfaces
+  - package: "**.mocks"
+    shouldNotDependsOn:
+      internal:
+        - "**.core.service"
+        - "**.core.usecase"
+        - "**.adapter"
+        - "**.cmd"
+        - "**.tests"
+
+  # CMD packages - entry points
+  - package: "**.cmd"
+    shouldNotDependsOn:
+      internal:
+        - "**.tests"
+
+# Package content rules
+contentRules:
+  # Domain should contain only models and business logic
+  - package: "**.core.domain"
+    shouldNotContainInterfaces: true
+
+  # Port should contain only interfaces
+  - package: "**.core.port"
+    shouldOnlyContainInterfaces: true
+
+  # UseCase should contain only business logic
+  - package: "**.core.usecase"
+    shouldNotContainStructs: true
+
+  # Service should contain only business logic
+  - package: "**.core.service"
+    shouldNotContainStructs: true
+
+  # Mocks should contain only mocks
+  - package: "**.mocks"
+    shouldOnlyContainMocks: true
+
+  # Util packages should contain only utilities
+  - package: "**.util"
+    shouldNotContainBusinessLogic: true
+
+# Naming rules
+namingRules:
+  # Adapters should have appropriate suffixes
+  - package: "**.adapter.repository"
+    interfaceImplementationNamingRule:
+      structsThatImplement: "*Repository"
+      shouldHaveSimpleNameEndingWith: "Repository"
+
+  - package: "**.adapter.email"
+    interfaceImplementationNamingRule:
+      structsThatImplement: "*EmailSender"
+      shouldHaveSimpleNameEndingWith: "EmailSender"
+
+  - package: "**.adapter.weather"
+    interfaceImplementationNamingRule:
+      structsThatImplement: "*WeatherProvider"
+      shouldHaveSimpleNameEndingWith: "WeatherProvider"
+
+  - package: "**.adapter.cache"
+    interfaceImplementationNamingRule:
+      structsThatImplement: "*Cache"
+      shouldHaveSimpleNameEndingWith: "Cache"
+
+  # Mocks should have Mock prefix
+  - package: "**.mocks"
+    interfaceImplementationNamingRule:
+      structsThatImplement: "*"
+      shouldHaveSimpleNameStartingWith: "Mock"
+
+# Compliance thresholds
+threshold:
+  complianceRate: 100
+  coverageRate: 100 

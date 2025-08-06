@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather Subscription</title>
+    <script src="/web/config.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; }
+        input, select { width: 100%; padding: 8px; box-sizing: border-box; }
+        button {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover { background-color: #45a049; }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        button.clicked {
+            background-color: #ff9800;
+        }
+        #result { margin-top: 20px; padding: 10px; border: 1px solid #ddd; display: none; }
+        .error { color: red; display: none; }
+    </style>
+</head>
+<body>
+<h1>Weather Subscription</h1>
+
+<div class="form-group">
+    <label for="email">Email:</label>
+    <input type="email" id="email" required>
+    <div id="emailError" class="error">Email is required</div>
+</div>
+<div class="form-group">
+    <label for="city">City:</label>
+    <input type="text" id="city" required>
+    <div id="cityError" class="error">City is required</div>
+</div>
+<div class="form-group">
+    <label for="frequency">Frequency:</label>
+    <select id="frequency" required>
+        <option value="hourly">Hourly</option>
+        <option value="daily">Daily</option>
+    </select>
+    <div id="frequencyError" class="error">Frequency is required</div>
+</div>
+<button id="subscribeBtn" onclick="subscribe()">Subscribe</button>
+<div id="result"></div>
+
+<script>
+    const subscribeBtn = document.getElementById('subscribeBtn');
+    const emailInput = document.getElementById('email');
+    const cityInput = document.getElementById('city');
+    const frequencySelect = document.getElementById('frequency');
+    const emailError = document.getElementById('emailError');
+    const cityError = document.getElementById('cityError');
+    const frequencyError = document.getElementById('frequencyError');
+
+    async function subscribe() {
+        const isValid = validateFields();
+        if (!isValid) return;
+
+        subscribeBtn.classList.add('clicked');
+        subscribeBtn.disabled = true;
+
+        const email = emailInput.value;
+        const city = cityInput.value;
+        const frequency = frequencySelect.value;
+
+        try {
+            const response = await fetch(`${config.baseUrl}/api/subscribe`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, city, frequency })
+            });
+
+            const data = await response.json();
+            if (data.token) {
+                alert('Check your email for confirmation link!');
+            }
+        } catch (error) {}
+    }
+
+    function validateFields() {
+        let isValid = true;
+
+        emailError.style.display = 'none';
+        cityError.style.display = 'none';
+        frequencyError.style.display = 'none';
+
+        if (!emailInput.value.trim()) {
+            emailError.style.display = 'block';
+            isValid = false;
+        } else if (!emailInput.checkValidity()) {
+            emailError.innerHTML = 'Please enter a valid email address';
+            emailError.style.display = 'block';
+            isValid = false;
+        }
+
+        if (!cityInput.value.trim()) {
+            cityError.style.display = 'block';
+            isValid = false;
+        }
+
+        if (!frequencySelect.value) {
+            frequencyError.style.display = 'block';
+            isValid = false;
+        }
+
+        return isValid;
+    }
+
+    function resetButtonState() {
+        subscribeBtn.classList.remove('clicked');
+        subscribeBtn.disabled = false;
+        validateFields();
+    }
+
+    emailInput.addEventListener('input', resetButtonState);
+    cityInput.addEventListener('input', resetButtonState);
+    frequencySelect.addEventListener('change', resetButtonState);
+    window.addEventListener('load', validateFields);
+</script>
+</body>
+</html>
