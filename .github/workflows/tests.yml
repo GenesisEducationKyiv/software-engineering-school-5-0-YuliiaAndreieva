@@ -133,8 +133,7 @@ jobs:
     
     - name: Run Token Service Tests
       run: |
-        docker build -f services/token/Dockerfile.test -t token-service-tests .
-        docker run --rm token-service-tests
+        docker compose -f docker-compose.test.yml up --build --abort-on-container-exit --exit-code-from token-service-tests
 
   weather-broadcast-service-tests:
     name: Weather Broadcast Service Tests

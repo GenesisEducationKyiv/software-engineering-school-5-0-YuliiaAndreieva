@@ -63,12 +63,14 @@ func setupTokenHandlerTest() *tokenHandlerTestSetup {
 
 func (ts *tokenHandlerTestSetup) setupSuccessMocks() {
 	ts.mockLogger.On("Infof", mock.Anything, mock.Anything).Return()
+	ts.mockLogger.On("Debugf", mock.Anything, mock.Anything).Return()
 	ts.mockLogger.On("Warnf", mock.Anything, mock.Anything).Return()
 	ts.mockLogger.On("Errorf", mock.Anything, mock.Anything).Return()
 }
 
 func (ts *tokenHandlerTestSetup) setupErrorMocks() {
 	ts.mockLogger.On("Infof", mock.Anything, mock.Anything).Return()
+	ts.mockLogger.On("Debugf", mock.Anything, mock.Anything).Return()
 	ts.mockLogger.On("Warnf", mock.Anything, mock.Anything).Return()
 	ts.mockLogger.On("Errorf", mock.Anything, mock.Anything).Return()
 }
@@ -178,7 +180,6 @@ func TestTokenHandler_ValidateToken_Success(t *testing.T) {
 		w, response := ts.makeValidateTokenRequest(t, request)
 
 		assert.Equal(t, http.StatusOK, w.Code)
-		assert.True(t, response.Success)
 		assert.True(t, response.Valid)
 		assert.Contains(t, response.Message, "Token is valid")
 	})
@@ -197,7 +198,6 @@ func TestTokenHandler_ValidateToken_InvalidToken(t *testing.T) {
 		w, response := ts.makeValidateTokenRequest(t, request)
 
 		assert.Equal(t, http.StatusOK, w.Code)
-		assert.True(t, response.Success)
 		assert.False(t, response.Valid)
 		assert.Contains(t, response.Message, "Token is invalid")
 	})
@@ -212,7 +212,6 @@ func TestTokenHandler_ValidateToken_InvalidToken(t *testing.T) {
 		w, response := ts.makeValidateTokenRequest(t, request)
 
 		assert.Equal(t, http.StatusOK, w.Code)
-		assert.True(t, response.Success)
 		assert.False(t, response.Valid)
 		assert.Contains(t, response.Message, "Token is invalid")
 	})
@@ -235,7 +234,7 @@ func TestTokenHandler_ValidateToken_InvalidJSON(t *testing.T) {
 		var response domain.ValidateTokenResponse
 		err := json.Unmarshal(w.Body.Bytes(), &response)
 		require.NoError(t, err)
-		assert.False(t, response.Success)
+		assert.False(t, response.Valid)
 		assert.Contains(t, response.Message, "Invalid request")
 	})
 }

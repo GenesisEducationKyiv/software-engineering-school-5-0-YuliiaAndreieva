@@ -31,12 +31,14 @@ func setupGenerateTokenUseCaseTest() *generateTokenUseCaseTestSetup {
 
 func (ts *generateTokenUseCaseTestSetup) setupSuccessMocks() {
 	ts.mockLogger.On("Infof", mock.Anything, mock.Anything).Return()
+	ts.mockLogger.On("Debugf", mock.Anything, mock.Anything).Return()
 	ts.mockLogger.On("Warnf", mock.Anything, mock.Anything).Return()
 	ts.mockLogger.On("Errorf", mock.Anything, mock.Anything).Return()
 }
 
 func (ts *generateTokenUseCaseTestSetup) setupWarningMocks() {
 	ts.mockLogger.On("Infof", mock.Anything, mock.Anything).Return()
+	ts.mockLogger.On("Debugf", mock.Anything, mock.Anything).Return()
 	ts.mockLogger.On("Warnf", mock.Anything, mock.Anything).Return()
 	ts.mockLogger.On("Errorf", mock.Anything, mock.Anything).Return()
 }

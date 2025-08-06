@@ -119,7 +119,7 @@ func (sits *subscriptionIntegrationTestSetup) setupLoggerMocks() {
 }
 
 func (sits *subscriptionIntegrationTestSetup) setupEventPublisherMocks() {
-	sits.mockEventPublisher.On("PublishSubscriptionCreated", mock.Anything, mock.Anything).Return(nil)
+	sits.mockEventPublisher.On("PublishSubscriptionCreated", mock.Anything, mock.AnythingOfType("domain.Subscription")).Return(nil)
 }
 
 func (sits *subscriptionIntegrationTestSetup) makeSubscribeRequest(t *testing.T, request domain.SubscriptionRequest) (*httptest.ResponseRecorder, *domain.SubscriptionResponse) {
@@ -180,7 +180,7 @@ func TestSubscriptionIntegration_Subscribe(t *testing.T) {
 		}
 
 		ts.mockTokenService.On("GenerateToken", mock.Anything, request.Email, "24h").Return("test-token", nil)
-		ts.mockEventPublisher.On("PublishSubscriptionCreated", mock.Anything, mock.AnythingOfType("domain.SubscriptionCreatedEvent")).Return(nil)
+		ts.mockEventPublisher.On("PublishSubscriptionCreated", mock.Anything, mock.AnythingOfType("domain.Subscription")).Return(nil)
 
 		w, response := ts.makeSubscribeRequest(t, request)
 
@@ -235,7 +235,7 @@ func TestSubscriptionIntegration_Subscribe(t *testing.T) {
 		}
 
 		ts.mockTokenService.On("GenerateToken", mock.Anything, request.Email, "24h").Return("duplicate-token", nil)
-		ts.mockEventPublisher.On("PublishSubscriptionCreated", mock.Anything, mock.AnythingOfType("domain.SubscriptionCreatedEvent")).Return(nil)
+		ts.mockEventPublisher.On("PublishSubscriptionCreated", mock.Anything, mock.AnythingOfType("domain.Subscription")).Return(nil)
 
 		w, response := ts.makeSubscribeRequest(t, request)
 
@@ -265,7 +265,7 @@ func TestSubscriptionIntegration_Confirm(t *testing.T) {
 		}
 
 		ts.mockTokenService.On("GenerateToken", mock.Anything, request.Email, "24h").Return("confirm-token", nil)
-		ts.mockEventPublisher.On("PublishSubscriptionCreated", mock.Anything, mock.AnythingOfType("domain.SubscriptionCreatedEvent")).Return(nil)
+		ts.mockEventPublisher.On("PublishSubscriptionCreated", mock.Anything, mock.AnythingOfType("domain.Subscription")).Return(nil)
 
 		w, _ := ts.makeSubscribeRequest(t, request)
 		assert.Equal(t, http.StatusOK, w.Code)
@@ -316,7 +316,7 @@ func TestSubscriptionIntegration_Unsubscribe(t *testing.T) {
 		}
 
 		ts.mockTokenService.On("GenerateToken", mock.Anything, request.Email, "24h").Return("unsubscribe-token", nil)
-		ts.mockEventPublisher.On("PublishSubscriptionCreated", mock.Anything, mock.AnythingOfType("domain.SubscriptionCreatedEvent")).Return(nil)
+		ts.mockEventPublisher.On("PublishSubscriptionCreated", mock.Anything, mock.AnythingOfType("domain.Subscription")).Return(nil)
 
 		w, _ := ts.makeSubscribeRequest(t, request)
 		assert.Equal(t, http.StatusOK, w.Code)

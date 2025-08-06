@@ -105,7 +105,7 @@ func TestSubscriptionRabbitMQFlow(t *testing.T) {
 	case <-messageReceived:
 		assert.Equal(t, "test-rabbitmq@example.com", receivedEvent.Email)
 		assert.Equal(t, "TestCity", receivedEvent.City)
-		assert.Equal(t, "daily", receivedEvent.Frequency)
+		assert.Equal(t, domain.Frequency("daily"), receivedEvent.Frequency)
 		t.Log("✅ RabbitMQ message received successfully")
 	case <-time.After(10 * time.Second):
 		t.Fatal("❌ Timeout waiting for RabbitMQ message")

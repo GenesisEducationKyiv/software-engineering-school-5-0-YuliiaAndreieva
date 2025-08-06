@@ -47,12 +47,14 @@ func setupValidateTokenUseCaseTest() *validateTokenUseCaseTestSetup {
 
 func (ts *validateTokenUseCaseTestSetup) setupSuccessMocks() {
 	ts.mockLogger.On("Infof", mock.Anything, mock.Anything).Return()
+	ts.mockLogger.On("Debugf", mock.Anything, mock.Anything).Return()
 	ts.mockLogger.On("Warnf", mock.Anything, mock.Anything).Return()
 	ts.mockLogger.On("Errorf", mock.Anything, mock.Anything).Return()
 }
 
 func (ts *validateTokenUseCaseTestSetup) setupWarningMocks() {
 	ts.mockLogger.On("Infof", mock.Anything, mock.Anything).Return()
+	ts.mockLogger.On("Debugf", mock.Anything, mock.Anything).Return()
 	ts.mockLogger.On("Warnf", mock.Anything, mock.Anything).Return()
 	ts.mockLogger.On("Errorf", mock.Anything, mock.Anything).Return()
 }
@@ -70,7 +72,6 @@ func TestValidateTokenUseCase_Success(t *testing.T) {
 		result, err := ts.useCase.ValidateToken(context.Background(), request)
 
 		assert.NoError(t, err)
-		assert.True(t, result.Success)
 		assert.True(t, result.Valid)
 		assert.Contains(t, result.Message, "Token is valid")
 	})
@@ -89,7 +90,6 @@ func TestValidateTokenUseCase_InvalidToken(t *testing.T) {
 		result, err := ts.useCase.ValidateToken(context.Background(), request)
 
 		assert.NoError(t, err)
-		assert.True(t, result.Success)
 		assert.False(t, result.Valid)
 		assert.Contains(t, result.Message, "Token is invalid")
 	})
@@ -104,7 +104,6 @@ func TestValidateTokenUseCase_InvalidToken(t *testing.T) {
 		result, err := ts.useCase.ValidateToken(context.Background(), request)
 
 		assert.NoError(t, err)
-		assert.True(t, result.Success)
 		assert.False(t, result.Valid)
 		assert.Contains(t, result.Message, "Token is invalid")
 	})
@@ -119,7 +118,6 @@ func TestValidateTokenUseCase_InvalidToken(t *testing.T) {
 		result, err := ts.useCase.ValidateToken(context.Background(), request)
 
 		assert.NoError(t, err)
-		assert.True(t, result.Success)
 		assert.False(t, result.Valid)
 		assert.Contains(t, result.Message, "Token is invalid")
 	})
@@ -146,7 +144,6 @@ func TestValidateTokenUseCase_DifferentSecret(t *testing.T) {
 		result, err := ts.useCase.ValidateToken(context.Background(), request)
 
 		assert.NoError(t, err)
-		assert.True(t, result.Success)
 		assert.False(t, result.Valid)
 		assert.Contains(t, result.Message, "Token is invalid")
 	})
