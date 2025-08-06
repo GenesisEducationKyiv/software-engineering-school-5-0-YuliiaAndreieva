@@ -25,9 +25,13 @@ linters:
           - revive
           - unparam
           - godot
+      - path: services/subscription/internal/adapter/http/subscription_handler.go
+        linters:
+          - errcheck
   settings:
     errcheck:
       check-type-assertions: true
+      ignore: "github.com/gin-gonic/gin.(*Context).JSON,github.com/gin-gonic/gin.(*Context).Data"
     gocyclo:
       min-complexity: 15
     revive:

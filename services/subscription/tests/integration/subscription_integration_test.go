@@ -6,28 +6,27 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
-	"subscription/internal/core/usecase"
 	"testing"
 
-	"github.com/joho/godotenv"
-
-	"subscription/internal/adapter/database"
-	httphandler "subscription/internal/adapter/http"
-	"subscription/internal/core/domain"
-	"subscription/tests/mocks"
-
 	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+
+	"subscription/internal/adapter/database"
+	httphandler "subscription/internal/adapter/http"
 	"subscription/internal/config"
+	"subscription/internal/core/domain"
+	"subscription/internal/core/usecase"
+	"subscription/tests/mocks"
 )
 
 func init() {
 	if err := godotenv.Load("../../test.env"); err != nil {
-		// Ignore error if test.env doesn't exist
+		return
 	}
 }
 

@@ -175,10 +175,7 @@ func (h *SubscriptionHandler) sendErrorResponse(c *gin.Context, statusCode int, 
 		c.JSON(statusCode, gin.H{"success": false, "message": message})
 		return
 	}
-	if _, err := c.Data(statusCode, "application/json", responseBytes); err != nil {
-		h.logger.Errorf("Failed to send error response: %v", err)
-		c.JSON(statusCode, gin.H{"success": false, "message": message})
-	}
+	c.Data(statusCode, "application/json", responseBytes)
 }
 
 func (h *SubscriptionHandler) sendConfirmErrorResponse(c *gin.Context, statusCode int, message string) {
