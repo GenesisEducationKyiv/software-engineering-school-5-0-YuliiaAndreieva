@@ -31,6 +31,11 @@ services:
         condition: service_healthy
       mailhog:
         condition: service_started
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8081/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
     environment:
       SMTP_HOST: mailhog
       SMTP_PORT: 1025
@@ -55,6 +60,8 @@ services:
         condition: service_healthy
       mailhog:
         condition: service_started
+      email-service:
+        condition: service_healthy
     environment:
       SMTP_HOST: mailhog
       SMTP_PORT: 1025
