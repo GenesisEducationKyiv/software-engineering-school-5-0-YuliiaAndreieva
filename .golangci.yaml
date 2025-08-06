@@ -33,6 +33,69 @@ linters:
           - revive
           - unparam
           - godot
+      - path: services/token/tests/.*\.go
+        linters:
+          - errcheck
+          - govet
+          - staticcheck
+          - gocyclo
+          - revive
+          - unparam
+          - godot
+      - path: services/token/tests/mocks
+        linters:
+          - errcheck
+          - govet
+          - staticcheck
+          - gocyclo
+          - revive
+          - unparam
+          - godot
+      - path: services/subscription/tests/mocks
+        linters:
+          - errcheck
+          - govet
+          - staticcheck
+          - gocyclo
+          - revive
+          - unparam
+          - godot
+      - path: services/email/tests/mocks
+        linters:
+          - errcheck
+          - govet
+          - staticcheck
+          - gocyclo
+          - revive
+          - unparam
+          - godot
+      - path: services/weather/tests/mocks
+        linters:
+          - errcheck
+          - govet
+          - staticcheck
+          - gocyclo
+          - revive
+          - unparam
+          - godot
+      - path: services/weather-broadcast/tests/mocks
+        linters:
+          - errcheck
+          - govet
+          - staticcheck
+          - gocyclo
+          - revive
+          - unparam
+          - godot
+      - path: services/gateway/tests/mocks
+        linters:
+          - errcheck
+          - govet
+          - staticcheck
+          - gocyclo
+          - revive
+          - unparam
+          - godot
   settings:
     errcheck:
       check-type-assertions: true
