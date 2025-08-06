@@ -34,7 +34,6 @@ linters:
   settings:
     errcheck:
       check-type-assertions: true
-      ignore: "github.com/gin-gonic/gin.(*Context).JSON,github.com/gin-gonic/gin.(*Context).Data,github.com/robfig/cron/v3.(*Cron).AddFunc"
     gocyclo:
       min-complexity: 15
     revive:
