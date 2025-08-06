@@ -3,34 +3,34 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/prometheus/client_golang/prometheus"
 	"log"
 	"net"
 	"net/http"
 	"os"
 	"os/signal"
-	pb "proto/weather"
 	"syscall"
+
+	"github.com/gin-gonic/gin"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"google.golang.org/grpc"
+
+	pb "proto/weather"
+	sharedlogger "shared/logger"
+
 	"weather/internal/adapter/cache/core/metrics"
 	"weather/internal/adapter/cache/core/redis"
-	grpchandler "weather/internal/adapter/grpc"
-	"weather/internal/adapter/weather/openweathermap"
-	filelogger "weather/internal/utils/logger"
-
 	weathercache "weather/internal/adapter/cache/weather"
+	grpchandler "weather/internal/adapter/grpc"
 	httphandler "weather/internal/adapter/http"
-
-	sharedlogger "shared/logger"
 	"weather/internal/adapter/weather"
+	"weather/internal/adapter/weather/openweathermap"
 	"weather/internal/adapter/weather/weatherapi"
 	"weather/internal/config"
 	"weather/internal/core/ports/in"
 	"weather/internal/core/ports/out"
 	"weather/internal/core/usecase"
-
-	"github.com/gin-gonic/gin"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"google.golang.org/grpc"
+	filelogger "weather/internal/utils/logger"
 )
 
 func setupFileLogger() out.ProviderLogger {
