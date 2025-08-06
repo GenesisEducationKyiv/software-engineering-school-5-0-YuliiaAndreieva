@@ -52,7 +52,7 @@ func (uc *UnsubscribeUseCase) Unsubscribe(ctx context.Context, req domain.Unsubs
 func (uc *UnsubscribeUseCase) validateToken(token string) error {
 	if token == "" {
 		uc.logger.Errorf("Token is empty")
-		return fmt.Errorf("Token is required")
+		return fmt.Errorf("token is required")
 	}
 	return nil
 }
@@ -66,7 +66,7 @@ func (uc *UnsubscribeUseCase) validateTokenService(ctx context.Context, token st
 
 	if !isValid {
 		uc.logger.Errorf("Invalid token: %s", token)
-		return fmt.Errorf("Invalid token")
+		return fmt.Errorf("invalid token")
 	}
 
 	return nil

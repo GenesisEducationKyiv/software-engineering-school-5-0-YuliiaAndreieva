@@ -169,8 +169,16 @@ func (h *SubscriptionHandler) sendErrorResponse(c *gin.Context, statusCode int, 
 		Success: false,
 		Message: message,
 	}
-	responseBytes, _ := json.Marshal(response)
-	c.Data(statusCode, "application/json", responseBytes)
+	responseBytes, err := json.Marshal(response)
+	if err != nil {
+		h.logger.Errorf("Failed to marshal error response: %v", err)
+		c.JSON(statusCode, gin.H{"success": false, "message": message})
+		return
+	}
+	if _, err := c.Data(statusCode, "application/json", responseBytes); err != nil {
+		h.logger.Errorf("Failed to send error response: %v", err)
+		c.JSON(statusCode, gin.H{"success": false, "message": message})
+	}
 }
 
 func (h *SubscriptionHandler) sendConfirmErrorResponse(c *gin.Context, statusCode int, message string) {

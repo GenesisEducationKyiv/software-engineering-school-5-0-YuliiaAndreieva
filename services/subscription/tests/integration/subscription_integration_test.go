@@ -26,7 +26,9 @@ import (
 )
 
 func init() {
-	godotenv.Load("../../test.env")
+	if err := godotenv.Load("../../test.env"); err != nil {
+		// Ignore error if test.env doesn't exist
+	}
 }
 
 func getEnvWithDefault(key, defaultValue string) string {

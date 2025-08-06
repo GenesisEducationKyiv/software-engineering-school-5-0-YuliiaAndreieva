@@ -169,7 +169,9 @@ func gracefulShutdown(httpSrv *http.Server, grpcSrv *grpc.Server, eventPublisher
 		logger.Fatalf("HTTP server forced to shutdown: %v", err)
 	}
 
-	eventPublisher.Close()
+	if err := eventPublisher.Close(); err != nil {
+		logger.Errorf("Failed to close event publisher: %v", err)
+	}
 }
 
 func main() {
@@ -190,7 +192,11 @@ func main() {
 	tokenClient := httphandler.NewTokenClient(cfg.Token.ServiceURL, httpClient, loggerInstance)
 
 	eventPublisher := setupRabbitMQ(cfg, loggerInstance)
-	defer eventPublisher.Close()
+	defer func() {
+		if err := eventPublisher.Close(); err != nil {
+			loggerInstance.Errorf("Failed to close event publisher: %v", err)
+		}
+	}()
 
 	subscribeUseCase, confirmUseCase, unsubscribeUseCase, listByFrequencyUseCase := setupUseCases(repo, tokenClient, eventPublisher, metricsCollector, loggerInstance, cfg)
 

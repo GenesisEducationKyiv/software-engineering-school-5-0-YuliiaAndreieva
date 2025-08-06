@@ -29,13 +29,13 @@ func NewRabbitMQPublisher(url, exchange string, logger out.Logger) (*RabbitMQPub
 	}
 
 	err = ch.ExchangeDeclare(
-		exchange, // name
-		"fanout", // type
-		true,     // durable
-		false,    // auto-deleted
-		false,    // internal
-		false,    // no-wait
-		nil,      // arguments
+		exchange, // name.
+		"fanout", // type.
+		true,     // durable.
+		false,    // auto-deleted.
+		false,    // internal.
+		false,    // no-wait.
+		nil,      // arguments.
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to declare exchange: %w", err)
@@ -49,7 +49,7 @@ func NewRabbitMQPublisher(url, exchange string, logger out.Logger) (*RabbitMQPub
 	}, nil
 }
 
-func (p *RabbitMQPublisher) PublishSubscriptionCreated(ctx context.Context, subscription domain.Subscription) error {
+func (p *RabbitMQPublisher) PublishSubscriptionCreated(_ context.Context, subscription domain.Subscription) error {
 	event := domain.SubscriptionCreatedEvent{
 		Email:       subscription.Email,
 		City:        subscription.City,
@@ -64,10 +64,10 @@ func (p *RabbitMQPublisher) PublishSubscriptionCreated(ctx context.Context, subs
 	}
 
 	err = p.channel.Publish(
-		p.exchange, // exchange
-		"",         // routing key
-		false,      // mandatory
-		false,      // immediate
+		p.exchange, // exchange.
+		"",         // routing key.
+		false,      // mandatory.
+		false,      // immediate.
 		amqp.Publishing{
 			ContentType: "application/json",
 			Body:        body,
@@ -82,15 +82,24 @@ func (p *RabbitMQPublisher) PublishSubscriptionCreated(ctx context.Context, subs
 }
 
 func (p *RabbitMQPublisher) Close() error {
+	var errors []error
+
 	if p.channel != nil {
 		if err := p.channel.Close(); err != nil {
 			p.logger.Errorf("Failed to close channel: %v", err)
+			errors = append(errors, fmt.Errorf("failed to close channel: %w", err))
 		}
 	}
 	if p.conn != nil {
 		if err := p.conn.Close(); err != nil {
 			p.logger.Errorf("Failed to close connection: %v", err)
+			errors = append(errors, fmt.Errorf("failed to close connection: %w", err))
 		}
 	}
+
+	if len(errors) > 0 {
+		return fmt.Errorf("encountered %d errors during close: %v", len(errors), errors)
+	}
+
 	return nil
 }

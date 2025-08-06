@@ -55,12 +55,12 @@ func (uc *ConfirmSubscriptionUseCase) validateToken(ctx context.Context, token s
 	valid, err := uc.tokenService.ValidateToken(ctx, token)
 	if err != nil {
 		uc.logger.Errorf("Failed to validate token: %v", err)
-		return fmt.Errorf("Token validation failed")
+		return fmt.Errorf("token validation failed")
 	}
 
 	if !valid {
 		uc.logger.Errorf("Invalid token: %s", token)
-		return fmt.Errorf("Invalid token")
+		return fmt.Errorf("invalid token")
 	}
 
 	return nil

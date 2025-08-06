@@ -116,32 +116,6 @@ func (ts *subscriptionHandlerTestSetup) makeSubscribeRequest(t *testing.T, reque
 	return w, &response
 }
 
-func (ts *subscriptionHandlerTestSetup) makeConfirmRequest(t *testing.T, token string) (*httptest.ResponseRecorder, *domain.ConfirmResponse) {
-	req := httptest.NewRequest("GET", "/confirm/"+token, nil)
-
-	w := httptest.NewRecorder()
-	ts.router.ServeHTTP(w, req)
-
-	var response domain.ConfirmResponse
-	err := json.Unmarshal(w.Body.Bytes(), &response)
-	require.NoError(t, err)
-
-	return w, &response
-}
-
-func (ts *subscriptionHandlerTestSetup) makeUnsubscribeRequest(t *testing.T, token string) (*httptest.ResponseRecorder, *domain.UnsubscribeResponse) {
-	req := httptest.NewRequest("DELETE", "/unsubscribe/"+token, nil)
-
-	w := httptest.NewRecorder()
-	ts.router.ServeHTTP(w, req)
-
-	var response domain.UnsubscribeResponse
-	err := json.Unmarshal(w.Body.Bytes(), &response)
-	require.NoError(t, err)
-
-	return w, &response
-}
-
 func TestSubscriptionHandler_Subscribe_Success(t *testing.T) {
 	ts := setupSubscriptionHandlerTest()
 

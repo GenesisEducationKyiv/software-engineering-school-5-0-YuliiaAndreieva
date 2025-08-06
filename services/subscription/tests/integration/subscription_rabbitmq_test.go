@@ -20,11 +20,19 @@ func TestSubscriptionRabbitMQFlow(t *testing.T) {
 
 	conn, err := amqp.Dial(cfg.RabbitMQ.URL)
 	require.NoError(t, err)
-	defer conn.Close()
+	defer func() {
+		if closeErr := conn.Close(); closeErr != nil {
+			t.Logf("Failed to close connection: %v", closeErr)
+		}
+	}()
 
 	ch, err := conn.Channel()
 	require.NoError(t, err)
-	defer ch.Close()
+	defer func() {
+		if closeErr := ch.Close(); closeErr != nil {
+			t.Logf("Failed to close channel: %v", closeErr)
+		}
+	}()
 
 	err = ch.ExchangeDeclare(
 		cfg.RabbitMQ.Exchange,
@@ -78,7 +86,9 @@ func TestSubscriptionRabbitMQFlow(t *testing.T) {
 				receivedEvent = event
 				messageReceived <- true
 			}
-			msg.Ack(false)
+			if ackErr := msg.Ack(false); ackErr != nil {
+				t.Logf("Failed to ack message: %v", ackErr)
+			}
 		}
 	}()
 
@@ -97,7 +107,11 @@ func TestSubscriptionRabbitMQFlow(t *testing.T) {
 		bytes.NewBuffer(reqBody),
 	)
 	require.NoError(t, err)
-	defer resp.Body.Close()
+	defer func() {
+		if closeErr := resp.Body.Close(); closeErr != nil {
+			t.Logf("Failed to close response body: %v", closeErr)
+		}
+	}()
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
@@ -118,11 +132,19 @@ func TestRabbitMQConnection(t *testing.T) {
 
 	conn, err := amqp.Dial(cfg.RabbitMQ.URL)
 	require.NoError(t, err)
-	defer conn.Close()
+	defer func() {
+		if closeErr := conn.Close(); closeErr != nil {
+			t.Logf("Failed to close connection: %v", closeErr)
+		}
+	}()
 
 	ch, err := conn.Channel()
 	require.NoError(t, err)
-	defer ch.Close()
+	defer func() {
+		if closeErr := ch.Close(); closeErr != nil {
+			t.Logf("Failed to close channel: %v", closeErr)
+		}
+	}()
 
 	t.Log("✅ RabbitMQ connection successful")
 }

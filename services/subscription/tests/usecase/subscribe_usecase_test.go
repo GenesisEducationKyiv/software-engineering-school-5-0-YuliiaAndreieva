@@ -37,10 +37,14 @@ func setupSubscribeUseCaseTest() *subscribeUseCaseTestSetup {
 		},
 	}
 
-	useCase := usecase.NewSubscribeUseCase(mockRepo, mockTokenService, mockEventPublisher, mockLogger, config).(*usecase.SubscribeUseCase)
+	useCase := usecase.NewSubscribeUseCase(mockRepo, mockTokenService, mockEventPublisher, mockLogger, config)
+	typedUseCase, ok := useCase.(*usecase.SubscribeUseCase)
+	if !ok {
+		panic("Failed to type assert SubscribeUseCase")
+	}
 
 	return &subscribeUseCaseTestSetup{
-		useCase:            useCase,
+		useCase:            typedUseCase,
 		mockRepo:           mockRepo,
 		mockTokenService:   mockTokenService,
 		mockEventPublisher: mockEventPublisher,
