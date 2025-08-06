@@ -17,7 +17,7 @@ type WeatherClient struct {
 }
 
 func NewWeatherClient(address string, logger sharedlogger.Logger) (*WeatherClient, error) {
-	conn, err := grpc.Dial(address, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.NewClient(address, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to weather service: %w", err)
 	}

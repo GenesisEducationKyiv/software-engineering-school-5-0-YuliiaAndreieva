@@ -17,7 +17,7 @@ type SubscriptionClient struct {
 }
 
 func NewSubscriptionClient(address string, logger sharedlogger.Logger) (*SubscriptionClient, error) {
-	conn, err := grpc.Dial(address, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.NewClient(address, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to subscription service: %w", err)
 	}

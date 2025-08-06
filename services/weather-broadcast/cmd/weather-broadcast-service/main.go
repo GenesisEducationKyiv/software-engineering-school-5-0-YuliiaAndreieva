@@ -51,6 +51,7 @@ func setupHandler(broadcastUseCase in.BroadcastUseCase, logger sharedlogger.Logg
 func setupCronJobs(broadcastUseCase in.BroadcastUseCase, logger sharedlogger.Logger) *cron.Cron {
 	c := cron.New(cron.WithLocation(time.UTC))
 
+	//nolint:errcheck
 	c.AddFunc("* * * * *", func() {
 		logger.Infof("Starting hourly weather broadcast")
 		if err := broadcastUseCase.Broadcast(context.Background(), domain.Daily); err != nil {
@@ -58,6 +59,7 @@ func setupCronJobs(broadcastUseCase in.BroadcastUseCase, logger sharedlogger.Log
 		}
 	})
 
+	//nolint:errcheck
 	c.AddFunc("0 8 * * *", func() {
 		logger.Infof("Starting daily weather broadcast")
 		if err := broadcastUseCase.Broadcast(context.Background(), domain.Daily); err != nil {

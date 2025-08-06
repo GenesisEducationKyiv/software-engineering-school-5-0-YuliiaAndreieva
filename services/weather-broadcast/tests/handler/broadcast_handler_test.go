@@ -79,8 +79,9 @@ func (ts *broadcastHandlerTestSetup) makeBroadcastRequest(t *testing.T, request 
 	ts.router.ServeHTTP(w, req)
 
 	var response map[string]interface{}
-	err = json.Unmarshal(w.Body.Bytes(), &response)
-	require.NoError(t, err)
+	if err := json.Unmarshal(w.Body.Bytes(), &response); err != nil {
+		t.Fatalf("Failed to unmarshal response: %v", err)
+	}
 
 	return w, response
 }
@@ -136,8 +137,9 @@ func TestBroadcastHandler_InvalidJSON(t *testing.T) {
 		assert.Equal(t, http.StatusBadRequest, w.Code)
 
 		var response map[string]interface{}
-		err := json.Unmarshal(w.Body.Bytes(), &response)
-		require.NoError(t, err)
+		if err := json.Unmarshal(w.Body.Bytes(), &response); err != nil {
+			t.Fatalf("Failed to unmarshal response: %v", err)
+		}
 		assert.False(t, response["success"].(bool))
 		assert.Contains(t, response["message"], "Invalid request")
 	})
@@ -158,8 +160,9 @@ func TestBroadcastHandler_MissingFrequency(t *testing.T) {
 		assert.Equal(t, http.StatusBadRequest, w.Code)
 
 		var response map[string]interface{}
-		err := json.Unmarshal(w.Body.Bytes(), &response)
-		require.NoError(t, err)
+		if err := json.Unmarshal(w.Body.Bytes(), &response); err != nil {
+			t.Fatalf("Failed to unmarshal response: %v", err)
+		}
 		assert.False(t, response["success"].(bool))
 		assert.Contains(t, response["message"], "Invalid request")
 	})

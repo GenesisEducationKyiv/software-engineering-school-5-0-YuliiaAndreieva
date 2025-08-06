@@ -17,7 +17,7 @@ type EmailClient struct {
 }
 
 func NewEmailClient(address string, logger sharedlogger.Logger) (*EmailClient, error) {
-	conn, err := grpc.Dial(address, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.NewClient(address, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to email service: %w", err)
 	}
@@ -50,7 +50,6 @@ func (c *EmailClient) SendWeather(ctx context.Context, info *domain.WeatherMailS
 		return fmt.Errorf("failed to send weather update email: %w", err)
 	}
 
-	// Validate that email was sent to the correct address
 	if resp.To != info.Email {
 		c.logger.Warnf("Email sent to different address: expected %s, got %s", info.Email, resp.To)
 	}
