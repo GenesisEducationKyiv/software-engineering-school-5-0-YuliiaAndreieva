@@ -1,4 +1,4 @@
-name: build
+name: Build Services
 
 on:
   push:
@@ -7,21 +7,38 @@ on:
     branches: [ "*" ]
 
 jobs:
-  build:
+  build-services:
+    name: Build Services
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service:
+          - name: subscription
+            path: services/subscription
+          - name: email
+            path: services/email
+          - name: token
+            path: services/token
+          - name: weather
+            path: services/weather
+          - name: weather-broadcast
+            path: services/weather-broadcast
+    
     steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-go@v5
-        with:
-          go-version: '1.24.3'
-
-      - uses: actions/cache@v3
-        with:
-          path: ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('go.sum') }}
-          restore-keys: ${{ runner.os }}-go-
-
-      - run: go mod download
-
-      - run: go build -v ./...
+    - uses: actions/checkout@v4
+    
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.24'
+    
+    - name: Download dependencies for ${{ matrix.service.name }}
+      run: |
+        cd ${{ matrix.service.path }}
+        go mod download
+        go mod tidy
+    
+    - name: Build ${{ matrix.service.name }} service
+      run: |
+        cd ${{ matrix.service.path }}
+        go build -o ${{ matrix.service.name }}-service ./cmd/${{ matrix.service.name }}-service

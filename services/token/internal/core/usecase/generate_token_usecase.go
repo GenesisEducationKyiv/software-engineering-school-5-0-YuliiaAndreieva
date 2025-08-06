@@ -1,0 +1,86 @@
+package usecase
+
+import (
+	"context"
+	"crypto/rand"
+	"encoding/base64"
+	sharedlogger "shared/logger"
+	"time"
+	"token/internal/core/domain"
+	"token/internal/core/ports/in"
+
+	"github.com/golang-jwt/jwt/v5"
+)
+
+const (
+	defaultTokenExpiration = 24 * time.Hour
+)
+
+type GenerateTokenUseCase struct {
+	logger sharedlogger.Logger
+	secret []byte
+}
+
+func NewGenerateTokenUseCase(logger sharedlogger.Logger, secret string) in.GenerateTokenUseCase {
+	return &GenerateTokenUseCase{
+		logger: logger,
+		secret: []byte(secret),
+	}
+}
+
+func (uc *GenerateTokenUseCase) GenerateToken(ctx context.Context, req domain.GenerateTokenRequest) (*domain.GenerateTokenResponse, error) {
+	uc.logger.Infof("Generating JWT token for subject: %s", req.Subject)
+
+	expiresIn := defaultTokenExpiration
+	if req.ExpiresIn != "" {
+		if parsed, err := time.ParseDuration(req.ExpiresIn); err == nil {
+			expiresIn = parsed
+		} else {
+			uc.logger.Warnf("Invalid expires_in format: %s, using default 24h", req.ExpiresIn)
+		}
+	}
+
+	jti, err := uc.generateJTI()
+	if err != nil {
+		uc.logger.Errorf("Failed to generate JTI: %v", err)
+		return &domain.GenerateTokenResponse{
+			Success: false,
+			Message: "Failed to generate token",
+			Error:   err.Error(),
+		}, nil
+	}
+
+	claims := jwt.MapClaims{
+		"sub": req.Subject,
+		"exp": time.Now().Add(expiresIn).Unix(),
+		"iat": time.Now().Unix(),
+		"jti": jti,
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	tokenString, err := token.SignedString(uc.secret)
+	if err != nil {
+		uc.logger.Errorf("Failed to sign token: %v", err)
+		return &domain.GenerateTokenResponse{
+			Success: false,
+			Message: "Failed to generate token",
+			Error:   err.Error(),
+		}, nil
+	}
+
+	uc.logger.Infof("Successfully generated JWT token for subject: %s", req.Subject)
+	return &domain.GenerateTokenResponse{
+		Success: true,
+		Token:   tokenString,
+		Message: "Token generated successfully",
+	}, nil
+}
+
+func (uc *GenerateTokenUseCase) generateJTI() (string, error) {
+	bytes := make([]byte, 16)
+	if _, err := rand.Read(bytes); err != nil {
+		uc.logger.Errorf("Failed to generate random bytes: %v", err)
+		return "", err
+	}
+	return base64.RawURLEncoding.EncodeToString(bytes), nil
+}

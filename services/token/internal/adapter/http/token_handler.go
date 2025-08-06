@@ -1,0 +1,88 @@
+package http
+
+import (
+	"net/http"
+
+	sharedlogger "shared/logger"
+	"token/internal/core/domain"
+	"token/internal/core/ports/in"
+
+	"github.com/gin-gonic/gin"
+)
+
+type TokenHandler struct {
+	generateTokenUseCase in.GenerateTokenUseCase
+	validateTokenUseCase in.ValidateTokenUseCase
+	logger               sharedlogger.Logger
+}
+
+func NewTokenHandler(
+	generateTokenUseCase in.GenerateTokenUseCase,
+	validateTokenUseCase in.ValidateTokenUseCase,
+	logger sharedlogger.Logger,
+) *TokenHandler {
+	return &TokenHandler{
+		generateTokenUseCase: generateTokenUseCase,
+		validateTokenUseCase: validateTokenUseCase,
+		logger:               logger,
+	}
+}
+
+func (h *TokenHandler) GenerateToken(c *gin.Context) {
+	var req domain.GenerateTokenRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		h.logger.Errorf("Failed to bind JSON for token generation: %v", err)
+		c.JSON(http.StatusBadRequest, domain.GenerateTokenResponse{
+			Success: false,
+			Message: "Invalid request: " + err.Error(),
+		})
+		return
+	}
+
+	result, err := h.generateTokenUseCase.GenerateToken(c.Request.Context(), req)
+	if err != nil {
+		h.logger.Errorf("Failed to generate token: %v", err)
+		c.JSON(http.StatusInternalServerError, domain.GenerateTokenResponse{
+			Success: false,
+			Message: "Failed to generate token: " + err.Error(),
+		})
+		return
+	}
+
+	if result.Success {
+		h.logger.Infof("Token generated successfully")
+		c.JSON(http.StatusOK, result)
+	} else {
+		h.logger.Warnf("Token generation failed: %s", result.Message)
+		c.JSON(http.StatusBadRequest, result)
+	}
+}
+
+func (h *TokenHandler) ValidateToken(c *gin.Context) {
+	var req domain.ValidateTokenRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		h.logger.Errorf("Failed to bind JSON for token validation: %v", err)
+		c.JSON(http.StatusBadRequest, domain.ValidateTokenResponse{
+			Valid:   false,
+			Message: "Invalid request: " + err.Error(),
+		})
+		return
+	}
+
+	result, err := h.validateTokenUseCase.ValidateToken(c.Request.Context(), req)
+	if err != nil {
+		h.logger.Errorf("Failed to validate token: %v", err)
+		c.JSON(http.StatusInternalServerError, domain.ValidateTokenResponse{
+			Valid:   false,
+			Message: "Failed to validate token: " + err.Error(),
+		})
+		return
+	}
+
+	if result.Valid {
+		h.logger.Infof("Token validated successfully")
+	} else {
+		h.logger.Warnf("Token validation failed: %s", result.Message)
+	}
+	c.JSON(http.StatusOK, result)
+}

@@ -2,13 +2,13 @@ services:
   postgres-integration:
     image: postgres:15
     environment:
-      POSTGRES_DB: weather_test
+      POSTGRES_DB: integration_test
       POSTGRES_USER: test
       POSTGRES_PASSWORD: test
     ports:
-      - "5433:5432"
+      - "5432:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U test -d weather_test"]
+      test: ["CMD-SHELL", "pg_isready -U test -d integration_test"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -16,13 +16,13 @@ services:
   postgres-e2e:
     image: postgres:15
     environment:
-      POSTGRES_DB: weather_test
+      POSTGRES_DB: e2e_test
       POSTGRES_USER: test
       POSTGRES_PASSWORD: test
     ports:
-      - "5434:5432"
+      - "5433:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U test -d weather_test"]
+      test: ["CMD-SHELL", "pg_isready -U test -d e2e_test"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -33,6 +33,58 @@ services:
       - "1025:1025"
       - "8025:8025"
 
-volumes:
-  postgres_integration_data:
-  postgres_e2e_data: 
+  email-service-tests:
+    build:
+      context: .
+      dockerfile: services/email/Dockerfile.test
+    depends_on:
+      mailhog:
+        condition: service_started
+    environment:
+      SMTP_HOST: mailhog
+      SMTP_PORT: 1025
+      SMTP_USER: test@example.com
+      SMTP_PASS: ""
+
+  subscription-service-tests:
+    build:
+      context: .
+      dockerfile: services/subscription/Dockerfile.test
+    depends_on:
+      postgres-integration:
+        condition: service_healthy
+      mailhog:
+        condition: service_started
+    environment:
+      DB_HOST: postgres-integration
+      DB_PORT: 5432
+      DB_NAME: integration_test
+      DB_USER: test
+      DB_PASSWORD: test
+      SMTP_HOST: mailhog
+      SMTP_PORT: 1025
+
+  token-service-tests:
+    build:
+      context: .
+      dockerfile: services/token/Dockerfile.test
+    depends_on:
+      - mailhog
+
+  weather-broadcast-service-tests:
+    build:
+      context: .
+      dockerfile: services/weather-broadcast/Dockerfile.test
+    depends_on:
+      postgres-integration:
+        condition: service_healthy
+      mailhog:
+        condition: service_started
+    environment:
+      DB_HOST: postgres-integration
+      DB_PORT: 5432
+      DB_NAME: integration_test
+      DB_USER: test
+      DB_PASSWORD: test
+      SMTP_HOST: mailhog
+      SMTP_PORT: 1025 

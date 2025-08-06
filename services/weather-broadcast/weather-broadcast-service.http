@@ -1,0 +1,18 @@
+### Health check
+GET http://localhost:8085/health
+
+### Start daily broadcast
+POST http://localhost:8085/broadcast
+Content-Type: application/json
+
+{
+  "frequency": "daily"
+}
+
+### Start weekly broadcast
+POST http://localhost:8085/broadcast
+Content-Type: application/json
+
+{
+  "frequency": "weekly"
+}
