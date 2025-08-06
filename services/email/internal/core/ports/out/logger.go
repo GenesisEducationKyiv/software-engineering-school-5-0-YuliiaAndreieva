@@ -3,5 +3,4 @@ package out
 
 import sharedlogger "shared/logger"
 
-// Logger interface просто використовує shared logger
 type Logger = sharedlogger.Logger

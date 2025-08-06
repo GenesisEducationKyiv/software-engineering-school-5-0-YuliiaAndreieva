@@ -1,29 +1,63 @@
-version: '3.8'
-
 services:
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmqctl", "status"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   mailhog:
     image: mailhog/mailhog:latest
     ports:
-      - "1025:1025"  # SMTP port
-      - "8025:8025"  # Web UI port
-    environment:
-      - MH_STORAGE=memory
-      - MH_HOSTNAME=mailhog
+      - "1025:1025"
+      - "8025:8025"
 
-  email-tests:
+  email-service:
     build:
-      context: .
-      dockerfile: Dockerfile.test
+      context: ../..
+      dockerfile: services/email/Dockerfile
+    ports:
+      - "8081:8081"
     depends_on:
-      - mailhog
+      rabbitmq:
+        condition: service_healthy
+      mailhog:
+        condition: service_started
     environment:
-      - SMTP_HOST=mailhog
-      - SMTP_PORT=1025
-      - MAILHOG_HOST=mailhog
-      - MAILHOG_WEB_PORT=8025
-    networks:
-      - email-test-network
+      SMTP_HOST: mailhog
+      SMTP_PORT: 1025
+      SMTP_USER: test@example.com
+      SMTP_PASS: ""
+      SERVER_PORT: 8081
+      GRPC_PORT: 9091
+      BASE_URL: http://localhost:8081
+      SUBSCRIPTION_SERVICE_URL: http://fake-subscription:8082
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
+      RABBITMQ_EXCHANGE: subscription_events
+      RABBITMQ_QUEUE: email_notifications
 
-networks:
-  email-test-network:
-    driver: bridge 
+  email-service-tests:
+    build:
+      context: ../..
+      dockerfile: services/email/Dockerfile.test
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      mailhog:
+        condition: service_started
+    environment:
+      SMTP_HOST: mailhog
+      SMTP_PORT: 1025
+      SMTP_USER: test@example.com
+      SMTP_PASS: ""
+      SERVER_PORT: 8081
+      GRPC_PORT: 9091
+      BASE_URL: http://localhost:8081
+      SUBSCRIPTION_SERVICE_URL: http://fake-subscription:8082
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
+      RABBITMQ_EXCHANGE: subscription_events
+      RABBITMQ_QUEUE: email_notifications

@@ -34,7 +34,6 @@ func (uc *SendEmailUseCase) SendConfirmationEmail(ctx context.Context, req domai
 
 	template, err := uc.templateBuilder.BuildConfirmationEmail(ctx, req.To, req.City, req.ConfirmationLink)
 	if err != nil {
-		uc.logger.Errorf("Failed to build confirmation email template: %v", err)
 		return nil, err
 	}
 
@@ -46,7 +45,6 @@ func (uc *SendEmailUseCase) SendConfirmationEmail(ctx context.Context, req domai
 
 	result, err := uc.emailSender.SendEmail(ctx, emailReq)
 	if err != nil {
-		uc.logger.Errorf("Failed to send confirmation email: %v", err)
 		return result, err
 	}
 
@@ -59,7 +57,6 @@ func (uc *SendEmailUseCase) SendWeatherUpdateEmail(ctx context.Context, req doma
 
 	template, err := uc.templateBuilder.BuildWeatherUpdateEmail(ctx, req.To, req.City, req.Description, req.Humidity, req.WindSpeed, req.Temperature, req.UnsubscribeToken)
 	if err != nil {
-		uc.logger.Errorf("Failed to build weather update email template: %v", err)
 		return nil, err
 	}
 
@@ -71,7 +68,6 @@ func (uc *SendEmailUseCase) SendWeatherUpdateEmail(ctx context.Context, req doma
 
 	result, err := uc.emailSender.SendEmail(ctx, emailReq)
 	if err != nil {
-		uc.logger.Errorf("Failed to send weather update email: %v", err)
 		return result, err
 	}
 

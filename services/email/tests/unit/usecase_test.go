@@ -5,10 +5,10 @@ import (
 	"errors"
 	"testing"
 
-	"email/internal/adapter/logger"
 	"email/internal/core/domain"
 	"email/internal/core/usecase"
 	"email/tests/mocks"
+	"shared/logger"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -274,7 +274,6 @@ func TestSendEmailUseCase_Validation(t *testing.T) {
 			ConfirmationLink: "http://localhost/confirm/token",
 		}
 
-		// Налаштовуємо моки для випадку, коли usecase викликається
 		templateBuilder.On("BuildConfirmationEmail", mock.Anything, request.To, request.City, request.ConfirmationLink).
 			Return("<html><body>Test template</body></html>", nil)
 
