@@ -5,7 +5,6 @@ WORKDIR /app
 COPY shared/ ./shared/
 COPY services/gateway/go.mod services/gateway/go.sum ./
 
-# Створюємо правильну структуру для shared модуля
 RUN mkdir -p ../../shared && cp -r ./shared/* ../../shared/
 
 COPY services/gateway/ ./

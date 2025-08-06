@@ -6,7 +6,6 @@ COPY proto/ ./proto/
 COPY shared/ ./shared/
 COPY services/weather-broadcast/go.mod services/weather-broadcast/go.sum ./
 
-# Створюємо правильну структуру для shared та proto модулів
 RUN mkdir -p ../../shared && cp -r ./shared/* ../../shared/ && \
     mkdir -p ../../proto && cp -r ./proto/* ../../proto/
 

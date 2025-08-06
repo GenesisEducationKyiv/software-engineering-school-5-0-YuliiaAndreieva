@@ -6,7 +6,6 @@ COPY proto/ ./proto/
 COPY shared/ ./shared/
 COPY services/email/go.mod services/email/go.sum ./
 
-# Створюємо правильну структуру для shared та proto модулів
 RUN mkdir -p ../../shared && cp -r ./shared/* ../../shared/ && \
     mkdir -p ../../proto && cp -r ./proto/* ../../proto/
 
