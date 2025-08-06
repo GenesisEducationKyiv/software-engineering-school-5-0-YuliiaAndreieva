@@ -29,7 +29,9 @@ jobs:
       run: |
         for service in email subscription token weather-broadcast; do
           echo "Running linter for $service service..."
-          golangci-lint run --allow-parallel-runners services/$service/...
+          cd services/$service
+          golangci-lint run --config=../../.golangci.yaml
+          cd ../..
         done
     
     - name: Generate Mocks for All Services
