@@ -1,0 +1,27 @@
+name: Lint
+
+on:
+  push:
+    branches: [ "*" ]
+  pull_request:
+    branches: [ "*" ]
+
+jobs:
+  lint:
+    name: Lint All Services
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.24'
+    
+    - name: Run Linter for All Services
+      uses: golangci/golangci-lint-action@v8
+      with:
+        version: latest
+        working-directory: .
+        args: --config=.golangci.yaml --skip-dirs="*/tests/mocks/*,*/mocks/*" 

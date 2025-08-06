@@ -7,43 +7,9 @@ on:
     branches: [ "*" ]
 
 jobs:
-  lint:
-    name: Lint All Services
-    runs-on: ubuntu-latest
-    
-    steps:
-    - uses: actions/checkout@v4
-    
-    - name: Set up Go
-      uses: actions/setup-go@v4
-      with:
-        go-version: '1.24'
-    
-    - name: Install mockery
-      run: go install github.com/vektra/mockery/v2@latest
-    
-    - name: Install golangci-lint
-      run: go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
-    
-    - name: Run Linter for All Services
-      uses: golangci/golangci-lint-action@v8
-      with:
-        version: latest
-        working-directory: .
-        args: --config=.golangci.yaml
-    
-    - name: Generate Mocks for All Services
-      run: |
-        for service in email subscription token weather-broadcast; do
-          cd services/$service
-          mockery --all --output tests/mocks --outpkg mocks
-          cd ../..
-        done
-
   email-service-tests:
     name: Email Service Tests
     runs-on: ubuntu-latest
-    needs: lint
     
     steps:
     - uses: actions/checkout@v4
@@ -87,7 +53,6 @@ jobs:
   subscription-service-tests:
     name: Subscription Service Tests
     runs-on: ubuntu-latest
-    needs: lint
     
     steps:
     - uses: actions/checkout@v4
@@ -131,7 +96,6 @@ jobs:
   token-service-tests:
     name: Token Service Tests
     runs-on: ubuntu-latest
-    needs: lint
     
     steps:
     - uses: actions/checkout@v4
@@ -175,7 +139,6 @@ jobs:
   weather-broadcast-service-tests:
     name: Weather Broadcast Service Tests
     runs-on: ubuntu-latest
-    needs: lint
     
     steps:
     - uses: actions/checkout@v4
