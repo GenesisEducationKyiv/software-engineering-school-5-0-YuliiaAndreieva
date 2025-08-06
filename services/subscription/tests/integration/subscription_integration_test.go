@@ -290,7 +290,7 @@ func TestSubscriptionIntegration_Confirm(t *testing.T) {
 
 		assert.Equal(t, http.StatusBadRequest, w.Code)
 		assert.False(t, response.Success)
-		assert.Contains(t, response.Message, "Invalid token")
+		assert.Contains(t, response.Message, "invalid token")
 	})
 
 	t.Run("Empty token", func(t *testing.T) {
@@ -344,6 +344,6 @@ func TestSubscriptionIntegration_Unsubscribe(t *testing.T) {
 
 		assert.Equal(t, http.StatusBadRequest, w.Code)
 		assert.False(t, response.Success)
-		assert.Contains(t, response.Message, "Invalid token")
+		assert.Contains(t, response.Message, "invalid token")
 	})
 }
