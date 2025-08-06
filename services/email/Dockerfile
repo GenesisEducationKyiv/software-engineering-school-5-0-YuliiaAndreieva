@@ -22,5 +22,6 @@ RUN apk add --no-cache tzdata
 WORKDIR /app
 
 COPY --from=builder /app/main .
+COPY services/email/.env* ./
 
 CMD ["./main"] 
