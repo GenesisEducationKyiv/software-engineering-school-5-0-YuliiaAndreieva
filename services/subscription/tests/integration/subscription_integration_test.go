@@ -344,6 +344,6 @@ func TestSubscriptionIntegration_Unsubscribe(t *testing.T) {
 
 		assert.Equal(t, http.StatusBadRequest, w.Code)
 		assert.False(t, response.Success)
-		assert.Contains(t, response.Message, "invalid token")
+		assert.Contains(t, response.Message, "Invalid token")
 	})
 }
