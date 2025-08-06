@@ -30,7 +30,7 @@ jobs:
         for service in email subscription token weather-broadcast; do
           echo "Running linter for $service service..."
           cd services/$service
-          golangci-lint run --config=../../.golangci.yaml
+          golangci-lint run --allow-parallel-runners
           cd ../..
         done
     
