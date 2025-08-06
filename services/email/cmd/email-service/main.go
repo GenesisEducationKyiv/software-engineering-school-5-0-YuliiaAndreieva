@@ -120,7 +120,9 @@ func gracefulShutdown(httpSrv *http.Server, grpcSrv *grpc.Server, consumer *mess
 		logger.Fatalf("HTTP server forced to shutdown: %v", err)
 	}
 
-	consumer.Close()
+	if err := consumer.Close(); err != nil {
+		logger.Errorf("Failed to close RabbitMQ consumer: %v", err)
+	}
 }
 
 func main() {
@@ -135,7 +137,11 @@ func main() {
 	sendEmailUseCase, grpcHandler := setupEmailComponents(cfg, loggerInstance)
 
 	consumer := setupRabbitMQConsumer(cfg, sendEmailUseCase, loggerInstance)
-	defer consumer.Close()
+	defer func() {
+		if err := consumer.Close(); err != nil {
+			loggerInstance.Errorf("Failed to close RabbitMQ consumer: %v", err)
+		}
+	}()
 
 	if err := consumer.Start(context.Background()); err != nil {
 		loggerInstance.Fatalf("Failed to start RabbitMQ consumer: %v", err)

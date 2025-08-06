@@ -7,6 +7,7 @@ import (
 	"email/internal/core/ports/out"
 	"encoding/json"
 	"fmt"
+
 	"github.com/streadway/amqp"
 )
 
@@ -28,49 +29,63 @@ func NewRabbitMQConsumer(url, exchange, queue string, useCase in.SendEmailUseCas
 
 	ch, err := conn.Channel()
 	if err != nil {
-		conn.Close()
+		if closeErr := conn.Close(); closeErr != nil {
+			logger.Errorf("Failed to close connection: %v", closeErr)
+		}
 		return nil, fmt.Errorf("failed to open channel: %w", err)
 	}
 
 	err = ch.ExchangeDeclare(
-		exchange, // name
-		"fanout", // type
-		true,     // durable
-		false,    // auto-deleted
-		false,    // internal
-		false,    // no-wait
-		nil,      // arguments
+		exchange, // name.
+		"fanout", // type.
+		true,     // durable.
+		false,    // auto-deleted.
+		false,    // internal.
+		false,    // no-wait.
+		nil,      // arguments.
 	)
 	if err != nil {
-		ch.Close()
-		conn.Close()
+		if closeErr := ch.Close(); closeErr != nil {
+			logger.Errorf("Failed to close channel: %v", closeErr)
+		}
+		if closeErr := conn.Close(); closeErr != nil {
+			logger.Errorf("Failed to close connection: %v", closeErr)
+		}
 		return nil, fmt.Errorf("failed to declare exchange '%s': %w", exchange, err)
 	}
 
 	q, err := ch.QueueDeclare(
-		queue, // name
-		true,  // durable
-		false, // delete when unused
-		false, // exclusive
-		false, // no-wait
-		nil,   // arguments
+		queue, // name.
+		true,  // durable.
+		false, // delete when unused.
+		false, // exclusive.
+		false, // no-wait.
+		nil,   // arguments.
 	)
 	if err != nil {
-		ch.Close()
-		conn.Close()
+		if closeErr := ch.Close(); closeErr != nil {
+			logger.Errorf("Failed to close channel: %v", closeErr)
+		}
+		if closeErr := conn.Close(); closeErr != nil {
+			logger.Errorf("Failed to close connection: %v", closeErr)
+		}
 		return nil, fmt.Errorf("failed to declare queue '%s': %w", queue, err)
 	}
 
 	err = ch.QueueBind(
-		q.Name,   // queue name
-		"",       // routing key
-		exchange, // exchange
+		q.Name,   // queue name.
+		"",       // routing key.
+		exchange, // exchange.
 		false,
 		nil,
 	)
 	if err != nil {
-		ch.Close()
-		conn.Close()
+		if closeErr := ch.Close(); closeErr != nil {
+			logger.Errorf("Failed to close channel: %v", closeErr)
+		}
+		if closeErr := conn.Close(); closeErr != nil {
+			logger.Errorf("Failed to close connection: %v", closeErr)
+		}
 		return nil, fmt.Errorf("failed to bind queue '%s' to exchange '%s': %w", queue, exchange, err)
 	}
 
@@ -93,13 +108,13 @@ func (c *RabbitMQConsumer) Start(ctx context.Context) error {
 	}
 
 	msgs, err := c.channel.Consume(
-		c.queue, // queue
-		"",      // consumer
-		false,   // auto-ack
-		false,   // exclusive
-		false,   // no-local
-		false,   // no-wait
-		nil,     // args
+		c.queue, // queue.
+		"",      // consumer.
+		false,   // auto-ack.
+		false,   // exclusive.
+		false,   // no-local.
+		false,   // no-wait.
+		nil,     // args.
 	)
 	if err != nil {
 		return fmt.Errorf("failed to start consuming from queue '%s': %w", c.queue, err)
@@ -137,7 +152,7 @@ func (c *RabbitMQConsumer) Start(ctx context.Context) error {
 }
 
 func (c *RabbitMQConsumer) handleMessage(ctx context.Context, msg amqp.Delivery) error {
-	if msg.Body == nil || len(msg.Body) == 0 {
+	if len(msg.Body) == 0 {
 		return fmt.Errorf("received empty message")
 	}
 

@@ -41,18 +41,16 @@ type MailHogClient struct {
 	baseURL string
 }
 
-func NewMailHogClient(baseURL string) *MailHogClient {
-	return &MailHogClient{
-		baseURL: baseURL,
-	}
-}
-
 func (m *MailHogClient) CheckEmailSent(t *testing.T, recipientEmail, expectedSubject string) bool {
 	time.Sleep(2 * time.Second)
 
 	resp, err := http.Get(m.baseURL + "/api/v2/messages")
 	require.NoError(t, err)
-	defer resp.Body.Close()
+	defer func() {
+		if closeErr := resp.Body.Close(); closeErr != nil {
+			t.Logf("Failed to close response body: %v", closeErr)
+		}
+	}()
 
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
@@ -97,7 +95,11 @@ func (m *MailHogClient) ClearMailHog(t *testing.T) {
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	require.NoError(t, err)
-	defer resp.Body.Close()
+	defer func() {
+		if closeErr := resp.Body.Close(); closeErr != nil {
+			t.Logf("Failed to close response body: %v", closeErr)
+		}
+	}()
 
 	time.Sleep(1 * time.Second)
 }
@@ -107,7 +109,11 @@ func (m *MailHogClient) GetEmailContent(t *testing.T, recipientEmail string) *Ma
 
 	resp, err := http.Get(m.baseURL + "/api/v2/messages")
 	require.NoError(t, err)
-	defer resp.Body.Close()
+	defer func() {
+		if closeErr := resp.Body.Close(); closeErr != nil {
+			t.Logf("Failed to close response body: %v", closeErr)
+		}
+	}()
 
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
@@ -130,7 +136,11 @@ func (m *MailHogClient) GetEmailContent(t *testing.T, recipientEmail string) *Ma
 func (m *MailHogClient) GetEmailsCount(t *testing.T) int {
 	resp, err := http.Get(m.baseURL + "/api/v2/messages")
 	require.NoError(t, err)
-	defer resp.Body.Close()
+	defer func() {
+		if closeErr := resp.Body.Close(); closeErr != nil {
+			t.Logf("Failed to close response body: %v", closeErr)
+		}
+	}()
 
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)

@@ -81,7 +81,11 @@ func (h *WeatherHandler) forwardRequestToWeatherService(requestBody []byte) ([]b
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to send request to weather service: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if closeErr := resp.Body.Close(); closeErr != nil {
+			h.logger.Errorf("Failed to close response body: %v", closeErr)
+		}
+	}()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {

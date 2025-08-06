@@ -20,11 +20,19 @@ const (
 func TestEmailConsumerRabbitMQFlow(t *testing.T) {
 	conn, err := amqp.Dial("amqp://guest:guest@rabbitmq:5672/")
 	require.NoError(t, err)
-	defer conn.Close()
+	defer func() {
+		if closeErr := conn.Close(); closeErr != nil {
+			t.Logf("Failed to close connection: %v", closeErr)
+		}
+	}()
 
 	ch, err := conn.Channel()
 	require.NoError(t, err)
-	defer ch.Close()
+	defer func() {
+		if closeErr := ch.Close(); closeErr != nil {
+			t.Logf("Failed to close channel: %v", closeErr)
+		}
+	}()
 
 	err = ch.ExchangeDeclare(
 		"subscription_events",
@@ -67,7 +75,11 @@ func TestEmailConsumerRabbitMQFlow(t *testing.T) {
 		if err != nil {
 			return false
 		}
-		defer resp.Body.Close()
+		defer func() {
+			if closeErr := resp.Body.Close(); closeErr != nil {
+				t.Logf("Failed to close response body: %v", closeErr)
+			}
+		}()
 		return resp.StatusCode == http.StatusOK
 	}, emailServiceHealthTimeout, emailServiceHealthInterval, "email-service did not become healthy in time")
 
@@ -80,13 +92,21 @@ func TestEmailServiceHealth(t *testing.T) {
 		if err != nil {
 			return false
 		}
-		defer resp.Body.Close()
+		defer func() {
+			if closeErr := resp.Body.Close(); closeErr != nil {
+				t.Logf("Failed to close response body: %v", closeErr)
+			}
+		}()
 		return resp.StatusCode == http.StatusOK
 	}, emailServiceHealthTimeout, emailServiceHealthInterval, "email-service did not become healthy in time")
 
 	resp, err := http.Get("http://email-service:8081/health")
 	require.NoError(t, err)
-	defer resp.Body.Close()
+	defer func() {
+		if closeErr := resp.Body.Close(); closeErr != nil {
+			t.Logf("Failed to close response body: %v", closeErr)
+		}
+	}()
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
