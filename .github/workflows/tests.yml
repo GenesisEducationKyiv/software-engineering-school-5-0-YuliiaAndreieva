@@ -26,13 +26,11 @@ jobs:
       run: go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
     
     - name: Run Linter for All Services
-      run: |
-        for service in email subscription token weather-broadcast; do
-          echo "Running linter for $service service..."
-          cd services/$service
-          golangci-lint run --config=../../.golangci.yaml
-          cd ../..
-        done
+      uses: golangci/golangci-lint-action@v8
+      with:
+        version: latest
+        working-directory: .
+        args: --config=.golangci.yaml
     
     - name: Generate Mocks for All Services
       run: |
