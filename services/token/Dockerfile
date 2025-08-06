@@ -20,6 +20,6 @@ RUN apk add --no-cache tzdata
 WORKDIR /app
 
 COPY --from=builder /app/main .
-COPY services/token/.env ./
+COPY services/token/.env* ./
 
 CMD ["./main"] 
