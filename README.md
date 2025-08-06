@@ -4,31 +4,192 @@ Microservices architecture for weather notifications with gRPC communication bet
 
 ## Architecture
 
-```
-┌─────────────────┐    HTTP    ┌─────────────────┐
-│   Gateway       │◄──────────►│   Client        │
-└─────────────────┘            └─────────────────┘
-         │
-         │ HTTP
-         ▼
-┌─────────────────┐    gRPC    ┌─────────────────┐    gRPC    ┌─────────────────┐
-│ Weather-Broadcast│◄──────────►│   Subscription  │◄──────────►│     Email       │
-└─────────────────┘            └─────────────────┘            └─────────────────┘
-         │                              │
-         │ gRPC                         │
-         ▼                              │
-┌─────────────────┐                     │
-│    Weather      │◄────────────────────┘
-└─────────────────┘
+```mermaid
+graph TB
+    Client[Client] <-->|HTTP| Gateway[Gateway]
+    Gateway -->|HTTP| WeatherBroadcast[Weather-Broadcast]
+    Gateway -->|HTTP| Subscription[Subscription]
+    Gateway -->|HTTP| Token[Token]
+    Gateway -->|HTTP| Weather[Weather]
+    
+    WeatherBroadcast -->|gRPC| Subscription
+    WeatherBroadcast -->|gRPC| Email[Email]
+    WeatherBroadcast -->|gRPC| Weather
+    
+    Subscription -->|gRPC| Email
+    
+    subgraph "Services"
+        Gateway
+        WeatherBroadcast
+        Subscription
+        Token
+        Weather
+        Email
+    end
 ```
 
 **Services:**
-- **Gateway** (8080) - API Gateway
-- **Email** (8081/9091) - Email notifications
-- **Subscription** (8082/9090) - Subscription management
-- **Token** (8083) - JWT tokens
-- **Weather** (8084/9092) - Weather data
-- **Weather-Broadcast** (8085) - Weather broadcast service
+- **Gateway** (8080) - API Gateway (HTTP)
+- **Email** (8081 HTTP / 9091 gRPC) - Email notifications
+- **Subscription** (8082 HTTP / 9093 gRPC) - Subscription management
+- **Token** (8083) - JWT tokens (HTTP)
+- **Weather** (8084 HTTP / 9092 gRPC) - Weather data
+- **Weather-Broadcast** (8085) - Weather broadcast service (HTTP)
+
+## Environment Configuration
+
+### Gateway Service (.env)
+```bash
+PORT=8080
+WEATHER_SERVICE_URL=http://weather-service:8084
+SUBSCRIPTION_SERVICE_URL=http://subscription-service:8082
+HTTP_CLIENT_TIMEOUT=30s
+SHUTDOWN_TIMEOUT=5s
+LOG_INITIAL=100
+LOG_THEREAFTER=100
+LOG_TICK=1s
+```
+
+### Email Service (.env)
+```bash
+# Server Configuration
+SERVER_PORT=8081
+GRPC_PORT=9091
+BASE_URL=http://email-service:8081
+SUBSCRIPTION_SERVICE_URL=http://subscription-service:8082
+
+# SMTP Configuration
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=your-email@gmail.com
+SMTP_PASS=your-app-password
+
+# RabbitMQ Configuration
+RABBITMQ_URL=amqp://admin:password@rabbitmq:5672/
+RABBITMQ_EXCHANGE=subscription_events
+RABBITMQ_QUEUE=email_notifications
+
+# Timeout Configuration
+SHUTDOWN_TIMEOUT=5s
+
+# Logging Configuration
+LOG_INITIAL=100
+LOG_THEREAFTER=100
+LOG_TICK=1s
+```
+
+### Subscription Service (.env)
+```bash
+# Server Configuration
+SERVER_PORT=8082
+GRPC_PORT=9093
+BASE_URL=http://subscription-service:8082
+
+# Token Service Configuration
+TOKEN_SERVICE_URL=http://token-service:8083
+TOKEN_EXPIRATION=24h
+
+# Database Configuration
+DATABASE_DSN=host=postgres user=postgres password=postgres dbname=subscriptions port=5432 sslmode=disable
+
+# RabbitMQ Configuration
+RABBITMQ_URL=amqp://admin:password@rabbitmq:5672/
+RABBITMQ_EXCHANGE=subscription_events
+RABBITMQ_QUEUE=email_notifications
+
+# Timeout Configuration
+HTTP_CLIENT_TIMEOUT=10s
+SHUTDOWN_TIMEOUT=5s
+DATABASE_RETRY_DELAY=2s
+DATABASE_MAX_RETRIES=30
+
+# Logging Configuration
+LOG_INITIAL=100
+LOG_THEREAFTER=100
+LOG_TICK=1s
+```
+
+### Token Service (.env)
+```bash
+# Server Configuration
+SERVER_PORT=8083
+
+# JWT Configuration
+JWT_SECRET=your-super-secret-jwt-key-here
+
+# Timeout Configuration
+SHUTDOWN_TIMEOUT=5s
+
+# Logging Configuration
+LOG_INITIAL=100
+LOG_THEREAFTER=100
+LOG_TICK=1s
+```
+
+### Weather Service (.env)
+```bash
+# Server Configuration
+PORT=8084
+GRPC_PORT=9092
+BASE_URL=http://weather-service:8084
+
+# Weather API Configuration
+WEATHER_API_KEY=your-weather-api-key
+WEATHER_API_BASE_URL=http://api.weatherapi.com/v1
+OPENWEATHERMAP_API_KEY=your-openweathermap-api-key
+OPENWEATHERMAP_BASE_URL=https://api.openweathermap.org/data/2.5
+
+# Redis Configuration
+REDIS_ADDRESS=redis:6379
+REDIS_TTL=30m
+REDIS_DIAL_TIMEOUT=5s
+REDIS_READ_TIMEOUT=3s
+REDIS_WRITE_TIMEOUT=3s
+REDIS_POOL_SIZE=10
+REDIS_MIN_IDLE_CONNS=5
+
+# Timeout Configuration
+HTTP_READ_TIMEOUT=10s
+HTTP_WRITE_TIMEOUT=10s
+SHUTDOWN_TIMEOUT=5s
+HTTP_CLIENT_TIMEOUT=10s
+
+# Logging Configuration
+LOG_INITIAL=100
+LOG_THEREAFTER=100
+LOG_TICK=1s
+```
+
+### Weather-Broadcast Service (.env)
+```bash
+# Server Configuration
+PORT=8085
+
+# Service URLs
+SUBSCRIPTION_SERVICE_URL=http://subscription-service:8082
+WEATHER_SERVICE_URL=http://weather-service:8084
+EMAIL_SERVICE_URL=http://email-service:8081
+
+# gRPC URLs
+SUBSCRIPTION_GRPC_URL=subscription-service:9093
+EMAIL_GRPC_URL=email-service:9091
+WEATHER_GRPC_URL=weather-service:9092
+
+# Worker Configuration
+WORKER_AMOUNT=10
+PAGE_SIZE=100
+
+# Timeout Configuration
+HTTP_CLIENT_TIMEOUT=10s
+HTTP_READ_TIMEOUT=10s
+HTTP_WRITE_TIMEOUT=10s
+SHUTDOWN_TIMEOUT=5s
+
+# Logging Configuration
+LOG_INITIAL=100
+LOG_THEREAFTER=100
+LOG_TICK=1s
+```
 
 ## Build & Run
 
