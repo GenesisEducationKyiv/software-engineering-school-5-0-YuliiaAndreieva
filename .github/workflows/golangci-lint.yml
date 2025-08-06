@@ -19,6 +19,7 @@ jobs:
           - services/weather-broadcast
           - services/email
           - services/gateway
+          - services/token
     steps:
       - uses: actions/checkout@v4
         with:
@@ -32,4 +33,4 @@ jobs:
         with:
           version: latest
           working-directory: ${{ matrix.service }}
-          args: --config=.golangci.yaml
+          args: --config=../../.golangci.yaml
