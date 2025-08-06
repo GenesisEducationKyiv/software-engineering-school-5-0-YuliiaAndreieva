@@ -21,10 +21,14 @@ func setupGenerateTokenUseCaseTest() *generateTokenUseCaseTestSetup {
 	mockLogger := &mocks.Logger{}
 	secret := "test-secret-key-for-jwt-signing"
 
-	useCase := usecase.NewGenerateTokenUseCase(mockLogger, secret).(*usecase.GenerateTokenUseCase)
+	useCase := usecase.NewGenerateTokenUseCase(mockLogger, secret)
+	typedUseCase, ok := useCase.(*usecase.GenerateTokenUseCase)
+	if !ok {
+		panic("Failed to type assert GenerateTokenUseCase")
+	}
 
 	return &generateTokenUseCaseTestSetup{
-		useCase:    useCase,
+		useCase:    typedUseCase,
 		mockLogger: mockLogger,
 	}
 }

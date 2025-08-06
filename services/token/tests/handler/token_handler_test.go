@@ -40,7 +40,6 @@ func setupTokenHandlerTest() *tokenHandlerTestSetup {
 	router.POST("/generate", handler.GenerateToken)
 	router.POST("/validate", handler.ValidateToken)
 
-	// Налаштовуємо моки для логера
 	mockLogger.On("Infof", mock.Anything, mock.Anything).Return()
 	mockLogger.On("Warnf", mock.Anything, mock.Anything).Return()
 	mockLogger.On("Errorf", mock.Anything, mock.Anything).Return()

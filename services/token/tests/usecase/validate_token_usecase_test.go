@@ -22,14 +22,17 @@ func setupValidateTokenUseCaseTest() *validateTokenUseCaseTestSetup {
 	mockLogger := &mocks.Logger{}
 	secret := "test-secret-key-for-jwt-signing"
 
-	useCase := usecase.NewValidateTokenUseCase(mockLogger, secret).(*usecase.ValidateTokenUseCase)
+	useCase := usecase.NewValidateTokenUseCase(mockLogger, secret)
+	typedUseCase, ok := useCase.(*usecase.ValidateTokenUseCase)
+	if !ok {
+		panic("Failed to type assert ValidateTokenUseCase")
+	}
 
-	// Налаштовуємо моки для логера
 	mockLogger.On("Infof", mock.Anything, mock.Anything).Return()
 	mockLogger.On("Warnf", mock.Anything, mock.Anything).Return()
 	mockLogger.On("Errorf", mock.Anything, mock.Anything).Return()
 
-	generateUseCase := usecase.NewGenerateTokenUseCase(mockLogger, secret).(*usecase.GenerateTokenUseCase)
+	generateUseCase := usecase.NewGenerateTokenUseCase(mockLogger, secret)
 	validToken, err := generateUseCase.GenerateToken(context.Background(), domain.GenerateTokenRequest{
 		Subject:   "test@example.com",
 		ExpiresIn: "24h",
@@ -39,7 +42,7 @@ func setupValidateTokenUseCaseTest() *validateTokenUseCaseTestSetup {
 	}
 
 	return &validateTokenUseCaseTestSetup{
-		useCase:    useCase,
+		useCase:    typedUseCase,
 		mockLogger: mockLogger,
 		validToken: validToken.Token,
 	}
@@ -128,12 +131,15 @@ func TestValidateTokenUseCase_DifferentSecret(t *testing.T) {
 
 	t.Run("Token signed with different secret", func(t *testing.T) {
 		differentSecret := "different-secret-key"
-		differentUseCase := usecase.NewGenerateTokenUseCase(ts.mockLogger, differentSecret).(*usecase.GenerateTokenUseCase)
+		differentUseCase := usecase.NewGenerateTokenUseCase(ts.mockLogger, differentSecret)
 
-		differentToken, _ := differentUseCase.GenerateToken(context.Background(), domain.GenerateTokenRequest{
+		differentToken, err := differentUseCase.GenerateToken(context.Background(), domain.GenerateTokenRequest{
 			Subject:   "test@example.com",
 			ExpiresIn: "24h",
 		})
+		if err != nil {
+			panic(err)
+		}
 
 		request := domain.ValidateTokenRequest{
 			Token: differentToken.Token,
