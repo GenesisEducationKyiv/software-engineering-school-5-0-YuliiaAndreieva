@@ -20,8 +20,10 @@ jobs:
         go-version: '1.24'
     
     - name: Run Linter for All Services
-      uses: golangci/golangci-lint-action@v8
-      with:
-        version: latest
-        working-directory: .
-        args: --config=.golangci.yaml --skip-dirs="*/tests/mocks/*,*/mocks/*" 
+      run: |
+        for service in email subscription token weather-broadcast; do
+          echo "Running linter for $service service..."
+          cd services/$service
+          golangci-lint run --config=../../.golangci.yaml --skip-dirs="tests/mocks/*,mocks/*"
+          cd ../..
+        done 
