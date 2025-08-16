@@ -29,7 +29,7 @@ func NewSendEmailUseCase(
 func (uc *SendEmailUseCase) SendEmail(ctx context.Context, req domain.SendEmailRequest) (*domain.EmailDeliveryResult, error) {
 	uc.logger.Infof("Starting email send to %s, type: %s", req.To, req.Type)
 
-	template, err := uc.templateBuilder.BuildTemplate(ctx, req.Type, req.Data)
+	template, err := uc.templateBuilder.BuildEmailTemplate(ctx, req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build template: %w", err)
 	}
