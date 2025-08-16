@@ -2,7 +2,7 @@ package weatherapi
 
 type response struct {
 	TempC     float64 `json:"temp_c"`
-	Humidity  int     `json:"humidity"`
+	Humidity  float64 `json:"humidity"`
 	Condition struct {
 		Text string `json:"text"`
 	} `json:"condition"`

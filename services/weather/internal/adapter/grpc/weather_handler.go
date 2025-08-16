@@ -34,7 +34,7 @@ func (h *WeatherHandler) GetWeatherByCity(ctx context.Context, req *pb.WeatherRe
 	return &pb.WeatherResponse{
 		Weather: &pb.Weather{
 			Temperature: weatherResp.Weather.Temperature,
-			Humidity:    int32(weatherResp.Weather.Humidity),
+			Humidity:    weatherResp.Weather.Humidity,
 			Description: weatherResp.Weather.Description,
 			WindSpeed:   weatherResp.Weather.WindSpeed,
 		},
