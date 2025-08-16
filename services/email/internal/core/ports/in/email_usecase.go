@@ -7,6 +7,5 @@ import (
 )
 
 type SendEmailUseCase interface {
-	SendConfirmationEmail(ctx context.Context, req domain.ConfirmationEmailRequest) (*domain.EmailDeliveryResult, error)
-	SendWeatherUpdateEmail(ctx context.Context, req domain.WeatherUpdateEmailRequest) (*domain.EmailDeliveryResult, error)
+	SendEmail(ctx context.Context, req domain.SendEmailRequest) (*domain.EmailDeliveryResult, error)
 }

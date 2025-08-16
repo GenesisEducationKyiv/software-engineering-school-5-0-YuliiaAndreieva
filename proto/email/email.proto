@@ -14,9 +14,9 @@ message WeatherUpdateRequest {
   string name = 3;
   string city = 4;
   string description = 5;
-  int32 temperature = 6;
-  int32 humidity = 7;
-  int32 wind_speed = 8;
+  double temperature = 6;
+  double humidity = 7;
+  double wind_speed = 8;
   string unsubscribe_token = 9;
 }
 

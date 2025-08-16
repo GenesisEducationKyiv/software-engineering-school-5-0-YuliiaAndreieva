@@ -44,7 +44,7 @@ func (c *WeatherClient) GetWeatherByCity(ctx context.Context, city string) (*dom
 
 	weather := &domain.Weather{
 		Temperature: resp.Weather.Temperature,
-		Humidity:    int(resp.Weather.Humidity),
+		Humidity:    resp.Weather.Humidity,
 		Description: resp.Weather.Description,
 		WindSpeed:   resp.Weather.WindSpeed,
 	}

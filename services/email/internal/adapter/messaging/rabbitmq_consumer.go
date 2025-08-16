@@ -163,14 +163,17 @@ func (c *RabbitMQConsumer) handleMessage(ctx context.Context, msg amqp.Delivery)
 
 	c.logger.Infof("Received subscription created event for email: %s, city: %s", event.Email, event.City)
 
-	req := domain.ConfirmationEmailRequest{
-		To:               event.Email,
-		Subject:          "Confirm your weather subscription",
-		City:             event.City,
-		ConfirmationLink: fmt.Sprintf("%s/confirm/%s", c.subscriptionServiceURL, event.Token),
+	req := domain.SendEmailRequest{
+		Type: domain.EmailTypeConfirmation,
+		Data: map[string]interface{}{
+			"city":             event.City,
+			"confirmationLink": fmt.Sprintf("%s/confirm/%s", c.subscriptionServiceURL, event.Token),
+		},
+		To:      event.Email,
+		Subject: "Confirm your weather subscription",
 	}
 
-	result, err := c.useCase.SendConfirmationEmail(ctx, req)
+	result, err := c.useCase.SendEmail(ctx, req)
 	if err != nil {
 		return fmt.Errorf("failed to send confirmation email to %s: %w", event.Email, err)
 	}

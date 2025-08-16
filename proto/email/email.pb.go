@@ -28,9 +28,9 @@ type WeatherUpdateRequest struct {
 	Name             string                 `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
 	City             string                 `protobuf:"bytes,4,opt,name=city,proto3" json:"city,omitempty"`
 	Description      string                 `protobuf:"bytes,5,opt,name=description,proto3" json:"description,omitempty"`
-	Temperature      int32                  `protobuf:"varint,6,opt,name=temperature,proto3" json:"temperature,omitempty"`
-	Humidity         int32                  `protobuf:"varint,7,opt,name=humidity,proto3" json:"humidity,omitempty"`
-	WindSpeed        int32                  `protobuf:"varint,8,opt,name=wind_speed,json=windSpeed,proto3" json:"wind_speed,omitempty"`
+	Temperature      float64                `protobuf:"fixed64,6,opt,name=temperature,proto3" json:"temperature,omitempty"`
+	Humidity         float64                `protobuf:"fixed64,7,opt,name=humidity,proto3" json:"humidity,omitempty"`
+	WindSpeed        float64                `protobuf:"fixed64,8,opt,name=wind_speed,json=windSpeed,proto3" json:"wind_speed,omitempty"`
 	UnsubscribeToken string                 `protobuf:"bytes,9,opt,name=unsubscribe_token,json=unsubscribeToken,proto3" json:"unsubscribe_token,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
@@ -101,21 +101,21 @@ func (x *WeatherUpdateRequest) GetDescription() string {
 	return ""
 }
 
-func (x *WeatherUpdateRequest) GetTemperature() int32 {
+func (x *WeatherUpdateRequest) GetTemperature() float64 {
 	if x != nil {
 		return x.Temperature
 	}
 	return 0
 }
 
-func (x *WeatherUpdateRequest) GetHumidity() int32 {
+func (x *WeatherUpdateRequest) GetHumidity() float64 {
 	if x != nil {
 		return x.Humidity
 	}
 	return 0
 }
 
-func (x *WeatherUpdateRequest) GetWindSpeed() int32 {
+func (x *WeatherUpdateRequest) GetWindSpeed() float64 {
 	if x != nil {
 		return x.WindSpeed
 	}
@@ -192,10 +192,10 @@ const file_email_proto_rawDesc = "" +
 	"\x04name\x18\x03 \x01(\tR\x04name\x12\x12\n" +
 	"\x04city\x18\x04 \x01(\tR\x04city\x12 \n" +
 	"\vdescription\x18\x05 \x01(\tR\vdescription\x12 \n" +
-	"\vtemperature\x18\x06 \x01(\x05R\vtemperature\x12\x1a\n" +
-	"\bhumidity\x18\a \x01(\x05R\bhumidity\x12\x1d\n" +
+	"\vtemperature\x18\x06 \x01(\x01R\vtemperature\x12\x1a\n" +
+	"\bhumidity\x18\a \x01(\x01R\bhumidity\x12\x1d\n" +
 	"\n" +
-	"wind_speed\x18\b \x01(\x05R\twindSpeed\x12+\n" +
+	"wind_speed\x18\b \x01(\x01R\twindSpeed\x12+\n" +
 	"\x11unsubscribe_token\x18\t \x01(\tR\x10unsubscribeToken\"8\n" +
 	"\rEmailResponse\x12\x0e\n" +
 	"\x02to\x18\x01 \x01(\tR\x02to\x12\x17\n" +

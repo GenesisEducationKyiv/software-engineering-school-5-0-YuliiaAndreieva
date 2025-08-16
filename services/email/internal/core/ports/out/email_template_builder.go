@@ -1,9 +1,11 @@
 //go:generate mockery --dir . --output ../../../../tests/mocks --outpkg mocks --filename email_template_builder_mock.go --structname EmailTemplateBuilder --name EmailTemplateBuilder
 package out
 
-import "context"
+import (
+	"context"
+	"email/internal/core/domain"
+)
 
 type EmailTemplateBuilder interface {
-	BuildConfirmationEmail(ctx context.Context, email, city, confirmationLink string) (string, error)
-	BuildWeatherUpdateEmail(ctx context.Context, email, city, description string, humidity int, windSpeed int, temperature int, unsubscribeToken string) (string, error)
+	BuildEmailTemplate(ctx context.Context, req domain.SendEmailRequest) (string, error)
 }

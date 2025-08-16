@@ -2,15 +2,15 @@ package unit
 
 import (
 	"context"
+	"email/internal/adapter/email/templates"
 	"testing"
 
-	"email/internal/adapter/email"
 	"shared/logger"
 )
 
 func TestTemplateBuilder_BuildConfirmationEmail(t *testing.T) {
 	logger := logger.NewLogrusLogger()
-	builder := email.NewTemplateBuilder(logger, "http://localhost:8081", "http://localhost:8082")
+	builder := templates.NewTemplateBuilder(logger, "http://localhost:8081", "http://localhost:8082")
 
 	tests := []struct {
 		name             string
@@ -68,7 +68,7 @@ func TestTemplateBuilder_BuildConfirmationEmail(t *testing.T) {
 
 func TestTemplateBuilder_BuildWeatherUpdateEmail(t *testing.T) {
 	logger := logger.NewLogrusLogger()
-	builder := email.NewTemplateBuilder(logger, "http://localhost:8081", "http://localhost:8082")
+	builder := templates.NewTemplateBuilder(logger, "http://localhost:8081", "http://localhost:8082")
 
 	tests := []struct {
 		name             string
@@ -149,7 +149,7 @@ func TestTemplateBuilder_BuildWeatherUpdateEmail(t *testing.T) {
 
 func TestTemplateBuilder_EdgeCases(t *testing.T) {
 	logger := logger.NewLogrusLogger()
-	builder := email.NewTemplateBuilder(logger, "http://localhost:8081", "http://localhost:8082")
+	builder := templates.NewTemplateBuilder(logger, "http://localhost:8081", "http://localhost:8082")
 
 	t.Run("Empty city", func(t *testing.T) {
 		template, err := builder.BuildConfirmationEmail(context.Background(), "test@example.com", "", "http://localhost/confirm/token")

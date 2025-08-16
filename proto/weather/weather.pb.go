@@ -112,7 +112,7 @@ func (x *WeatherResponse) GetWeather() *Weather {
 type Weather struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Temperature   float64                `protobuf:"fixed64,1,opt,name=temperature,proto3" json:"temperature,omitempty"`
-	Humidity      int32                  `protobuf:"varint,2,opt,name=humidity,proto3" json:"humidity,omitempty"`
+	Humidity      float64                `protobuf:"fixed64,2,opt,name=humidity,proto3" json:"humidity,omitempty"`
 	Description   string                 `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
 	WindSpeed     float64                `protobuf:"fixed64,4,opt,name=wind_speed,json=windSpeed,proto3" json:"wind_speed,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -156,7 +156,7 @@ func (x *Weather) GetTemperature() float64 {
 	return 0
 }
 
-func (x *Weather) GetHumidity() int32 {
+func (x *Weather) GetHumidity() float64 {
 	if x != nil {
 		return x.Humidity
 	}
@@ -188,7 +188,7 @@ const file_weather_proto_rawDesc = "" +
 	"\aweather\x18\x01 \x01(\v2\x10.weather.WeatherR\aweather\"\x88\x01\n" +
 	"\aWeather\x12 \n" +
 	"\vtemperature\x18\x01 \x01(\x01R\vtemperature\x12\x1a\n" +
-	"\bhumidity\x18\x02 \x01(\x05R\bhumidity\x12 \n" +
+	"\bhumidity\x18\x02 \x01(\x01R\bhumidity\x12 \n" +
 	"\vdescription\x18\x03 \x01(\tR\vdescription\x12\x1d\n" +
 	"\n" +
 	"wind_speed\x18\x04 \x01(\x01R\twindSpeed2W\n" +

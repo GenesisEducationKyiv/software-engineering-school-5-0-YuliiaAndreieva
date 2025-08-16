@@ -22,19 +22,21 @@ func NewEmailHandler(sendEmailUseCase in.SendEmailUseCase) *EmailHandler {
 }
 
 func (h *EmailHandler) SendWeatherUpdate(ctx context.Context, req *pb.WeatherUpdateRequest) (*pb.EmailResponse, error) {
-	request := domain.WeatherUpdateEmailRequest{
-		To:               req.To,
-		Subject:          req.Subject,
-		Name:             req.Name,
-		City:             req.City,
-		Description:      req.Description,
-		Temperature:      int(req.Temperature),
-		Humidity:         int(req.Humidity),
-		WindSpeed:        int(req.WindSpeed),
-		UnsubscribeToken: req.UnsubscribeToken,
+	request := domain.SendEmailRequest{
+		Type: domain.EmailTypeWeatherUpdate,
+		Data: map[string]interface{}{
+			"city":             req.City,
+			"description":      req.Description,
+			"temperature":      req.Temperature,
+			"humidity":         req.Humidity,
+			"windSpeed":        req.WindSpeed,
+			"unsubscribeToken": req.UnsubscribeToken,
+		},
+		To:      req.To,
+		Subject: req.Subject,
 	}
 
-	result, err := h.sendEmailUseCase.SendWeatherUpdateEmail(ctx, request)
+	result, err := h.sendEmailUseCase.SendEmail(ctx, request)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to send weather update email: %v", err)
 	}

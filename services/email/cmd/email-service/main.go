@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"email/internal/adapter/email"
+	"email/internal/adapter/email/strategies"
 	grpchandler "email/internal/adapter/grpc"
 	"email/internal/adapter/messaging"
 	"email/internal/config"
@@ -33,9 +34,13 @@ func setupEmailComponents(cfg *config.Config, logger sharedlogger.Logger) (in.Se
 		Pass: cfg.SMTP.Pass,
 	}
 	emailSender := email.NewSMTPSender(smtpConfig, logger)
-	templateBuilder := email.NewTemplateBuilder(logger, cfg.Server.BaseURL, cfg.Server.SubscriptionServiceURL)
 
-	sendEmailUseCase := usecase.NewSendEmailUseCase(emailSender, templateBuilder, logger, cfg.Server.BaseURL)
+	strategyFactory := strategies.NewStrategyFactory(logger, cfg.Server.SubscriptionServiceURL)
+	strategies := strategyFactory.CreateStrategies()
+
+	templateBuilder := email.NewTemplateBuilder(logger, strategies)
+
+	sendEmailUseCase := usecase.NewSendEmailUseCase(emailSender, templateBuilder, logger)
 	grpcHandler := grpchandler.NewEmailHandler(sendEmailUseCase)
 
 	return sendEmailUseCase, grpcHandler

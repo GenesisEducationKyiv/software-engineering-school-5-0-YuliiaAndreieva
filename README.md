@@ -275,6 +275,37 @@ cd services/subscription/tests
 docker-compose -f docker-compose.test.yml up --build --abort-on-container-exit
 ```
 
+## Observability
+
+The current observability stack includes Prometheus metrics from all services, structured Zap logging, and centralized monitoring via Prometheus + Grafana, while distributed tracing with OpenTelemetry and Jaeger would provide complete request flow visibility across service boundaries.
+
+## Caching
+
+### Current Implementation
+
+**Redis Caching**: Weather service implements Redis-based caching with configurable TTL (default 30 minutes) for weather data to reduce external API calls and improve response times.
+
+**Cache Strategy**: 
+- **TTL**: 30 minutes for weather data (configurable via `REDIS_TTL`)
+- **Cache-Aside Pattern**: Weather data is cached after first fetch, subsequent requests serve from cache until TTL expires
+- **No Manual Invalidation**: Cache expires automatically based on TTL, no manual cache invalidation logic implemented
+
+**Cache Metrics**: Comprehensive Prometheus metrics track cache hits, misses, errors, and operation duration for monitoring cache performance.
+
+### Cache Configuration
+
+```bash
+# Redis Configuration (Weather Service)
+REDIS_ADDRESS=redis:6379
+REDIS_TTL=30m
+REDIS_POOL_SIZE=10
+REDIS_MIN_IDLE_CONNS=5
+```
+
+### Recommended Improvements
+
+Implement cache invalidation strategies (e.g., manual cache clearing for specific cities, cache warming for popular locations) and consider multi-level caching for frequently accessed weather data.
+
 ## Technologies
 
 - **Go 1.24** - main language

@@ -10,7 +10,7 @@ const (
 
 type Weather struct {
 	Temperature float64 `json:"temperature"`
-	Humidity    int     `json:"humidity"`
+	Humidity    float64 `json:"humidity"`
 	Description string  `json:"description"`
 	WindSpeed   float64 `json:"wind_speed"`
 }
@@ -67,13 +67,13 @@ type WeatherErrorEmailRequest struct {
 }
 
 type WeatherUpdateEmailRequest struct {
-	To               string `json:"to"`
-	Subject          string `json:"subject"`
-	Name             string `json:"name"`
-	City             string `json:"city"`
-	Description      string `json:"description"`
-	Temperature      int    `json:"temperature"`
-	Humidity         int    `json:"humidity"`
-	WindSpeed        int    `json:"windSpeed"`
-	UnsubscribeToken string `json:"unsubscribeToken"`
+	To               string  `json:"to"`
+	Subject          string  `json:"subject"`
+	Name             string  `json:"name"`
+	City             string  `json:"city"`
+	Description      string  `json:"description"`
+	Temperature      float64 `json:"temperature"`
+	Humidity         float64 `json:"humidity"`
+	WindSpeed        float64 `json:"windSpeed"`
+	UnsubscribeToken string  `json:"unsubscribeToken"`
 }
