@@ -1,0 +1,57 @@
+### Gateway Service Tests
+
+### Health Check
+GET http://localhost:8080/health
+Content-Type: application/json
+
+###
+
+### Get Weather by City
+GET http://localhost:8080/weather?city=Kyiv
+Content-Type: application/json
+
+###
+
+### Subscribe to Weather Updates
+POST http://localhost:8080/subscribe
+Content-Type: application/json
+
+{
+  "email": "yulia_andreyeva@knu.ua",
+  "city": "Kyiv",
+  "frequency": "daily"
+}
+
+###
+
+### Unsubscribe from Weather Updates
+DELETE http://localhost:8080/unsubscribe
+Content-Type: application/json
+
+{
+  "email": "test@example.com"
+}
+
+### Test Invalid City
+GET http://localhost:8080/weather?city=InvalidCity123
+Content-Type: application/json
+
+###
+
+### Test Missing Parameters
+GET http://localhost:8080/weather
+Content-Type: application/json
+
+###
+
+### Test Invalid Email Format
+POST http://localhost:8080/subscribe
+Content-Type: application/json
+
+{
+  "email": "invalid-email",
+  "city": "Kyiv",
+  "frequency": "daily"
+}
+
+### 

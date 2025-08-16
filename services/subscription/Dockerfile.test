@@ -1,0 +1,17 @@
+FROM golang:1.24-alpine
+
+WORKDIR /app
+
+COPY proto/ ./proto/
+COPY shared/ ./shared/
+COPY services/subscription/go.mod services/subscription/go.sum ./
+
+RUN mkdir -p ../../shared && cp -r ./shared/* ../../shared/
+RUN mkdir -p ../../proto && cp -r ./proto/* ../../proto/
+
+COPY services/subscription/ ./
+
+RUN go mod download
+RUN go mod tidy
+
+CMD ["go", "test", "-v", "./tests/..."]

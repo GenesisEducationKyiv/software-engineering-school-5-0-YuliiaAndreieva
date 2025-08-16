@@ -1,0 +1,46 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: 'gateway-service'
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['gateway-service:8080']
+    scrape_interval: 5s
+    scrape_timeout: 5s
+
+  - job_name: 'email-service'
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['email-service:8081']
+    scrape_interval: 5s
+    scrape_timeout: 5s
+
+  - job_name: 'subscription-service'
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['subscription-service:8082']
+    scrape_interval: 5s
+    scrape_timeout: 5s
+
+  - job_name: 'token-service'
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['token-service:8083']
+    scrape_interval: 5s
+    scrape_timeout: 5s
+
+  - job_name: 'weather-service'
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['weather-service:8084']
+    scrape_interval: 5s
+    scrape_timeout: 5s
+
+  - job_name: 'weather-broadcast-service'
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['weather-broadcast-service:8085']
+    scrape_interval: 5s
+    scrape_timeout: 5s 

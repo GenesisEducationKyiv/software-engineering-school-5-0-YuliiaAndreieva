@@ -1,0 +1,36 @@
+services:
+  token-service:
+    build:
+      context: ../..
+      dockerfile: services/token/Dockerfile
+    ports:
+      - "8083:8083"
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8083/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    environment:
+      SERVER_PORT: 8083
+      GRPC_PORT: 9093
+      BASE_URL: http://token-service:8083
+      JWT_SECRET: test-secret-key-for-jwt-signing
+    networks:
+      - token-test-network
+
+  token-service-tests:
+    build:
+      context: ../..
+      dockerfile: services/token/Dockerfile.test
+    depends_on:
+      token-service:
+        condition: service_healthy
+    environment:
+      TEST_BASE_URL: http://token-service:8083
+      TEST_JWT_SECRET: test-secret-key-for-jwt-signing
+    networks:
+      - token-test-network
+
+networks:
+  token-test-network:
+    driver: bridge 

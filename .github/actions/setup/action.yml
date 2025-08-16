@@ -7,4 +7,11 @@ runs:
     - name: Set up Go
       uses: actions/setup-go@v4
       with:
-        go-version: '1.24.3' 
+        go-version: '1.24.3'
+    
+    - name: Configure Go modules
+      shell: bash
+      run: |
+        go env -w GO111MODULE=on
+        go env -w GOPROXY=https://proxy.golang.org,direct
+        go env -w GOSUMDB=sum.golang.org 

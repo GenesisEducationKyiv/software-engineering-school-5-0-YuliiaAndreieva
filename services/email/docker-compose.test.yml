@@ -1,0 +1,82 @@
+services:
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmqctl", "status"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - email-test-network
+
+  mailhog:
+    image: mailhog/mailhog:latest
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+    networks:
+      - email-test-network
+
+  email-service:
+    build:
+      context: ../..
+      dockerfile: services/email/Dockerfile
+    ports:
+      - "8081:8081"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      mailhog:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8081/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    environment:
+      SMTP_HOST: mailhog
+      SMTP_PORT: 1025
+      SMTP_USER: test@example.com
+      SMTP_PASS: ""
+      SERVER_PORT: 8081
+      GRPC_PORT: 9091
+      BASE_URL: http://localhost:8081
+      SUBSCRIPTION_SERVICE_URL: http://fake-subscription:8082
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
+      RABBITMQ_EXCHANGE: subscription_events
+      RABBITMQ_QUEUE: email_notifications
+    networks:
+      - email-test-network
+
+  email-service-tests:
+    build:
+      context: ../..
+      dockerfile: services/email/Dockerfile.test
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      mailhog:
+        condition: service_started
+      email-service:
+        condition: service_healthy
+    environment:
+      SMTP_HOST: mailhog
+      SMTP_PORT: 1025
+      SMTP_USER: test@example.com
+      SMTP_PASS: ""
+      SERVER_PORT: 8081
+      GRPC_PORT: 9091
+      BASE_URL: http://localhost:8081
+      SUBSCRIPTION_SERVICE_URL: http://fake-subscription:8082
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
+      RABBITMQ_EXCHANGE: subscription_events
+      RABBITMQ_QUEUE: email_notifications
+    networks:
+      - email-test-network
+
+networks:
+  email-test-network:
+    driver: bridge

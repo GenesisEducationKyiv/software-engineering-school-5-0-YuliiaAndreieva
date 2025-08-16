@@ -1,118 +1,320 @@
-# Weather API Service
+# Weather Services
 
-A Go-based weather API service that provides weather updates via email subscriptions. Users can subscribe to receive weather updates for their preferred cities either hourly or daily.
+Microservices architecture for weather notifications with gRPC communication between services.
 
-### 🚨 Please be aware that site is deployed at https://weatherapi-rpum.onrender.com (currently unavailable) 🚨
 ## Architecture
 
-The project follows a clean architecture pattern with the following structure:
-
+```mermaid
+graph TB
+    Client[Client] <-->|HTTP| Gateway[Gateway]
+    Gateway -->|HTTP| WeatherBroadcast[Weather-Broadcast]
+    Gateway -->|HTTP| Subscription[Subscription]
+    Gateway -->|HTTP| Token[Token]
+    Gateway -->|HTTP| Weather[Weather]
+    
+    WeatherBroadcast -->|gRPC| Subscription
+    WeatherBroadcast -->|gRPC| Email[Email]
+    WeatherBroadcast -->|gRPC| Weather
+    
+    Subscription -->|gRPC| Email
+    
+    subgraph "Services"
+        Gateway
+        WeatherBroadcast
+        Subscription
+        Token
+        Weather
+        Email
+    end
 ```
-weather-api/
-├── cmd/
-│   └── server/         # Application entry point
-├── internal/
-│   ├── adapter/        # External service adapters (email, weather API, database)
-│   ├── core/           # Domain models and business logic
-│   ├── handler/        # HTTP handlers
-│   ├── mocks/          # Mock implementations for testing
-│   └── util/           # Utility functions and configuration
-├── migrations/         # Database migrations
-└── web/               # Frontend static files
+
+**Services:**
+- **Gateway** (8080) - API Gateway (HTTP)
+- **Email** (8081 HTTP / 9091 gRPC) - Email notifications
+- **Subscription** (8082 HTTP / 9093 gRPC) - Subscription management
+- **Token** (8083) - JWT tokens (HTTP)
+- **Weather** (8084 HTTP / 9092 gRPC) - Weather data
+- **Weather-Broadcast** (8085) - Weather broadcast service (HTTP)
+
+## Environment Configuration
+
+### Gateway Service (.env)
+```bash
+PORT=8080
+WEATHER_SERVICE_URL=http://weather-service:8084
+SUBSCRIPTION_SERVICE_URL=http://subscription-service:8082
+HTTP_CLIENT_TIMEOUT=30s
+SHUTDOWN_TIMEOUT=5s
+LOG_INITIAL=100
+LOG_THEREAFTER=100
+LOG_TICK=1s
 ```
 
-### Key Components
+### Email Service (.env)
+```bash
+# Server Configuration
+SERVER_PORT=8081
+GRPC_PORT=9091
+BASE_URL=http://email-service:8081
+SUBSCRIPTION_SERVICE_URL=http://subscription-service:8082
 
-- **Weather Service**: Fetches weather data from external weather API
-- **Email Service**: Handles email notifications using SMTP
-- **Subscription Service**: Manages user subscriptions and confirmation
-- **Token Service**: Generates subscription tokens
-- **PostgreSQL Database**: Stores subscription information
-
-## Prerequisites
-
-- Go 1.24
-- PostgreSQL
-- SMTP server access (google app generated pass)
-- Weather API key (https://www.weatherapi.com)
-
-## Environment Variables
-
-Create a `.env` file in the root directory with the following variables:
-
-```env
-DB_CONN_STR=postgres://username:password@localhost:5432/weather_db?sslmode=disable
-WEATHER_API_KEY=your_weather_api_key
-BASE_URL=http://localhost:8080
+# SMTP Configuration
 SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
-SMTP_USER=your_email@gmail.com
-SMTP_PASS=your_app_specific_password
-PORT=8080
+SMTP_USER=your-email@gmail.com
+SMTP_PASS=your-app-password
+
+# RabbitMQ Configuration
+RABBITMQ_URL=amqp://admin:password@rabbitmq:5672/
+RABBITMQ_EXCHANGE=subscription_events
+RABBITMQ_QUEUE=email_notifications
+
+# Timeout Configuration
+SHUTDOWN_TIMEOUT=5s
+
+# Logging Configuration
+LOG_INITIAL=100
+LOG_THEREAFTER=100
+LOG_TICK=1s
 ```
 
-## Running the Project
-
-1. Start the server and postgres db using docker:
+### Subscription Service (.env)
 ```bash
-docker compose up -d
+# Server Configuration
+SERVER_PORT=8082
+GRPC_PORT=9093
+BASE_URL=http://subscription-service:8082
+
+# Token Service Configuration
+TOKEN_SERVICE_URL=http://token-service:8083
+TOKEN_EXPIRATION=24h
+
+# Database Configuration
+DATABASE_DSN=host=postgres user=postgres password=postgres dbname=subscriptions port=5432 sslmode=disable
+
+# RabbitMQ Configuration
+RABBITMQ_URL=amqp://admin:password@rabbitmq:5672/
+RABBITMQ_EXCHANGE=subscription_events
+RABBITMQ_QUEUE=email_notifications
+
+# Timeout Configuration
+HTTP_CLIENT_TIMEOUT=10s
+SHUTDOWN_TIMEOUT=5s
+DATABASE_RETRY_DELAY=2s
+DATABASE_MAX_RETRIES=30
+
+# Logging Configuration
+LOG_INITIAL=100
+LOG_THEREAFTER=100
+LOG_TICK=1s
 ```
-Migrations will be automatically applied upon lift.
-The server will start on port 8080 by default.
 
-## Running Tests
-
-Run all tests:
+### Token Service (.env)
 ```bash
-go test ./...
+# Server Configuration
+SERVER_PORT=8083
+
+# JWT Configuration
+JWT_SECRET=your-super-secret-jwt-key-here
+
+# Timeout Configuration
+SHUTDOWN_TIMEOUT=5s
+
+# Logging Configuration
+LOG_INITIAL=100
+LOG_THEREAFTER=100
+LOG_TICK=1s
 ```
 
-Run tests only in core/service directory:
+### Weather Service (.env)
 ```bash
-go test ./internal/core/service/...
+# Server Configuration
+PORT=8084
+GRPC_PORT=9092
+BASE_URL=http://weather-service:8084
+
+# Weather API Configuration
+WEATHER_API_KEY=your-weather-api-key
+WEATHER_API_BASE_URL=http://api.weatherapi.com/v1
+OPENWEATHERMAP_API_KEY=your-openweathermap-api-key
+OPENWEATHERMAP_BASE_URL=https://api.openweathermap.org/data/2.5
+
+# Redis Configuration
+REDIS_ADDRESS=redis:6379
+REDIS_TTL=30m
+REDIS_DIAL_TIMEOUT=5s
+REDIS_READ_TIMEOUT=3s
+REDIS_WRITE_TIMEOUT=3s
+REDIS_POOL_SIZE=10
+REDIS_MIN_IDLE_CONNS=5
+
+# Timeout Configuration
+HTTP_READ_TIMEOUT=10s
+HTTP_WRITE_TIMEOUT=10s
+SHUTDOWN_TIMEOUT=5s
+HTTP_CLIENT_TIMEOUT=10s
+
+# Logging Configuration
+LOG_INITIAL=100
+LOG_THEREAFTER=100
+LOG_TICK=1s
 ```
 
-### Code Quality with golangci-lint
+### Weather-Broadcast Service (.env)
+```bash
+# Server Configuration
+PORT=8085
 
-Install golangci-lint:
+# Service URLs
+SUBSCRIPTION_SERVICE_URL=http://subscription-service:8082
+WEATHER_SERVICE_URL=http://weather-service:8084
+EMAIL_SERVICE_URL=http://email-service:8081
+
+# gRPC URLs
+SUBSCRIPTION_GRPC_URL=subscription-service:9093
+EMAIL_GRPC_URL=email-service:9091
+WEATHER_GRPC_URL=weather-service:9092
+
+# Worker Configuration
+WORKER_AMOUNT=10
+PAGE_SIZE=100
+
+# Timeout Configuration
+HTTP_CLIENT_TIMEOUT=10s
+HTTP_READ_TIMEOUT=10s
+HTTP_WRITE_TIMEOUT=10s
+SHUTDOWN_TIMEOUT=5s
+
+# Logging Configuration
+LOG_INITIAL=100
+LOG_THEREAFTER=100
+LOG_TICK=1s
+```
+
+## Build & Run
+
+### Docker
+```bash
+# Build all services
+docker-compose build
+
+# Start
+docker-compose up
+
+# Stop
+docker-compose down
+```
+
+### Local Development
+```bash
+# Generate proto files
+cd proto
+protoc --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative subscription/subscription.proto
+protoc --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative email/email.proto
+protoc --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative weather/weather.proto
+go mod tidy
+
+# Run services (separately)
+cd services/email && go run cmd/email-service/main.go
+cd services/subscription && go run cmd/subscription-service/main.go
+cd services/weather && go run cmd/weather-service/main.go
+cd services/weather-broadcast && go run cmd/weather-broadcast-service/main.go
+```
+
+## Testing
+
+### Generate Mocks
+```bash
+# Email service
+cd services/email
+mockgen -source=internal/core/ports/in/email_usecase.go -destination=tests/mocks/email_usecase_mock.go
+
+# Subscription service  
+cd services/subscription
+mockgen -source=internal/core/ports/in/subscription_usecase.go -destination=tests/mocks/subscription_usecase_mock.go
+
+# Weather service
+cd services/weather
+mockgen -source=internal/core/ports/in/weather_usecase.go -destination=tests/mocks/weather_usecase_mock.go
+
+# Weather-broadcast service
+cd services/weather-broadcast
+mockgen -source=internal/core/ports/out/subscription_client.go -destination=tests/mocks/subscription_client_mock.go
+mockgen -source=internal/core/ports/out/email_client.go -destination=tests/mocks/email_client_mock.go
+mockgen -source=internal/core/ports/out/weather_client.go -destination=tests/mocks/weather_client_mock.go
+```
+
+### Run Tests
+```bash
+# Unit tests
+cd services/email && go test ./tests/unit/...
+cd services/subscription && go test ./tests/usecase/...
+cd services/weather && go test ./tests/unit/...
+cd services/weather-broadcast && go test ./tests/usecase/...
+
+# Integration tests
+cd services/email && go test ./tests/integration/...
+cd services/subscription && go test ./tests/integration/...
+cd services/weather && go test ./tests/integration/...
+
+# All service tests
+cd services/email && go test ./...
+cd services/subscription && go test ./...
+cd services/weather && go test ./...
+cd services/weather-broadcast && go test ./...
+```
+
+### Docker Tests
+```bash
+# Email service tests
+cd services/email/tests
+docker-compose -f docker-compose.test.yml up --build --abort-on-container-exit
+
+# Subscription service tests  
+cd services/subscription/tests
+docker-compose -f docker-compose.test.yml up --build --abort-on-container-exit
+```
+
+## Observability
+
+The current observability stack includes Prometheus metrics from all services, structured Zap logging, and centralized monitoring via Prometheus + Grafana, while distributed tracing with OpenTelemetry and Jaeger would provide complete request flow visibility across service boundaries.
+
+## Caching
+
+### Current Implementation
+
+**Redis Caching**: Weather service implements Redis-based caching with configurable TTL (default 30 minutes) for weather data to reduce external API calls and improve response times.
+
+**Cache Strategy**: 
+- **TTL**: 30 minutes for weather data (configurable via `REDIS_TTL`)
+- **Cache-Aside Pattern**: Weather data is cached after first fetch, subsequent requests serve from cache until TTL expires
+- **No Manual Invalidation**: Cache expires automatically based on TTL, no manual cache invalidation logic implemented
+
+**Cache Metrics**: Comprehensive Prometheus metrics track cache hits, misses, errors, and operation duration for monitoring cache performance.
+
+### Cache Configuration
 
 ```bash
-go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.1.6
+# Redis Configuration (Weather Service)
+REDIS_ADDRESS=redis:6379
+REDIS_TTL=30m
+REDIS_POOL_SIZE=10
+REDIS_MIN_IDLE_CONNS=5
 ```
 
-Run the linter:
-```bash
-golangci-lint run -v
-```
+### Recommended Improvements
 
-## API Endpoints
+Implement cache invalidation strategies (e.g., manual cache clearing for specific cities, cache warming for popular locations) and consider multi-level caching for frequently accessed weather data.
 
-- `GET /api/weather` - Get current weather for a city
-- `POST /api/subscribe` - Subscribe to weather updates
-- `GET /api/confirm/:token` - Confirm subscription
-- `GET /api/unsubscribe/:token` - Unsubscribe from updates
+## Technologies
 
-## Subscription Frequencies
-
-The service supports two types of update frequencies:
-
-1. **Hourly Updates**: Sent every hour
-2. **Daily Updates**: Sent once daily at 8:00 AM
-
-**Please be aware, that after click button Subscribe - on ui only button changes color and email sent, no alerts**
-To modify the update schedule, edit the cron expressions in `cmd/server/main.go`:
-
-```go
-cron.AddFunc("0 * * * *", func() { emailService.SendUpdates(context.Background(), domain.FrequencyHourly) })
-cron.AddFunc("0 0 * * *", func() { emailService.SendUpdates(context.Background(), domain.FrequencyDaily) })
-```
-
-## Example Subscription Request
-
-```json
-{
-    "email": "user@example.com",
-    "city": "Kyiv",
-    "frequency": "hourly"
-}
-```
+- **Go 1.24** - main language
+- **gRPC** - inter-service communication
+- **HTTP/REST** - external APIs
+- **PostgreSQL** - database
+- **Redis** - caching
+- **Docker** - containerization
+- **Gin** - HTTP framework
+- **GORM** - ORM
+- **Logrus** - logging
+- **Cron** - task scheduling 

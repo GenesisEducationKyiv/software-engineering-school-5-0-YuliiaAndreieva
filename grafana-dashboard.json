@@ -1,0 +1,211 @@
+{
+  "id": null,
+  "uid": "weather-service-metrics",
+  "title": "Weather Service Metrics",
+  "tags": ["weather", "subscription", "email"],
+  "timezone": "browser",
+  "schemaVersion": 36,
+  "version": 1,
+  "refresh": "10s",
+  "time": {
+    "from": "now-5m",
+    "to": "now"
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "HTTP Requests Total",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "expr": "sum(http_requests_total) by (method, path)",
+          "legendFormat": "{{method}} {{path}}",
+          "refId": "A"
+        }
+      ],
+      "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" }
+        }
+      }
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "HTTP Request Duration",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le, method, path))",
+          "legendFormat": "95th percentile - {{method}} {{path}}",
+          "refId": "B"
+        }
+      ],
+      "gridPos": { "x": 12, "y": 0, "w": 12, "h": 8 },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "unit": "seconds"
+        }
+      }
+    },
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "Subscription Metrics",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "expr": "subscription_created_total",
+          "legendFormat": "Created",
+          "refId": "C"
+        },
+        {
+          "expr": "subscription_confirmed_total",
+          "legendFormat": "Confirmed",
+          "refId": "D"
+        },
+        {
+          "expr": "subscription_unsubscribed_total",
+          "legendFormat": "Unsubscribed",
+          "refId": "E"
+        },
+        {
+          "expr": "subscription_errors_total",
+          "legendFormat": "Errors",
+          "refId": "F"
+        }
+      ],
+      "gridPos": { "x": 0, "y": 8, "w": 12, "h": 8 },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" }
+        }
+      }
+    },
+    {
+      "id": 4,
+      "type": "timeseries",
+      "title": "RabbitMQ Metrics",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "expr": "rabbitmq_published_total",
+          "legendFormat": "Published",
+          "refId": "G"
+        },
+        {
+          "expr": "rabbitmq_publish_errors_total",
+          "legendFormat": "Publish Errors",
+          "refId": "H"
+        }
+      ],
+      "gridPos": { "x": 12, "y": 8, "w": 12, "h": 8 },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" }
+        }
+      }
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "gRPC Requests",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(grpc_requests_total[5m])) by (service, method)",
+          "legendFormat": "{{service}} {{method}}",
+          "refId": "I"
+        }
+      ],
+      "gridPos": { "x": 0, "y": 16, "w": 12, "h": 8 },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "unit": "reqps"
+        }
+      }
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "Database Operations",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(database_operation_duration_seconds_bucket[5m])) by (le, operation))",
+          "legendFormat": "95th percentile - {{operation}}",
+          "refId": "J"
+        }
+      ],
+      "gridPos": { "x": 12, "y": 16, "w": 12, "h": 8 },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "unit": "seconds"
+        }
+      }
+    },
+    {
+      "id": 7,
+      "type": "timeseries",
+      "title": "Error Rate",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(subscription_errors_total[5m]))",
+          "legendFormat": "Subscription Errors",
+          "refId": "K"
+        },
+        {
+          "expr": "sum(rate(database_errors_total[5m]))",
+          "legendFormat": "Database Errors",
+          "refId": "L"
+        },
+        {
+          "expr": "sum(rate(grpc_errors_total[5m]))",
+          "legendFormat": "gRPC Errors",
+          "refId": "M"
+        }
+      ],
+      "gridPos": { "x": 0, "y": 24, "w": 24, "h": 8 },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "unit": "errps"
+        }
+      }
+    }
+  ],
+  "templating": { "list": [] },
+  "annotations": { "list": [] },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "links": [],
+  "liveNow": false
+} 

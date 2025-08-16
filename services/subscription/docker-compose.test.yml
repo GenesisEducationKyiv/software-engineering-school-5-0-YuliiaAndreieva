@@ -1,0 +1,115 @@
+services:
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmqctl", "status"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - subscription-test-network
+
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: subscription_test
+      POSTGRES_USER: test
+      POSTGRES_PASSWORD: test
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U test -d subscription_test"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - subscription-test-network
+
+  mailhog:
+    image: mailhog/mailhog:latest
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+    networks:
+      - subscription-test-network
+
+  mock-token-service:
+    image: nginx:alpine
+    ports:
+      - "8083:80"
+    volumes:
+      - ./mock-token-service.conf:/etc/nginx/conf.d/default.conf
+    networks:
+      - subscription-test-network
+
+  subscription-service:
+    build:
+      context: ../..
+      dockerfile: services/subscription/Dockerfile
+    ports:
+      - "8082:8082"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      mailhog:
+        condition: service_started
+      mock-token-service:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8082/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: test
+      DB_PASSWORD: test
+      DB_NAME: subscription_test
+      DATABASE_DSN: host=postgres user=test password=test dbname=subscription_test port=5432 sslmode=disable
+      SERVER_PORT: 8082
+      GRPC_PORT: 9092
+      BASE_URL: http://subscription-service:8082
+      TOKEN_SERVICE_URL: http://mock-token-service:80
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
+      RABBITMQ_EXCHANGE: subscription_events
+      RABBITMQ_QUEUE: email_notifications
+      EMAIL_SERVICE_URL: http://fake-email:8081
+    networks:
+      - subscription-test-network
+
+  subscription-service-tests:
+    build:
+      context: ../..
+      dockerfile: services/subscription/Dockerfile.test
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      mailhog:
+        condition: service_started
+      subscription-service:
+        condition: service_healthy
+    environment:
+      TEST_DB_HOST: postgres
+      TEST_DB_PORT: 5432
+      TEST_DB_USER: test
+      TEST_DB_PASSWORD: test
+      TEST_DB_NAME: subscription_test
+      TEST_RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
+      TEST_RABBITMQ_EXCHANGE: subscription_events
+      TEST_RABBITMQ_QUEUE: email_notifications
+      TEST_BASE_URL: http://subscription-service:8082
+      TEST_EMAIL_SERVICE_URL: http://fake-email:8081
+    networks:
+      - subscription-test-network
+
+networks:
+  subscription-test-network:
+    driver: bridge 

@@ -60,6 +60,10 @@ cmake-build-*/
 # IntelliJ
 out/
 
+# Exclude ports/out directories from being ignored (they contain interface definitions)
+!**/ports/out/
+!**/ports/out/**
+
 # mpeltonen/sbt-idea plugin
 .idea_modules/
 
@@ -158,3 +162,6 @@ coverage/
 # Temporary folders
 tmp/
 temp/
+
+# Generated mocks
+**/tests/mocks/*.go
