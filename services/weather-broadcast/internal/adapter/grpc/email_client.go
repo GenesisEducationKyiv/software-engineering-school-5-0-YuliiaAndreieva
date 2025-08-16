@@ -38,9 +38,9 @@ func (c *EmailClient) SendWeather(ctx context.Context, info *domain.WeatherMailS
 		Name:             "User",
 		City:             info.City,
 		Description:      info.Weather.Description,
-		Temperature:      int32(info.Weather.Temperature),
-		Humidity:         int32(info.Weather.Humidity),
-		WindSpeed:        int32(info.Weather.WindSpeed),
+		Temperature:      info.Weather.Temperature,
+		Humidity:         info.Weather.Humidity,
+		WindSpeed:        info.Weather.WindSpeed,
 		UnsubscribeToken: info.Token,
 	}
 
